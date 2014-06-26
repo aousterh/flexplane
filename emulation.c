@@ -63,15 +63,6 @@ void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
         struct emu_packet *packet;
         struct emu_endpoint_output *output;
 
-        /* move packets from main input queue to individual output queues */
-        while (fp_ring_dequeue(tor->q_in, (void **) &packet) == 0) {
-                /* assume this is a ToR switch with only downward-facing links
-                   to endpoints */
-                output = &tor->endpoint_outputs[packet->dst];
-                while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
-                        printf("failed enqueue within switch\n");
-        }
-
         /* try to output one packet per output port */
         for (output = &tor->endpoint_outputs[0];
              output < &tor->endpoint_outputs[EMU_SWITCH_MAX_ENDPOINT_PORTS];
@@ -84,6 +75,16 @@ void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
                 while (fp_ring_enqueue(state->finished_packet_q, packet)
                        == -ENOBUFS)
                         printf("failed enqueue to finished packet q\n");
+        }
+
+        /* move packets from main input queue to individual output queues
+           these are packets that arrived at the switch during this timeslot */
+        while (fp_ring_dequeue(tor->q_in, (void **) &packet) == 0) {
+                /* assume this is a ToR switch with only downward-facing links
+                   to endpoints */
+                output = &tor->endpoint_outputs[packet->dst];
+                while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
+                        printf("failed enqueue within switch\n");
         }
 }
 

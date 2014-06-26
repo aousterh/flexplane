@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 
-#define EMULATION_DURATION 5
+#define EMULATION_DURATION 7
 
 int main() {
         uint16_t i, num_packet_qs;
@@ -37,7 +37,9 @@ int main() {
         /* run a simple test of emulation framework */
 
         /* add some backlog */
-        emu_add_backlog(state, 0, 3, 1, 27);
+        emu_add_backlog(state, 0, 1, 1, 13);
+        emu_add_backlog(state, 0, 3, 3, 27);
+        emu_add_backlog(state, 7, 3, 2, 100);
 
         /* run some timeslots of emulation */
         for (i = 0; i < EMULATION_DURATION; i++)

@@ -8,6 +8,8 @@
 #ifndef PACKET_H_
 #define PACKET_H_
 
+#include <inttypes.h>
+
 #define EMU_PKT_QUEUE_SIZE 100
 
 /**

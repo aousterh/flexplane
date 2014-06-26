@@ -15,7 +15,7 @@ struct fp_ring;
  * A representation of an endpoint (server) in the emulated network.
  */
 struct emu_endpoint {
-        struct fp_ring *q_packet_in;
+        struct fp_ring *q_in;
         struct emu_switch *adj_switch;
 };
 

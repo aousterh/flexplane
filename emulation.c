@@ -37,58 +37,6 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 }
 
 /**
- * Emulate one timeslot at a given endpoint.
- */
-static inline
-void emu_timeslot_at_endpoint(struct emu_endpoint *endpoint) {
-        struct emu_packet *packet;
-        struct emu_router *router;
-
-        /* try to dequeue one packet - return if there are none */
-        if (fp_ring_dequeue(endpoint->q_in, (void **) &packet) != 0)
-                return;
-
-        /* try to enqueue the packet to the next router */
-        router = endpoint->router;
-        while (fp_ring_enqueue(router->q_in, packet) == -ENOBUFS)
-                printf("error: failed enqueue at router\n");
-}
-
-/**
- * Emulate one timeslot at a given router. For now, assume that routers
- * can process MTUs with no additional delay beyond the queueing delay.
- */
-static inline
-void emu_timeslot_at_router(struct emu_state *state, struct emu_router *router) {
-        struct emu_packet *packet;
-        struct emu_endpoint_output *output;
-
-        /* try to output one packet per output port */
-        for (output = &router->endpoint_outputs[0];
-             output < &router->endpoint_outputs[EMU_ROUTER_MAX_ENDPOINT_PORTS];
-             output++) {
-                /* try to dequeue one packet for this port */
-                if (fp_ring_dequeue(output->q_out, (void **) &packet) != 0)
-                        continue;
-
-                /* this packet made it to the endpoint; enqueue as completed */
-                while (fp_ring_enqueue(state->finished_packet_q, packet)
-                       == -ENOBUFS)
-                        printf("error: failed enqueue to finished packet q\n");
-        }
-
-        /* move packets from main input queue to individual output queues
-           these are packets that arrived at the router during this timeslot */
-        while (fp_ring_dequeue(router->q_in, (void **) &packet) == 0) {
-                /* assume this is a router with only downward-facing links to
-                   endpoints */
-                output = &router->endpoint_outputs[packet->dst];
-                while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
-                        printf("error: failed enqueue within router\n");
-        }
-}
-
-/**
  * Emulate a single timeslot.
  */
 void emu_timeslot(struct emu_state *state) {
@@ -99,13 +47,13 @@ void emu_timeslot(struct emu_state *state) {
         /* emulate one timeslot at each endpoint */
         for (endpoint = &state->endpoints[0];
              endpoint < &state->endpoints[EMU_NUM_ENDPOINTS]; endpoint++) {
-                emu_timeslot_at_endpoint(endpoint);
+                endpoint_emulate_timeslot(endpoint);
         }
 
         /* emulate one timeslot at each router */
         for (router = &state->routers[0];
              router < &state->routers[EMU_NUM_ROUTERS]; router++) {
-                emu_timeslot_at_router(state, router);
+                router_emulate_timeslot(router, state->finished_packet_q);
         }
 
         /* process all admitted traffic */

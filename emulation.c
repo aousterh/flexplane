@@ -42,30 +42,30 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 static inline
 void emu_timeslot_at_endpoint(struct emu_endpoint *endpoint) {
         struct emu_packet *packet;
-        struct emu_switch *tor;
+        struct emu_router *router;
 
         /* try to dequeue one packet - return if there are none */
         if (fp_ring_dequeue(endpoint->q_in, (void **) &packet) != 0)
                 return;
 
-        /* try to enqueue the packet to the next switch */
-        tor = endpoint->adj_switch;
-        while (fp_ring_enqueue(tor->q_in, packet) == -ENOBUFS)
-                printf("error: failed enqueue at switch\n");
+        /* try to enqueue the packet to the next router */
+        router = endpoint->router;
+        while (fp_ring_enqueue(router->q_in, packet) == -ENOBUFS)
+                printf("error: failed enqueue at router\n");
 }
 
 /**
- * Emulate one timeslot at a given switch. For now, assume that switches
+ * Emulate one timeslot at a given router. For now, assume that routers
  * can process MTUs with no additional delay beyond the queueing delay.
  */
 static inline
-void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
+void emu_timeslot_at_router(struct emu_state *state, struct emu_router *router) {
         struct emu_packet *packet;
         struct emu_endpoint_output *output;
 
         /* try to output one packet per output port */
-        for (output = &tor->endpoint_outputs[0];
-             output < &tor->endpoint_outputs[EMU_SWITCH_MAX_ENDPOINT_PORTS];
+        for (output = &router->endpoint_outputs[0];
+             output < &router->endpoint_outputs[EMU_ROUTER_MAX_ENDPOINT_PORTS];
              output++) {
                 /* try to dequeue one packet for this port */
                 if (fp_ring_dequeue(output->q_out, (void **) &packet) != 0)
@@ -78,13 +78,13 @@ void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
         }
 
         /* move packets from main input queue to individual output queues
-           these are packets that arrived at the switch during this timeslot */
-        while (fp_ring_dequeue(tor->q_in, (void **) &packet) == 0) {
-                /* assume this is a ToR switch with only downward-facing links
-                   to endpoints */
-                output = &tor->endpoint_outputs[packet->dst];
+           these are packets that arrived at the router during this timeslot */
+        while (fp_ring_dequeue(router->q_in, (void **) &packet) == 0) {
+                /* assume this is a router with only downward-facing links to
+                   endpoints */
+                output = &router->endpoint_outputs[packet->dst];
                 while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
-                        printf("error: failed enqueue within switch\n");
+                        printf("error: failed enqueue within router\n");
         }
 }
 
@@ -93,7 +93,7 @@ void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
  */
 void emu_timeslot(struct emu_state *state) {
         struct emu_endpoint *endpoint;
-        struct emu_switch *tor;
+        struct emu_router *router;
         struct emu_packet *packet;
 
         /* emulate one timeslot at each endpoint */
@@ -102,10 +102,10 @@ void emu_timeslot(struct emu_state *state) {
                 emu_timeslot_at_endpoint(endpoint);
         }
 
-        /* emulate one timeslot at each switch */
-        for (tor = &state->tors[0];
-             tor < &state->tors[EMU_NUM_TORS]; tor++) {
-                emu_timeslot_at_switch(state, tor);
+        /* emulate one timeslot at each router */
+        for (router = &state->routers[0];
+             router < &state->routers[EMU_NUM_ROUTERS]; router++) {
+                emu_timeslot_at_router(state, router);
         }
 
         /* process all admitted traffic */
@@ -134,21 +134,21 @@ void reset_endpoint_state(struct emu_state *state,
 }
 
 /**
- * Reset the state of a single switch.
+ * Reset the state of a single router.
  */
 static inline
-void reset_switch_state(struct emu_state *state, struct emu_switch *tor) {
+void reset_router_state(struct emu_state *state, struct emu_router *router) {
         struct emu_packet *packet;
         struct emu_endpoint_output *output;
 
         /* free packets in the input queue */
-        while (fp_ring_dequeue(tor->q_in, (void **) &packet) == 0) {
+        while (fp_ring_dequeue(router->q_in, (void **) &packet) == 0) {
                 fp_mempool_put(state->packet_mempool, packet);
         }
 
         /* free packets in the output queues */
-        for (output = &tor->endpoint_outputs[0];
-             output < &tor->endpoint_outputs[EMU_SWITCH_MAX_ENDPOINT_PORTS];
+        for (output = &router->endpoint_outputs[0];
+             output < &router->endpoint_outputs[EMU_ROUTER_MAX_ENDPOINT_PORTS];
              output++) {
                 /* try to dequeue one packet for this port */
                 if (fp_ring_dequeue(output->q_out, (void **) &packet) == 0) {
@@ -162,7 +162,7 @@ void reset_switch_state(struct emu_state *state, struct emu_switch *tor) {
  */
 void emu_reset_state(struct emu_state *state) {
         struct emu_endpoint *endpoint;
-        struct emu_switch *tor;
+        struct emu_router *router;
         struct emu_packet *packet;
 
         /* reset all endpoints */
@@ -171,10 +171,10 @@ void emu_reset_state(struct emu_state *state) {
                 reset_endpoint_state(state, endpoint);
         }
 
-        /* reset all tors */
-        for (tor = &state->tors[0];
-             tor < &state->tors[EMU_NUM_TORS]; tor++) {
-                reset_switch_state(state, tor);
+        /* reset all routers */
+        for (router = &state->routers[0];
+             router < &state->routers[EMU_NUM_ROUTERS]; router++) {
+                reset_router_state(state, router);
         }
 
         /* empty queue of finished packets, return them to the mempool */
@@ -191,24 +191,24 @@ void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
                 struct fp_ring **packet_queues) {
         uint16_t i, pq;
         struct emu_endpoint *endpoint;
-        struct emu_switch *tor;
+        struct emu_router *router;
 
         pq = 0;
         state->packet_mempool = packet_mempool;
         state->finished_packet_q = packet_queues[pq++];
 
-        /* construct topology: 1 tor with 1 rack of endpoints */
+        /* construct topology: 1 router with 1 rack of endpoints */
         for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
                 endpoint = &state->endpoints[i];
                 endpoint->q_in = packet_queues[pq++];
-                endpoint->adj_switch = &state->tors[0];
+                endpoint->router = &state->routers[0];
 
-                state->tors[0].endpoint_outputs[i].q_out = packet_queues[pq++];
+                state->routers[0].endpoint_outputs[i].q_out = packet_queues[pq++];
         }
 
-        for (i = 0; i < EMU_NUM_TORS; i++) {
-                tor = &state->tors[i];
-                tor->q_in = packet_queues[pq++];
+        for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+                router = &state->routers[i];
+                router->q_in = packet_queues[pq++];
         }
 }
 

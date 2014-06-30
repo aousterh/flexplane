@@ -8,7 +8,7 @@
 #ifndef ENDPOINT_H_
 #define ENDPOINT_H_
 
-struct emu_switch;
+struct emu_router;
 struct fp_ring;
 
 /**
@@ -16,7 +16,7 @@ struct fp_ring;
  */
 struct emu_endpoint {
         struct fp_ring *q_in;
-        struct emu_switch *adj_switch;
+        struct emu_router *router;
 };
 
 #endif /* ENDPOINT_H_ */

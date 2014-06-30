@@ -19,9 +19,9 @@ int main() {
 
         /* initialize state */
         /* packet queues for:
-           finished packets, endpoints, switch inputs, switch outputs */
-        num_packet_qs = 1 + EMU_NUM_ENDPOINTS + EMU_NUM_TORS +
-                EMU_NUM_TORS * EMU_SWITCH_MAX_ENDPOINT_PORTS;
+           finished packets, endpoints, router inputs, router outputs */
+        num_packet_qs = 1 + EMU_NUM_ENDPOINTS + EMU_NUM_ROUTERS +
+                EMU_NUM_ROUTERS * EMU_ROUTER_MAX_ENDPOINT_PORTS;
         struct fp_mempool *packet_mempool;
         struct fp_ring *packet_queues[num_packet_qs];
 

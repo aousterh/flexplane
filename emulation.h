@@ -9,7 +9,7 @@
 #define EMULATION_H_
 
 #include "endpoint.h"
-#include "switch.h"
+#include "router.h"
 #include "topology.h"
 
 #define PACKET_MEMPOOL_SIZE 10000
@@ -20,7 +20,7 @@
  */
 struct emu_state {
         struct emu_endpoint endpoints[EMU_NUM_ENDPOINTS];
-        struct emu_switch tors[EMU_NUM_TORS];
+        struct emu_router routers[EMU_NUM_ROUTERS];
         struct fp_mempool *packet_mempool;
         struct fp_ring *finished_packet_q;
 };

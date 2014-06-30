@@ -83,4 +83,15 @@ void endpoint_reset_state(struct emu_endpoint *endpoint,
         }
 }
 
+/**
+ * Initialize the state of a single endpoint.
+ */
+static inline
+void endpoint_init_state(struct emu_endpoint *endpoint, uint16_t id,
+                         struct fp_ring *q_in, struct emu_router *router) {
+        endpoint->id = id;
+        endpoint->q_in = q_in;
+        endpoint->router = router;
+}
+
 #endif /* ENDPOINT_H_ */

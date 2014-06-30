@@ -83,8 +83,6 @@ void emu_reset_state(struct emu_state *state) {
 void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
                 struct fp_ring **packet_queues) {
         uint16_t i, pq;
-        struct emu_endpoint *endpoint;
-        struct emu_router *router;
 
         pq = 0;
         state->packet_mempool = packet_mempool;
@@ -92,17 +90,12 @@ void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
 
         /* construct topology: 1 router with 1 rack of endpoints */
         for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-                endpoint = &state->endpoints[i];
-                endpoint->id = i;
-                endpoint->q_in = packet_queues[pq++];
-                endpoint->router = &state->routers[0];
-
-                state->routers[0].endpoint_outputs[i].q_out = packet_queues[pq++];
+                endpoint_init_state(&state->endpoints[i], i,
+                                    packet_queues[pq++], &state->routers[0]);
         }
 
         for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-                router = &state->routers[i];
-                router->q_in = packet_queues[pq++];
+                pq += router_init_state(&state->routers[i], packet_queues + pq);
         }
 }
 

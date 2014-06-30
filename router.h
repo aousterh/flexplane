@@ -103,5 +103,21 @@ void router_reset_state(struct emu_router *router,
         }
 }
 
+/**
+ * Initialize the state of a single router. Return the number of packet queues
+ * used.
+ */
+static inline
+uint16_t router_init_state(struct emu_router *router,
+                           struct fp_ring **packet_queues) {
+        uint16_t pq;
+
+        for (pq = 0; pq < EMU_NUM_ENDPOINTS; pq++) {
+                router->endpoint_outputs[pq].q_out = packet_queues[pq];
+        }
+        router->q_in = packet_queues[pq++];
+
+        return pq;
+}
 
 #endif /* ROUTER_H_ */

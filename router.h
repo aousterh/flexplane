@@ -11,6 +11,7 @@
 #include "packet.h"
 #include "topology.h"
 #include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 
 #include <stdio.h>
 
@@ -76,5 +77,31 @@ void router_emulate_timeslot(struct emu_router *router,
                         printf("error: failed enqueue within router\n");
         }
 }
+
+/**
+ * Reset the state of a single router.
+ */
+static inline
+void router_reset_state(struct emu_router *router,
+                        struct fp_mempool *packet_mempool) {
+        struct emu_packet *packet;
+        struct emu_endpoint_output *output;
+
+        /* free packets in the input queue */
+        while (fp_ring_dequeue(router->q_in, (void **) &packet) == 0) {
+                fp_mempool_put(packet_mempool, packet);
+        }
+
+        /* free packets in the output queues */
+        for (output = &router->endpoint_outputs[0];
+             output < &router->endpoint_outputs[EMU_ROUTER_MAX_ENDPOINT_PORTS];
+             output++) {
+                /* try to dequeue one packet for this port */
+                if (fp_ring_dequeue(output->q_out, (void **) &packet) == 0) {
+                        fp_mempool_put(packet_mempool, packet);
+                }
+        }
+}
+
 
 #endif /* ROUTER_H_ */

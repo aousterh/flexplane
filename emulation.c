@@ -16,24 +16,8 @@
  */
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
                      uint32_t amount, uint16_t start_id) {
-
-        /* create and enqueue a packet for each MTU */
-        uint32_t id = start_id;
-        struct emu_packet *packet;
-        struct fp_ring *packet_queue = state->endpoints[src].q_in;
-        while (id != start_id + amount) {
-                /* create a packet */
-                fp_mempool_get(state->packet_mempool, (void **) &packet);
-                packet->src = src;
-                packet->dst = dst;
-                packet->id = id;
-
-                /* enqueue the packet to the endpoint queue */
-                while (fp_ring_enqueue(packet_queue, packet) == -ENOBUFS)
-                        printf("error: failed enqueue at endpoint %d\n", src);
-
-                id++;
-        }
+        endpoint_add_backlog(&state->endpoints[src], state->packet_mempool, dst,
+                             amount, start_id);
 }
 
 /**
@@ -67,45 +51,6 @@ void emu_timeslot(struct emu_state *state) {
 }
 
 /**
- * Reset the state of a single endpoint.
- */
-static inline
-void reset_endpoint_state(struct emu_state *state,
-                          struct emu_endpoint *endpoint) {
-        struct emu_packet *packet;
-
-        /* return all queued packets to the mempool */
-        while (fp_ring_dequeue(endpoint->q_in, (void **) &packet) == 0) {
-                /* return queued packets to the mempool */
-                fp_mempool_put(state->packet_mempool, packet);
-        }
-}
-
-/**
- * Reset the state of a single router.
- */
-static inline
-void reset_router_state(struct emu_state *state, struct emu_router *router) {
-        struct emu_packet *packet;
-        struct emu_endpoint_output *output;
-
-        /* free packets in the input queue */
-        while (fp_ring_dequeue(router->q_in, (void **) &packet) == 0) {
-                fp_mempool_put(state->packet_mempool, packet);
-        }
-
-        /* free packets in the output queues */
-        for (output = &router->endpoint_outputs[0];
-             output < &router->endpoint_outputs[EMU_ROUTER_MAX_ENDPOINT_PORTS];
-             output++) {
-                /* try to dequeue one packet for this port */
-                if (fp_ring_dequeue(output->q_out, (void **) &packet) == 0) {
-                        fp_mempool_put(state->packet_mempool, packet);
-                }
-        }
-}
-
-/**
  * Reset the emulation state (clear all demands, packets, etc.).
  */
 void emu_reset_state(struct emu_state *state) {
@@ -116,13 +61,13 @@ void emu_reset_state(struct emu_state *state) {
         /* reset all endpoints */
         for (endpoint = &state->endpoints[0];
              endpoint < &state->endpoints[EMU_NUM_ENDPOINTS]; endpoint++) {
-                reset_endpoint_state(state, endpoint);
+                endpoint_reset_state(endpoint, state->packet_mempool);
         }
 
         /* reset all routers */
         for (router = &state->routers[0];
              router < &state->routers[EMU_NUM_ROUTERS]; router++) {
-                reset_router_state(state, router);
+                router_reset_state(router, state->packet_mempool);
         }
 
         /* empty queue of finished packets, return them to the mempool */
@@ -148,6 +93,7 @@ void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
         /* construct topology: 1 router with 1 rack of endpoints */
         for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
                 endpoint = &state->endpoints[i];
+                endpoint->id = i;
                 endpoint->q_in = packet_queues[pq++];
                 endpoint->router = &state->routers[0];
 

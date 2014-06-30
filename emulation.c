@@ -30,7 +30,7 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 
                 /* enqueue the packet to the endpoint queue */
                 while (fp_ring_enqueue(packet_queue, packet) == -ENOBUFS)
-                        printf("failed enqueue at endpoint %d\n", src);
+                        printf("error: failed enqueue at endpoint %d\n", src);
 
                 id++;
         }
@@ -51,7 +51,7 @@ void emu_timeslot_at_endpoint(struct emu_endpoint *endpoint) {
         /* try to enqueue the packet to the next switch */
         tor = endpoint->adj_switch;
         while (fp_ring_enqueue(tor->q_in, packet) == -ENOBUFS)
-                printf("failed enqueue at switch\n");
+                printf("error: failed enqueue at switch\n");
 }
 
 /**
@@ -74,7 +74,7 @@ void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
                 /* this packet made it to the endpoint; enqueue as completed */
                 while (fp_ring_enqueue(state->finished_packet_q, packet)
                        == -ENOBUFS)
-                        printf("failed enqueue to finished packet q\n");
+                        printf("error: failed enqueue to finished packet q\n");
         }
 
         /* move packets from main input queue to individual output queues
@@ -84,7 +84,7 @@ void emu_timeslot_at_switch(struct emu_state *state, struct emu_switch *tor) {
                    to endpoints */
                 output = &tor->endpoint_outputs[packet->dst];
                 while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
-                        printf("failed enqueue within switch\n");
+                        printf("error: failed enqueue within switch\n");
         }
 }
 

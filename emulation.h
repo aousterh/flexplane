@@ -12,8 +12,8 @@
 #include "switch.h"
 #include "topology.h"
 
-#define PACKET_MEMPOOL_SIZE 100
-#define PACKET_Q_SIZE 20
+#define PACKET_MEMPOOL_SIZE 10000
+#define PACKET_Q_SIZE 10
 
 /**
  * Data structure to store the state of the emulation.

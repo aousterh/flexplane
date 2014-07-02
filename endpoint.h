@@ -8,6 +8,7 @@
 #ifndef ENDPOINT_H_
 #define ENDPOINT_H_
 
+#include "packet.h"
 #include "router.h"
 #include "../graph-algo/fp_ring.h"
 
@@ -36,9 +37,7 @@ void endpoint_add_backlog(struct emu_endpoint *endpoint,
         while (id != start_id + amount) {
                 /* create a packet */
                 fp_mempool_get(packet_mempool, (void **) &packet);
-                packet->src = endpoint->id;
-                packet->dst = dst;
-                packet->id = id;
+                packet_init(packet, endpoint->id, dst, id);
 
                 /* enqueue the packet to the endpoint queue */
                 while (fp_ring_enqueue(endpoint->q_in, packet) == -ENOBUFS)

@@ -41,11 +41,10 @@ void emu_timeslot(struct emu_state *state) {
         }
 
         /* process all admitted traffic */
-        printf("admitted traffic:\n");
+        printf("finished traffic:\n");
         while (fp_ring_dequeue(state->finished_packet_q, (void **) &packet)
                == 0) {
-                printf("src %d to dst %d (%d)\n", packet->src, packet->dst,
-                       packet->id);
+                packet_print(packet);
                 fp_mempool_put(state->packet_mempool, packet);
         }
 }
@@ -81,7 +80,8 @@ void emu_reset_state(struct emu_state *state) {
  * Initialize an emulation state.
  */
 void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
-                struct fp_ring **packet_queues) {
+                struct fp_ring **packet_queues,
+                uint16_t router_output_port_capacity) {
         uint16_t i, pq;
 
         pq = 0;
@@ -95,7 +95,8 @@ void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
         }
 
         for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-                pq += router_init_state(&state->routers[i], packet_queues + pq);
+                pq += router_init_state(&state->routers[i], packet_queues + pq,
+                                        router_output_port_capacity);
         }
 }
 
@@ -103,12 +104,13 @@ void init_state(struct emu_state *state, struct fp_mempool *packet_mempool,
  * Returns an initialized emulation state, or NULL on error.
  */
 struct emu_state *emu_create_state(struct fp_mempool *packet_mempool,
-                                   struct fp_ring **packet_queues) {
+                                   struct fp_ring **packet_queues,
+                                   uint16_t router_output_port_capacity) {
         struct emu_state *state = fp_malloc("emu_state", sizeof(struct emu_state));
         if (state == NULL)
                 return NULL;
 
-        init_state(state, packet_mempool, packet_queues);
+        init_state(state, packet_mempool, packet_queues, router_output_port_capacity);
         emu_reset_state(state);
 
         return state;

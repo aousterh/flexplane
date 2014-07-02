@@ -9,7 +9,7 @@
 #define ROUTER_H_
 
 #include "packet.h"
-#include "topology.h"
+#include "config.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
@@ -22,6 +22,8 @@ struct emu_router;
  * An output queue to an endpoint in the emulated network.
  */
 struct emu_endpoint_output {
+        uint16_t capacity; /* if statically configured */
+        uint16_t count; /* current utilization */
         struct fp_ring *q_out;
 };
 
@@ -60,6 +62,7 @@ void router_emulate_timeslot(struct emu_router *router,
                 /* try to dequeue one packet for this port */
                 if (fp_ring_dequeue(output->q_out, (void **) &packet) != 0)
                         continue;
+                output->count--;
 
                 /* this packet made it to the endpoint; enqueue as completed */
                 while (fp_ring_enqueue(finished_packet_q, packet)
@@ -73,8 +76,22 @@ void router_emulate_timeslot(struct emu_router *router,
                 /* assume this is a router with only downward-facing links to
                    endpoints */
                 output = &router->endpoint_outputs[packet->dst];
+
+                /* check if this packet should be dropped */
+                if (output->count == output->capacity) {
+                        packet_mark_as_dropped(packet);
+
+                        /* enqueue to the finished packet q */
+                        while (fp_ring_enqueue(finished_packet_q, packet)
+                               == -ENOBUFS)
+                                printf("error: failed enqueue to finished packet q\n");
+
+                        continue;
+                }
+
                 while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
                         printf("error: failed enqueue within router\n");
+                output->count++;
         }
 }
 
@@ -96,10 +113,11 @@ void router_reset_state(struct emu_router *router,
         for (output = &router->endpoint_outputs[0];
              output < &router->endpoint_outputs[EMU_ROUTER_MAX_ENDPOINT_PORTS];
              output++) {
-                /* try to dequeue one packet for this port */
-                if (fp_ring_dequeue(output->q_out, (void **) &packet) == 0) {
+                /* return all queued packets to the mempool */
+                while (fp_ring_dequeue(output->q_out, (void **) &packet) == 0) {
                         fp_mempool_put(packet_mempool, packet);
                 }
+                output->count = 0;
         }
 }
 
@@ -109,11 +127,16 @@ void router_reset_state(struct emu_router *router,
  */
 static inline
 uint16_t router_init_state(struct emu_router *router,
-                           struct fp_ring **packet_queues) {
+                           struct fp_ring **packet_queues,
+                           uint16_t output_port_capacity) {
         uint16_t pq;
+        struct emu_endpoint_output *output;
 
         for (pq = 0; pq < EMU_NUM_ENDPOINTS; pq++) {
-                router->endpoint_outputs[pq].q_out = packet_queues[pq];
+                output = &router->endpoint_outputs[pq];
+
+                output->capacity = output_port_capacity;
+                output->q_out = packet_queues[pq];
         }
         router->q_in = packet_queues[pq++];
 

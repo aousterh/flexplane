@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 
-#define EMULATION_DURATION 7
+#define ROUTER_OUTPUT_PORT_CAPACITY 5
 
 int main() {
         uint16_t i, num_packet_qs;
@@ -32,16 +32,25 @@ int main() {
         }
 
         struct emu_state *state = emu_create_state(packet_mempool,
-                                                   packet_queues);
+                                                   packet_queues,
+                                                   ROUTER_OUTPUT_PORT_CAPACITY);
 
-        /* run a simple test of emulation framework */
-
-        /* add some backlog */
+        /* run a basic test of emulation framework */
+        printf("\nTEST 1: basic\n");
         emu_add_backlog(state, 0, 1, 1, 13);
         emu_add_backlog(state, 0, 3, 3, 27);
         emu_add_backlog(state, 7, 3, 2, 100);
 
-        /* run some timeslots of emulation */
-        for (i = 0; i < EMULATION_DURATION; i++)
+        for (i = 0; i < 7; i++)
+                emu_timeslot(state);
+
+        /* test drop-tail behavior at routers */
+        printf("\nTEST 2: drop-tail\n");
+        emu_reset_state(state);
+        for (i = 0; i < 10; i++) {
+                emu_add_backlog(state, i, 13, 3, 0);
+                emu_timeslot(state);
+        }
+        for (i = 0; i < 10; i++)
                 emu_timeslot(state);
 }

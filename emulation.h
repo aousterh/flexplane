@@ -10,7 +10,7 @@
 
 #include "endpoint.h"
 #include "router.h"
-#include "topology.h"
+#include "config.h"
 
 #define PACKET_MEMPOOL_SIZE 10000
 #define PACKET_Q_SIZE 10
@@ -45,6 +45,7 @@ void emu_reset_state(struct emu_state *state);
  * Returns an initialized emulation state, or NULL on error.
  */
 struct emu_state *emu_create_state(struct fp_mempool *packet_mempool,
-                                   struct fp_ring **packet_queues);
+                                   struct fp_ring **packet_queues,
+                                   uint16_t router_output_port_capacity);
 
 #endif /* EMULATION_H_ */

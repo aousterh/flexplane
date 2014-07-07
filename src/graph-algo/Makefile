@@ -12,6 +12,7 @@ CCFLAGS += -DPIPELINED_ALGO
 #CCFLAGS += -debug inline-debug-info
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
+#CCFLAGS += -DASM_GOTO_UNSUPPORTED
 
 # Pattern rule
 %.o: %.c

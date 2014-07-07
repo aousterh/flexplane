@@ -80,7 +80,15 @@ bool backlog_increase(struct backlog *backlog, uint16_t src,
     // Get full quantity from 16-bit LSB
     uint32_t index = _backlog_index(src, dst);
 
+    #ifndef ASM_GOTO_UNSUPPORTED
     set_and_jmp_if_was_set(backlog->is_active, index, already_active);
+    #else
+    uint64_t word = backlog->is_active[index >> 6];
+    uint8_t bit = (word >> (index & 0x3F)) & 0x1ULL;
+    backlog->is_active[index >> 6] = word | (1ULL << (index & 0x3F));
+    if (bit == 1)
+            goto already_active;
+    #endif
 
     assert(backlog->n[index] == 0);
     adm_log_increased_backlog_to_queue(stat, amount, amount);

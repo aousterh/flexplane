@@ -18,6 +18,7 @@
 #else
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 
 /* A data-structure to communicate pointers between components */
@@ -49,7 +50,9 @@ struct fp_ring *fp_ring_create(uint32_t log_size) {
 static inline
 int fp_ring_enqueue(struct fp_ring *ring, void *elem) {
 	assert(ring != NULL);
-	assert(ring->tail != ring->head + ring->mask);
+
+        if (ring->tail == ring->head + ring->mask)
+                return -ENOBUFS;
 
 	ring->elem[ring->tail & ring->mask] = elem;
 	ring->tail++;
@@ -63,7 +66,9 @@ int fp_ring_enqueue_bulk(struct fp_ring *ring, void **elems, unsigned n) {
 	int i;
 
 	assert(ring != NULL);
-	assert(ring->tail + n <= ring->head + ring->mask);
+
+        if (ring->tail + n > ring->head + ring->mask)
+                return -ENOBUFS;
 
 	for (i = 0; i < n; i++)
 		fp_ring_enqueue(ring, elems[i]);

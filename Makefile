@@ -6,6 +6,7 @@ CCFLAGS += -O3
 #CCFLAGS += -O1
 CCFLAGS += -DNO_DPDK
 #CCFLAGS += -debug inline-debug-info
+CCFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 

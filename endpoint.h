@@ -32,7 +32,7 @@ void endpoint_add_backlog(struct emu_endpoint *endpoint,
                           uint32_t amount, uint16_t start_id) {
 
         /* create and enqueue a packet for each MTU */
-        uint32_t id = start_id;
+        uint16_t id = start_id;
         struct emu_packet *packet;
         while (id != start_id + amount) {
                 /* create a packet */

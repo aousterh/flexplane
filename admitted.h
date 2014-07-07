@@ -8,12 +8,14 @@
 #ifndef ADMITTED_H_
 #define ADMITTED_H_
 
-#define NO_FLAGS     0
-#define DROP         1
+#define FLAGS_NONE     0
+#define FLAGS_DROP     1
 
 #include "config.h"
 
 #include <assert.h>
+#include <inttypes.h>
+#include <stdio.h>
 
 struct emu_admitted_edge {
         uint16_t src;
@@ -28,7 +30,7 @@ struct emu_admitted_edge {
  */
 struct emu_admitted_traffic {
     uint16_t size;
-    struct admitted_edge edges[EMU_NUM_ENDPOINTS];
+    struct emu_admitted_edge edges[EMU_NUM_ENDPOINTS];
 };
 
 /**
@@ -56,7 +58,33 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
     edge->src = src;
     edge->dst = dst;
     edge->id = id;
-    edge->should_drop = should_drop;
+    edge->flags = flags;
+}
+
+/**
+ * Print out one admitted edge, for debugging/testing
+ */
+static inline
+void admitted_edge_print(struct emu_admitted_edge *edge) {
+        if (edge->flags & FLAGS_DROP) {
+                printf("\tDROP src %d to dst %d (id %d)\n", edge->src,
+                       edge->dst, edge->id);
+        } else {
+                printf("\tsrc %d to dst %d (id %d)\n", edge->src,
+                       edge->dst, edge->id);
+        }
+ }
+
+/**
+ * Print out all edges in an admitted struct, for debugging/testing
+ */
+static inline
+void admitted_print(struct emu_admitted_traffic *admitted) {
+        uint16_t i;
+
+        printf("finished traffic:\n");
+        for (i = 0; i < admitted->size; i++)
+                admitted_edge_print(&admitted->edges[i]);
 }
 
 #endif /* ADMITTED_H_ */

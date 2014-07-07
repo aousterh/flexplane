@@ -8,7 +8,6 @@
 #ifndef ROUTER_H_
 #define ROUTER_H_
 
-#include "packet.h"
 #include "config.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
@@ -17,6 +16,7 @@
 
 struct emu_endpoint;
 struct emu_router;
+struct emu_state;
 
 /**
  * An output queue to an endpoint in the emulated network.
@@ -50,7 +50,7 @@ struct emu_router {
  * can process MTUs with no additional delay beyond the queueing delay.
  */
 void router_emulate_timeslot(struct emu_router *router,
-                             struct fp_ring *finished_packet_q);
+                             struct emu_state *state);
 
 /**
  * Reset the state of a single router.

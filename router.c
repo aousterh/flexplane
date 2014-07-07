@@ -7,14 +7,25 @@
 
 #include "router.h"
 
+#include "admitted.h"
+#include "emulation.h"
+#include "packet.h"
+
 /**
  * Emulate one timeslot at a given router. For now, assume that routers
  * can process MTUs with no additional delay beyond the queueing delay.
  */
 void router_emulate_timeslot(struct emu_router *router,
-                             struct fp_ring *finished_packet_q) {
+                             struct emu_state *state) {
         struct emu_packet *packet;
         struct emu_endpoint_output *output;
+        struct emu_admitted_traffic *admitted;
+
+        /* get admitted traffic, init it */
+        while (fp_mempool_get(state->admitted_traffic_mempool,
+                              (void **) &admitted) != 0)
+                printf("error: failed to get admitted traffic\n");
+        admitted_init(admitted);
 
         /* try to output one packet per output port */
         for (output = &router->endpoint_outputs[0];
@@ -25,10 +36,12 @@ void router_emulate_timeslot(struct emu_router *router,
                         continue;
                 output->count--;
 
-                /* this packet made it to the endpoint; enqueue as completed */
-                while (fp_ring_enqueue(finished_packet_q, packet)
-                       == -ENOBUFS)
-                        printf("error: failed enqueue to finished packet q\n");
+                /* this packet made it to the endpoint; add to admitted traffic */
+                admitted_insert_edge(admitted, packet->src, packet->dst,
+                                     packet->id, FLAGS_NONE);
+
+                /* return the packet to the mempool */
+                fp_mempool_put(state->packet_mempool, packet);
         }
 
         /* move packets from main input queue to individual output queues
@@ -40,12 +53,12 @@ void router_emulate_timeslot(struct emu_router *router,
 
                 /* check if this packet should be dropped */
                 if (output->count == output->capacity) {
-                        packet_mark_as_dropped(packet);
+                        /* this packet should be dropped; add to admitted traffic */
+                        admitted_insert_edge(admitted, packet->src, packet->dst,
+                                             packet->id, FLAGS_DROP);
 
-                        /* enqueue to the finished packet q */
-                        while (fp_ring_enqueue(finished_packet_q, packet)
-                               == -ENOBUFS)
-                                printf("error: failed enqueue to finished packet q\n");
+                        /* return the packet to the mempool */
+                        fp_mempool_put(state->packet_mempool, packet);
 
                         continue;
                 }
@@ -54,4 +67,9 @@ void router_emulate_timeslot(struct emu_router *router,
                         printf("error: failed enqueue within router\n");
                 output->count++;
         }
+
+
+        /* send out the admitted traffic */
+        while (fp_ring_enqueue(state->q_admitted_out, admitted) != 0)
+                printf("error: cannot enqueue admitted traffic\n");
 }

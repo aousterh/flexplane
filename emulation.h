@@ -8,10 +8,14 @@
 #ifndef EMULATION_H_
 #define EMULATION_H_
 
+#include "config.h"
 #include "endpoint.h"
 #include "router.h"
-#include "config.h"
+#include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 
+#define ADMITTED_MEMPOOL_SIZE 10
+#define ADMITTED_Q_SIZE 4
 #define PACKET_MEMPOOL_SIZE 10000
 #define PACKET_Q_SIZE 10
 
@@ -21,8 +25,9 @@
 struct emu_state {
         struct emu_endpoint endpoints[EMU_NUM_ENDPOINTS];
         struct emu_router routers[EMU_NUM_ROUTERS];
+        struct fp_mempool *admitted_traffic_mempool;
+        struct fp_ring *q_admitted_out;
         struct fp_mempool *packet_mempool;
-        struct fp_ring *finished_packet_q;
 };
 
 /**
@@ -44,7 +49,9 @@ void emu_reset_state(struct emu_state *state);
 /**
  * Returns an initialized emulation state, or NULL on error.
  */
-struct emu_state *emu_create_state(struct fp_mempool *packet_mempool,
+struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
+                                   struct fp_ring *q_admitted_out,
+                                   struct fp_mempool *packet_mempool,
                                    struct fp_ring **packet_queues,
                                    uint16_t router_output_port_capacity);
 

@@ -89,6 +89,12 @@ struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
         struct pim_state *pim_state = (struct pim_state *) state;
         return pim_state->admitted_traffic_mempool;
 }
+
+static inline
+uint16_t get_admitted_size(struct admitted_traffic *admitted)
+{
+        return admitted->size;
+}
 #endif
 
 /* pipelined algo */
@@ -172,6 +178,12 @@ void handle_spent_demands(struct admissible_state *state)
 {
     struct seq_admissible_status *status = (struct seq_admissible_status *) state;
     seq_handle_spent(status);
+}
+
+static inline
+uint16_t get_admitted_size(struct admitted_traffic *admitted)
+{
+        return admitted->size;
 }
 #endif
 

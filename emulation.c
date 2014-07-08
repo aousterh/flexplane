@@ -26,7 +26,6 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 void emu_timeslot(struct emu_state *state) {
         struct emu_endpoint *endpoint;
         struct emu_router *router;
-        struct emu_admitted_traffic *admitted;
 
         /* emulate one timeslot at each endpoint */
         for (endpoint = &state->endpoints[0];
@@ -39,13 +38,6 @@ void emu_timeslot(struct emu_state *state) {
              router < &state->routers[EMU_NUM_ROUTERS]; router++) {
                 router_emulate_timeslot(router, state);
         }
-
-        /* process admitted traffic */
-        while (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) != 0)
-                printf("error: cannot dequeue admitted traffic\n");
-
-        admitted_print(admitted);
-        fp_mempool_put(state->admitted_traffic_mempool, admitted);
 }
 
 /**

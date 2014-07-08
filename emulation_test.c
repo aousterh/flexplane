@@ -15,6 +15,23 @@
 
 #define ROUTER_OUTPUT_PORT_CAPACITY 5
 
+/**
+ * Emulate one timeslot and print out the admitted and dropped traffic
+ */
+void emulate_and_print_admitted(struct emu_state *state) {
+        struct emu_admitted_traffic *admitted;
+
+        /* emulate one timeslot */
+        emu_timeslot(state);
+
+        /* print out admitted traffic */
+        while (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) != 0)
+                printf("error: cannot dequeue admitted traffic\n");
+
+        admitted_print(admitted);
+        fp_mempool_put(state->admitted_traffic_mempool, admitted);
+}
+
 int main() {
         uint16_t i, num_packet_qs;
 
@@ -48,15 +65,15 @@ int main() {
         emu_add_backlog(state, 7, 3, 2, 100);
 
         for (i = 0; i < 7; i++)
-                emu_timeslot(state);
+                emulate_and_print_admitted(state);
 
         /* test drop-tail behavior at routers */
         printf("\nTEST 2: drop-tail\n");
         emu_reset_state(state);
         for (i = 0; i < 10; i++) {
                 emu_add_backlog(state, i, 13, 3, 0);
-                emu_timeslot(state);
+                emulate_and_print_admitted(state);
         }
         for (i = 0; i < 10; i++)
-                emu_timeslot(state);
+                emulate_and_print_admitted(state);
 }

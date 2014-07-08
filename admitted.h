@@ -29,8 +29,10 @@ struct emu_admitted_edge {
  * communication cores
  */
 struct emu_admitted_traffic {
-    uint16_t size;
-    struct emu_admitted_edge edges[EMU_NUM_ENDPOINTS];
+        uint16_t size;
+        uint16_t admitted;
+        uint16_t dropped;
+        struct emu_admitted_edge edges[EMU_NUM_ENDPOINTS];
 };
 
 /**
@@ -38,27 +40,49 @@ struct emu_admitted_traffic {
  */
 static inline
 void admitted_init(struct emu_admitted_traffic *admitted) {
-    assert(admitted != NULL);
+        assert(admitted != NULL);
 
-    admitted->size = 0;
+        admitted->size = 0;
+        admitted->admitted = 0;
+        admitted->dropped = 0;
+}
+
+/**
+ * Add an edge to the admitted struct
+ */
+static inline __attribute__((always_inline))
+void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
+                          uint16_t dst, uint16_t id, uint16_t flags) {
+        assert(admitted != NULL);
+        assert(admitted->size < EMU_NUM_ENDPOINTS);
+        assert(src < EMU_NUM_ENDPOINTS);
+        assert(dst < EMU_NUM_ENDPOINTS);
+
+        struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
+        edge->src = src;
+        edge->dst = dst;
+        edge->id = id;
+        edge->flags = flags;
 }
 
 /**
  * Add an admitted edge to the admitted struct
  */
 static inline __attribute__((always_inline))
-void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
-                          uint16_t dst, uint16_t id, uint16_t flags) {
-    assert(admitted != NULL);
-    assert(admitted->size < EMU_NUM_ENDPOINTS);
-    assert(src < EMU_NUM_ENDPOINTS);
-    assert(dst < EMU_NUM_ENDPOINTS);
+void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
+                                   uint16_t src, uint16_t dst, uint16_t id) {
+        admitted_insert_edge(admitted, src, dst, id, FLAGS_NONE);
+        admitted->admitted++;
+}
 
-    struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
-    edge->src = src;
-    edge->dst = dst;
-    edge->id = id;
-    edge->flags = flags;
+/**
+ * Add a dropped edge to the admitted struct
+ */
+static inline __attribute__((always_inline))
+void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
+                                  uint16_t src, uint16_t dst, uint16_t id) {
+        admitted_insert_edge(admitted, src, dst, id, FLAGS_DROP);
+        admitted->dropped++;
 }
 
 /**

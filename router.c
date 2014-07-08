@@ -56,6 +56,13 @@ void router_emulate_timeslot(struct emu_router *router,
                         admitted_insert_dropped_edge(admitted, packet->src,
                                                      packet->dst, packet->id);
 
+                        #ifdef AUTO_RE_REQUEST_BACKLOG
+                        /* backlog for dropped packets will not be re-requested,
+                         * so automatically request the backlog again */
+                        emu_add_backlog(state, packet->src, packet->dst, 1,
+                                        packet->id);
+                        #endif
+
                         /* return the packet to the mempool */
                         fp_mempool_put(state->packet_mempool, packet);
 

@@ -5,8 +5,8 @@
  *      Author: aousterh
  */
 
-#ifndef ADMITTED_H_
-#define ADMITTED_H_
+#ifndef EMU_ADMITTED_H_
+#define EMU_ADMITTED_H_
 
 #define FLAGS_NONE     0
 #define FLAGS_DROP     1
@@ -26,13 +26,13 @@ struct emu_admitted_edge {
 
 /**
  * Struct to hold admitted edges when passed from timeslot allocation cores to
- * communication cores
+ * communication cores. Holds both admitted and dropped edges.
  */
 struct emu_admitted_traffic {
         uint16_t size;
         uint16_t admitted;
         uint16_t dropped;
-        struct emu_admitted_edge edges[EMU_NUM_ENDPOINTS];
+        struct emu_admitted_edge edges[2 * EMU_NUM_ENDPOINTS];
 };
 
 /**
@@ -54,7 +54,7 @@ static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
                           uint16_t dst, uint16_t id, uint16_t flags) {
         assert(admitted != NULL);
-        assert(admitted->size < EMU_NUM_ENDPOINTS);
+        assert(admitted->size < 2 * EMU_NUM_ENDPOINTS);
         assert(src < EMU_NUM_ENDPOINTS);
         assert(dst < EMU_NUM_ENDPOINTS);
 
@@ -111,4 +111,4 @@ void admitted_print(struct emu_admitted_traffic *admitted) {
                 admitted_edge_print(&admitted->edges[i]);
 }
 
-#endif /* ADMITTED_H_ */
+#endif /* EMU_ADMITTED_H_ */

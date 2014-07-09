@@ -9,6 +9,7 @@
 
 #include "admitted.h"
 
+#include <assert.h>
 #include <stdio.h>
 
 /**
@@ -16,6 +17,9 @@
  */
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
                      uint32_t amount, uint16_t start_id) {
+        assert(src < EMU_NUM_ENDPOINTS);
+        assert(dst < EMU_NUM_ENDPOINTS);
+
         endpoint_add_backlog(&state->endpoints[src], state->packet_mempool, dst,
                              amount, start_id);
 }

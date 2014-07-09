@@ -7,11 +7,13 @@
 
 #define tslot_alloc_add_backlog		lru_alloc_add_backlog
 
-#if (defined(PARALLEL_ALGO) && defined(PIPELINED_ALGO))
-#error "Both PARALLEL_ALGO and PIPELINED_ALGO are defined"
+#if ((defined(PARALLEL_ALGO) && defined(PIPELINED_ALGO)) || \
+     (defined(PARALLEL_ALGO) && defined(EMULATION_ALGO)) ||  \
+     (defined(EMULATION_ALGO) && defined(PIPELINED_ALGO)))
+#error "Multiple ALGOs are defined"
 #endif
-#if !(defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
-#error "Neither PARALLEL_ALGO or PIPELINED_ALGO is defined"
+#if !(defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO) || defined(EMULATION_ALGO))
+#error "No ALGO is defined"
 #endif
 
 #ifdef PARALLEL_ALGO
@@ -29,6 +31,15 @@
 
 #ifndef ALGO_N_CORES
 #define ALGO_N_CORES				4
+#endif
+
+#endif
+
+#ifdef EMULATION_ALGO
+/* emulation */
+
+#ifndef ALGO_N_CORES
+#define ALGO_N_CORES				1
 #endif
 
 #endif

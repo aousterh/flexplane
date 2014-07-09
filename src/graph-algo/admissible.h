@@ -8,7 +8,10 @@
 #ifndef ADMISSIBLE_H_
 #define ADMISSIBLE_H_
 
+#include "admitted.h"
 #include "algo_config.h"
+
+#include <stdbool.h>
 
 /* dummy struct definition */
 struct admissible_state;
@@ -53,7 +56,7 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
                         struct fp_mempool *bin_mempool,
                         struct fp_mempool *admitted_traffic_mempool,
                         struct fp_ring **f, struct fp_ring **q_new_demands,
-                        struct fp_ring **q_ready_partitions)
+                        struct fp_ring **q_ready_partitions, uint16_t g)
 {
 		(void) q_spent; /* unused */
         struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
@@ -88,6 +91,12 @@ struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
 {
         struct pim_state *pim_state = (struct pim_state *) state;
         return pim_state->admitted_traffic_mempool;
+}
+
+static inline
+uint16_t get_admitted_struct_size()
+{
+        return sizeof(struct admitted_traffic);
 }
 
 static inline
@@ -134,7 +143,8 @@ create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
                         struct fp_ring *q_spent,
                         struct fp_mempool *head_bin_mempool,
                         struct fp_mempool *admitted_traffic_mempool,
-                        struct fp_ring **q_bin, struct fp_ring **a, struct fp_ring **b)
+                        struct fp_ring **q_bin, struct fp_ring **a, struct fp_ring **b,
+                        uint16_t c)
 {
         struct seq_admissible_status *status;
         status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
@@ -181,9 +191,114 @@ void handle_spent_demands(struct admissible_state *state)
 }
 
 static inline
+uint16_t get_admitted_struct_size()
+{
+        return sizeof(struct admitted_traffic);
+}
+
+static inline
 uint16_t get_admitted_size(struct admitted_traffic *admitted)
 {
         return admitted->size;
+}
+#endif
+
+/* emulation algo */
+#ifdef EMULATION_ALGO
+#include "../emulation/admitted.h"
+#include "../emulation/emulation.h"
+#include "../emulation/packet.h"
+
+#define SMALL_BIN_SIZE 0
+#define BATCH_SIZE 1
+#define BATCH_SHIFT 0
+#define ADMITTED_PER_BATCH 1
+#define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS + EMU_NUM_ROUTERS + \
+                       EMU_NUM_ROUTERS * EMU_ROUTER_MAX_ENDPOINT_PORTS)
+#define BIN_RING_SHIFT PACKET_Q_SIZE
+
+static inline
+void add_backlog(struct admissible_state *state, uint16_t src,
+                 uint16_t dst, uint32_t amount) {
+        /* use arbitrary id for now */
+        emu_add_backlog((struct emu_state *) state, src, dst, amount, 0);
+}
+
+static inline
+void flush_backlog(struct admissible_state *state) {
+        /* unused */
+};
+
+static inline
+void get_admissible_traffic(struct admissible_state *state, uint32_t a,
+                            uint64_t b, uint32_t c, uint32_t d) {
+        emu_timeslot((struct emu_state *) state);
+}
+
+static inline
+struct admissible_state *
+create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
+                        struct fp_ring *e, struct fp_ring *q_admitted_out,
+                        struct fp_ring *f,
+                        struct fp_mempool *packet_mempool,
+                        struct fp_mempool *admitted_traffic_mempool,
+                        struct fp_ring **g, struct fp_ring **packet_queues,
+                        struct fp_ring **h, uint16_t router_output_port_capacity)
+{
+        struct emu_state *state = emu_create_state(admitted_traffic_mempool,
+                                                   q_admitted_out,
+                                                   packet_mempool,
+                                                   packet_queues,
+                                                   router_output_port_capacity);
+        return (struct admissible_state *) state;
+}
+
+static inline
+void reset_admissible_state(struct admissible_state *state, bool a, uint16_t b,
+                            uint16_t c, uint16_t d)
+{
+        emu_reset_state((struct emu_state *) state);
+}
+
+static inline
+struct fp_ring *get_q_admitted_out(struct admissible_state *state)
+{
+        struct emu_state *emu_state = (struct emu_state *) state;
+        return emu_state->q_admitted_out;
+}
+
+static inline
+struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
+{
+        struct emu_state *emu_state = (struct emu_state *) state;
+        return emu_state->admitted_traffic_mempool;
+}
+
+static inline
+void handle_spent_demands(struct admissible_state *state)
+{
+        /* unused */
+}
+
+static inline
+uint16_t get_admitted_struct_size()
+{
+        return sizeof(struct emu_admitted_traffic);
+}
+
+static inline
+uint16_t get_admitted_size(struct admitted_traffic *admitted)
+{
+        struct emu_admitted_traffic *emu_admitted;
+        emu_admitted = (struct emu_admitted_traffic *) admitted;
+        return emu_admitted->admitted;
+}
+
+static inline
+uint32_t bin_num_bytes(uint32_t param)
+{
+        /* bin mempool used for packets instead */
+        return sizeof(struct emu_packet);
 }
 #endif
 

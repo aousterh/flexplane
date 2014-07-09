@@ -17,7 +17,7 @@
 #include "platform.h"
 #include "rdtsc.h"  // For timing
 
-#define NUM_FRACTIONS_A 11
+#define NUM_FRACTIONS_A 7
 #define NUM_SIZES_A 1
 #define NUM_FRACTIONS_P 11
 #define NUM_CAPACITIES_P 4
@@ -28,17 +28,18 @@
 #define ADMITTED_TRAFFIC_MEMPOOL_SIZE	(51*1000)
 #define ADMITTED_OUT_RING_LOG_SIZE		16
 #define READY_PARTITIONS_Q_SIZE                 2
+#define ROUTER_OUTPUT_PORT_CAPACITY             10
 
 const double admissible_fractions [NUM_FRACTIONS_A] =
-    {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99};
+        {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, /*0.8, 0.9, 0.95, 0.99*/};
 const uint32_t admissible_sizes [NUM_SIZES_A] =
-    {256, /*2048, 1024, 512, 128, 64, 32, 16*/};
+        {/*2048, 1024, 512, 256, 128, 64,*/ 32/*, 16*/};
 const double path_fractions [NUM_FRACTIONS_P] =
-    {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99};
+        {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99};
 const uint16_t path_capacities [NUM_CAPACITIES_P] =
-    {4, 8, 16, 32};  // inter-rack capacities (32 machines per rack)
+        {4, 8, 16, 32};  // inter-rack capacities (32 machines per rack)
 const uint8_t path_num_racks [NUM_RACKS_P] =
-    {32, 16, 8, 4};
+        {32, 16, 8, 4};
 
 enum benchmark_type {
     ADMISSIBLE,
@@ -235,26 +236,24 @@ int main(int argc, char **argv)
     q_spent = fp_ring_create(2 * FP_NODES_SHIFT);
     bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
     admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
-    		sizeof(struct admitted_traffic));
+                                                 get_admitted_struct_size());
     for (i = 0; i < NUM_BIN_RINGS; i++) {
             q_new_demands[i] = fp_ring_create(BIN_RING_SHIFT);
             if (!q_new_demands[i]) exit(-1);
             q_ready_partitions[i] = fp_ring_create(READY_PARTITIONS_Q_SIZE);
             if (!q_ready_partitions[i]) exit(-1);
     }
-    if (!q_bin) exit(-1);
-    if (!q_head) exit(-1);
-    if (!q_admitted_out) exit(-1);
-    if (!q_spent) exit(-1);
-    if (!bin_mempool) exit(-1);
-    if (!admitted_traffic_mempool) exit(-1);
+    if (!q_bin || !q_head || !q_admitted_out || !q_spent || !bin_mempool ||
+        !admitted_traffic_mempool)
+            exit(-1);
 
     /* init global status */
     status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
                                      q_spent, bin_mempool,
                                      admitted_traffic_mempool,
                                      &q_bin, &q_new_demands[0],
-                                     &q_ready_partitions[0]);
+                                     &q_ready_partitions[0],
+                                     ROUTER_OUTPUT_PORT_CAPACITY);
     if (status == NULL) {
         printf("Error initializing admissible_status!\n");
         exit(-1);

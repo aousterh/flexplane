@@ -11,8 +11,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#define EMU_PKT_QUEUE_SIZE 100
-
 /**
  * A representation of an MTU-sized packet in the emulated network.
  */

@@ -15,9 +15,9 @@
 #include "../graph-algo/platform.h"
 
 #define ADMITTED_MEMPOOL_SIZE 10
-#define ADMITTED_Q_SIZE 4
-#define PACKET_MEMPOOL_SIZE 10000
-#define PACKET_Q_SIZE 12
+#define ADMITTED_Q_LOG_SIZE 4
+#define PACKET_MEMPOOL_SIZE (1024 * 32)
+#define PACKET_Q_LOG_SIZE 12
 
 /**
  * Data structure to store the state of the emulation.

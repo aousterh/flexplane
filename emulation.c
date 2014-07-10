@@ -78,6 +78,8 @@ void init_state(struct emu_state *state,
                 struct fp_mempool *packet_mempool,
                 struct fp_ring **packet_queues,
                 uint16_t router_output_port_capacity) {
+        assert(router_output_port_capacity <= (1 << PACKET_Q_LOG_SIZE));
+
         uint16_t i, pq;
 
         pq = 0;

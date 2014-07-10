@@ -47,11 +47,11 @@ int main() {
 
         admitted_traffic_mempool = fp_mempool_create(ADMITTED_MEMPOOL_SIZE,
                                                      sizeof(struct emu_admitted_traffic));
-        q_admitted_out = fp_ring_create(ADMITTED_Q_SIZE);
+        q_admitted_out = fp_ring_create(ADMITTED_Q_LOG_SIZE);
         packet_mempool = fp_mempool_create(PACKET_MEMPOOL_SIZE,
                                            sizeof(struct emu_packet));
         for (i = 0; i < num_packet_qs; i++) {
-                packet_queues[i] = fp_ring_create(PACKET_Q_SIZE);
+                packet_queues[i] = fp_ring_create(PACKET_Q_LOG_SIZE);
         }
 
         state = emu_create_state(admitted_traffic_mempool, q_admitted_out,

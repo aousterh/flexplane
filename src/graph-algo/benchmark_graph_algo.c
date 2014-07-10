@@ -27,7 +27,7 @@
 #define ADMITTED_TRAFFIC_MEMPOOL_SIZE	(51*1000)
 #define ADMITTED_OUT_RING_LOG_SIZE		16
 #define READY_PARTITIONS_Q_SIZE                 2
-#define ROUTER_OUTPUT_PORT_CAPACITY             10
+#define ROUTER_OUTPUT_PORT_CAPACITY             512
 
 const double admissible_fractions [NUM_FRACTIONS_A] =
         {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99};

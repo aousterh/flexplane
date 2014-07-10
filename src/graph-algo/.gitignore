@@ -10,3 +10,5 @@ Rplots*
 *.tar
 throughput_results_*
 microbench
+.DS_Store
+.RData

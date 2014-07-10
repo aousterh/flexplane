@@ -89,18 +89,19 @@ if (type == 0) {
 
 theme_set(theme_bw(base_size=12))
 
-new_data = data[data$nodes > 128,]
+#new_data = data[data$nodes > 128,]
+new_data = data
 
 summary <- summarySE(new_data, measurevar="time", groupvars=c("observed_utilization", "nodes"))
 
 ggplot(summary, aes(x=observed_utilization, y=time,
              color=as.factor(nodes), shape=as.factor(nodes))) +
-             geom_errorbar(aes(ymin=p_5, ymax=p_95), width=0.01, colour='grey') +
+             geom_errorbar(aes(ymin=p_5, ymax=p_95), width=0.01, colour="#707070") +
              geom_point() + geom_line() +
-             scale_color_discrete(name="Nodes", guide = guide_legend(reverse = TRUE)) +
-             scale_shape_manual(name="Nodes", guide = guide_legend(reverse = TRUE), values=c(15, 16, 17, 18)) +
+             scale_color_discrete(name="Endpoints", guide = guide_legend(reverse = TRUE)) +
+             scale_shape_manual(name="Endpoints", guide = guide_legend(reverse = TRUE), values=c(15, 16, 17, 18)) +
              labs(x = "Network utilization (%)",
                   y = expression(paste("Processing time per timeslot (", mu, "s)"))) +
-             coord_cartesian(xlim=c(0,1), ylim=c(0,200))
+             coord_cartesian(xlim=c(0,1), ylim=c(0,1))
 
 detach(data)

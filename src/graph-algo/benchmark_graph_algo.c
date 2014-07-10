@@ -17,21 +17,20 @@
 #include "platform.h"
 #include "rdtsc.h"  // For timing
 
-#define NUM_FRACTIONS_A 7
+#define NUM_FRACTIONS_A 11
 #define NUM_SIZES_A 1
 #define NUM_FRACTIONS_P 11
 #define NUM_CAPACITIES_P 4
 #define NUM_RACKS_P 4
 #define NUM_NODES_P 1024
 #define PROCESSOR_SPEED 2.8
-#define BIN_MEMPOOL_SIZE 2048
 #define ADMITTED_TRAFFIC_MEMPOOL_SIZE	(51*1000)
 #define ADMITTED_OUT_RING_LOG_SIZE		16
 #define READY_PARTITIONS_Q_SIZE                 2
 #define ROUTER_OUTPUT_PORT_CAPACITY             10
 
 const double admissible_fractions [NUM_FRACTIONS_A] =
-        {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, /*0.8, 0.9, 0.95, 0.99*/};
+        {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99};
 const uint32_t admissible_sizes [NUM_SIZES_A] =
         {/*2048, 1024, 512, 256, 128, 64,*/ 32/*, 16*/};
 const double path_fractions [NUM_FRACTIONS_P] =

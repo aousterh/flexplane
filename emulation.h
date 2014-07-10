@@ -17,7 +17,7 @@
 #define ADMITTED_MEMPOOL_SIZE 10
 #define ADMITTED_Q_SIZE 4
 #define PACKET_MEMPOOL_SIZE 10000
-#define PACKET_Q_SIZE 10
+#define PACKET_Q_SIZE 12
 
 /**
  * Data structure to store the state of the emulation.

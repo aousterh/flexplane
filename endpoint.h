@@ -36,7 +36,8 @@ void endpoint_add_backlog(struct emu_endpoint *endpoint,
         struct emu_packet *packet;
         while (id != start_id + amount) {
                 /* create a packet */
-                fp_mempool_get(packet_mempool, (void **) &packet);
+                while (fp_mempool_get(packet_mempool, (void **) &packet) == -ENOENT)
+                        printf("error: failed to get packet from mempool\n");
                 packet_init(packet, endpoint->id, dst, id);
 
                 /* enqueue the packet to the endpoint queue */

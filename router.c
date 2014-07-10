@@ -23,7 +23,7 @@ void router_emulate_timeslot(struct emu_router *router,
 
         /* get admitted traffic, init it */
         while (fp_mempool_get(state->admitted_traffic_mempool,
-                              (void **) &admitted) != 0)
+                              (void **) &admitted) == -ENOENT)
                 printf("error: failed to get admitted traffic\n");
         admitted_init(admitted);
 

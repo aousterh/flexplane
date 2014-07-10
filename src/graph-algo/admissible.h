@@ -211,14 +211,14 @@ uint16_t get_admitted_size(struct admitted_traffic *admitted)
 #include "../emulation/emulation.h"
 #include "../emulation/packet.h"
 
-#define BIN_MEMPOOL_SIZE (1024 * 32)
 #define SMALL_BIN_SIZE 0
 #define BATCH_SIZE 1
 #define BATCH_SHIFT 0
 #define ADMITTED_PER_BATCH 1
 #define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS + EMU_NUM_ROUTERS + \
                        EMU_NUM_ROUTERS * EMU_ROUTER_MAX_ENDPOINT_PORTS)
-#define BIN_RING_SHIFT PACKET_Q_SIZE
+#define BIN_MEMPOOL_SIZE PACKET_MEMPOOL_SIZE
+#define BIN_RING_SHIFT PACKET_Q_LOG_SIZE
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,

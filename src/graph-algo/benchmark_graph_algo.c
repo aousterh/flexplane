@@ -29,6 +29,12 @@
 #define READY_PARTITIONS_Q_SIZE                 2
 #define ROUTER_OUTPUT_PORT_CAPACITY             512
 
+#ifdef EMULATION_ALGO
+#define BIN_MEMPOOL_SIZE PACKET_MEMPOOL_SIZE
+#else
+#define BIN_MEMPOOL_SIZE 2048
+#endif
+
 const double admissible_fractions [NUM_FRACTIONS_A] =
         {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99};
 const uint32_t admissible_sizes [NUM_SIZES_A] =

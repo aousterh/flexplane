@@ -22,7 +22,6 @@ struct admissible_state;
 #include "../grant-accept/pim.h"
 #include "../grant-accept/pim_admissible_traffic.h"
 
-#define BIN_MEMPOOL_SIZE 2048
 #define NUM_BINS_SHIFT 0
 #define NUM_BINS 1
 #define LARGE_BIN_SIZE 0 /* unused */
@@ -113,7 +112,6 @@ uint16_t get_admitted_size(struct admitted_traffic *admitted)
 #include "admissible_traffic.h"
 #include "batch.h"
 
-#define BIN_MEMPOOL_SIZE 2048
 #define ADMITTED_PER_BATCH BATCH_SIZE
 #define NUM_BIN_RINGS 0
 #define BIN_RING_SHIFT 0
@@ -209,7 +207,6 @@ uint16_t get_admitted_size(struct admitted_traffic *admitted)
 #ifdef EMULATION_ALGO
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
-#include "../emulation/packet.h"
 
 #define SMALL_BIN_SIZE 0
 #define BATCH_SIZE 1
@@ -217,7 +214,6 @@ uint16_t get_admitted_size(struct admitted_traffic *admitted)
 #define ADMITTED_PER_BATCH 1
 #define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS + EMU_NUM_ROUTERS + \
                        EMU_NUM_ROUTERS * EMU_ROUTER_MAX_ENDPOINT_PORTS)
-#define BIN_MEMPOOL_SIZE PACKET_MEMPOOL_SIZE
 #define BIN_RING_SHIFT PACKET_Q_LOG_SIZE
 
 static inline

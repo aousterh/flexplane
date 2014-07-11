@@ -23,6 +23,7 @@
 #define RAND_A					6364136223846793005
 #define RAND_C					1442695040888963407
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -92,5 +93,5 @@ int main() {
     	/* go through pseudo-random demands */
     }
 
-    printf("batch_total %llu\n", batch_total);
+    printf("batch_total %"PRIu64"\n", batch_total);
 }

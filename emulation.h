@@ -11,6 +11,7 @@
 #include "config.h"
 #include "endpoint.h"
 #include "router.h"
+#include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
@@ -28,6 +29,7 @@ struct emu_state {
         struct fp_mempool *admitted_traffic_mempool;
         struct fp_ring *q_admitted_out;
         struct fp_mempool *packet_mempool;
+        struct admission_statistics stat;
 };
 
 /**

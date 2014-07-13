@@ -72,12 +72,12 @@ void emu_reset_state(struct emu_state *state) {
 /**
  * Initialize an emulation state.
  */
-void init_state(struct emu_state *state,
-                struct fp_mempool *admitted_traffic_mempool,
-                struct fp_ring *q_admitted_out,
-                struct fp_mempool *packet_mempool,
-                struct fp_ring **packet_queues,
-                uint16_t router_output_port_capacity) {
+void emu_init_state(struct emu_state *state,
+                    struct fp_mempool *admitted_traffic_mempool,
+                    struct fp_ring *q_admitted_out,
+                    struct fp_mempool *packet_mempool,
+                    struct fp_ring **packet_queues,
+                    uint16_t router_output_port_capacity) {
         assert(router_output_port_capacity <= (1 << PACKET_Q_LOG_SIZE));
 
         uint16_t i, pq;
@@ -112,9 +112,9 @@ struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
         if (state == NULL)
                 return NULL;
 
-        init_state(state, admitted_traffic_mempool, q_admitted_out,
-                   packet_mempool, packet_queues,
-                   router_output_port_capacity);
+        emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
+                       packet_mempool, packet_queues,
+                       router_output_port_capacity);
         emu_reset_state(state);
 
         return state;

@@ -49,6 +49,16 @@ void emu_timeslot(struct emu_state *state);
 void emu_reset_state(struct emu_state *state);
 
 /**
+ * Initialize an emulation state.
+ */
+void emu_init_state(struct emu_state *state,
+                    struct fp_mempool *admitted_traffic_mempool,
+                    struct fp_ring *q_admitted_out,
+                    struct fp_mempool *packet_mempool,
+                    struct fp_ring **packet_queues,
+                    uint16_t router_output_port_capacity);
+
+/**
  * Returns an initialized emulation state, or NULL on error.
  */
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,

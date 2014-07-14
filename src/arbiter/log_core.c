@@ -255,12 +255,15 @@ int exec_log_core(void *void_cmd_p)
 
 		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
 		print_global_admission_log();
+		#ifndef EMULATION_ALGO
 		for (i = 0; i < 2; i++)
 			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
+		#endif
 		fflush(stdout);
 
 		/* write log */
 //		for (i = 0; i < MAX_NODES; i++) {
+                #ifndef EMULATION_ALGO
 		for (i = 49; i < 55; i++) {
 			conn_log.version = CONN_LOG_STRUCT_VERSION;
 			conn_log.node_id = i;
@@ -276,6 +279,7 @@ int exec_log_core(void *void_cmd_p)
 			if (fwrite(&conn_log, sizeof(conn_log), 1, fp) != 1)
 				LOGGING_ERR("couldn't write conn info of node %d to file\n", i);
 		}
+                #endif
 
 		fflush(fp);
 

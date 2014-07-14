@@ -95,4 +95,41 @@ struct admission_statistics *g_admission_stats(void) {
 
 #endif
 
+#ifdef EMULATION_ALGO
+/* emulation algo */
+#include "emu_admission_core.h"
+#include "../emulation/emulation.h"
+
+static inline
+void admission_init_global(struct rte_ring *q_admitted_out) {
+	emu_admission_init_global(q_admitted_out);
+}
+
+static inline
+void admission_init_core(uint16_t lcore_id) {
+        /* do nothing */
+}
+
+static inline
+int exec_admission_core(void *void_cmd_p) {
+	exec_emu_admission_core(void_cmd_p);
+}
+
+static inline
+struct admissible_state *g_admissible_status(void) {
+	return (struct admissible_state *) &g_emu_state;
+}
+
+static inline
+struct admission_core_statistics *g_admission_core_stats(uint16_t i) {
+        return NULL;
+}
+
+static inline
+struct admission_statistics *g_admission_stats(void) {
+	return &g_emu_state.stat;
+}
+
+#endif
+
 #endif /* ADMISSION_CORE_H */

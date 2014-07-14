@@ -29,3 +29,4 @@ missing
 py-compile
 release/
 build/
+fastpass-private/

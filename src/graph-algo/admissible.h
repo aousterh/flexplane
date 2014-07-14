@@ -262,7 +262,7 @@ void reset_admissible_state(struct admissible_state *state, bool a, uint16_t b,
 static inline
 void reset_sender(struct admissible_state *status, uint16_t src)
 {
-        /* TODO: implement this */
+        emu_reset_sender((struct emu_state *) status, src);
 }
 
 static inline

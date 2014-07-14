@@ -70,6 +70,17 @@ void emu_reset_state(struct emu_state *state) {
 }
 
 /**
+ * Reset the emulation state for a single sender.
+ */
+void emu_reset_sender(struct emu_state *state, uint16_t src) {
+        struct emu_endpoint *endpoint;
+
+        /* TODO: clear the packets in the routers too? */
+        endpoint = &state->endpoints[src];
+        endpoint_reset_state(endpoint, state->packet_mempool);
+}
+
+/**
  * Initialize an emulation state.
  */
 void emu_init_state(struct emu_state *state,

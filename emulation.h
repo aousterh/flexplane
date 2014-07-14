@@ -49,6 +49,11 @@ void emu_timeslot(struct emu_state *state);
 void emu_reset_state(struct emu_state *state);
 
 /**
+ * Reset the emulation state for a single sender.
+ */
+void emu_reset_sender(struct emu_state *state, uint16_t src);
+
+/**
  * Initialize an emulation state.
  */
 void emu_init_state(struct emu_state *state,

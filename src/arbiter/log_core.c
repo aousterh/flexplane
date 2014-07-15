@@ -122,19 +122,18 @@ void print_comm_log(uint16_t lcore_id)
 
 struct admission_statistics saved_admission_statistics;
 
-void print_global_admission_log() {
+void print_global_admission_log_parallel_or_pipelined() {
 	struct admission_statistics *st = g_admission_stats();
 	struct admission_statistics *sv = &saved_admission_statistics;
-	int i;
 
-#define D(X) (st->X - sv->X)
-	#ifdef PARALLEL_ALGO
+#if defined(PARALLEL_ALGO)
 	printf("\nadmission core (pim with %d ptns, %d nodes per ptn)", N_PARTITIONS, PARTITION_N_NODES);
-	#endif
-	#ifdef PIPELINED_ALGO
+#else
 	printf("\nadmission core (seq with %d algo cores, %d batch size, %d nodes)",
                ALGO_N_CORES, BATCH_SIZE, STRESS_TEST_NUM_NODES);
-	#endif
+#endif
+
+#define D(X) (st->X - sv->X)
 	printf("\n  enqueue waits: %lu q_head, %lu alloc_new_demands",
 			st->wait_for_space_in_q_head, st->new_demands_bin_alloc_failed);
 	printf("\n  add_backlog; %lu atomic add %0.2f to avg %0.2f; %lu queue add %0.2f to avg %0.2f",
@@ -152,6 +151,19 @@ void print_global_admission_log() {
 			st->spent_bins, D(spent_bins), st->spent_demands, D(spent_demands));
 	printf("\n");
 #undef D
+}
+
+void print_global_admission_log() {
+	struct admission_statistics *st = g_admission_stats();
+	struct admission_statistics *sv = &saved_admission_statistics;
+
+#if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
+	print_global_admission_log_parallel_or_pipelined();
+#elif defined(EMULATION_ALGO)
+	printf("\nadmission core (emu)");
+#else
+	printf("\nadmission core (UNKNOWN ALGO)");
+#endif
 
 	memcpy(sv, st, sizeof(*sv));
 }
@@ -184,10 +196,12 @@ void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 			st->passed_bins_during_run,
 			st->passed_bins_during_wrap_up,
 				st->wrap_up_non_empty_bin, st->wrap_up_non_empty_bin_demands);
-	#ifdef PARALLEL_ALGO
+
+#if defined(PARALLEL_ALGO)
 	printf("\n    %lu phases completed, %lu not ready, %lu out of order",
                st->phase_finished, st->phase_none_ready, st->phase_out_of_order);
-	#endif
+#endif
+
 	printf("\n");
 #undef D
 
@@ -196,7 +210,7 @@ void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 		printf("%lu ", st->backlog_histogram[i]);
 	printf ("\n");
 
-	#ifdef PIPELINED_ALGO
+#if defined(PIPELINED_ALGO)
 	printf("  bin_size >> %d: ", BIN_SIZE_HISTOGRAM_SHIFT);
 	for (i = 0; i < BIN_SIZE_HISTOGRAM_NUM_BINS; i++)
 		printf("%lu ", st->bin_size_histogram[i]);
@@ -215,7 +229,7 @@ void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 			printf("%lu ", al->after_tslots_histogram[i]);
 		printf ("\n");
 	}
-	#endif
+#endif
 }
 
 int exec_log_core(void *void_cmd_p)
@@ -255,31 +269,32 @@ int exec_log_core(void *void_cmd_p)
 
 		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
 		print_global_admission_log();
-		#ifndef EMULATION_ALGO
+
+#if (defined(PIPELINED_ALGO) || defined(PARALLEL_ALGO))
 		for (i = 0; i < 2; i++)
 			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
-		#endif
+#endif
 		fflush(stdout);
 
 		/* write log */
 //		for (i = 0; i < MAX_NODES; i++) {
-                #ifndef EMULATION_ALGO
 		for (i = 49; i < 55; i++) {
 			conn_log.version = CONN_LOG_STRUCT_VERSION;
 			conn_log.node_id = i;
 			conn_log.timestamp = fp_get_time_ns();
 			comm_dump_stat(i, &conn_log);
 
+#if (defined(PIPELINED_ALGO) || defined(PARALLEL_ALGO))
 			/* get backlog */
 			conn_log.backlog = 0;
 			for (j = 0; j < MAX_NODES; j++)
 				conn_log.backlog +=
 					backlog_get(g_admission_backlog(), i, j);
+#endif
 
 			if (fwrite(&conn_log, sizeof(conn_log), 1, fp) != 1)
 				LOGGING_ERR("couldn't write conn info of node %d to file\n", i);
 		}
-                #endif
 
 		fflush(fp);
 

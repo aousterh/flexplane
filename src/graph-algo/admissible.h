@@ -94,6 +94,12 @@ struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
 }
 
 static inline
+void handle_spent_demands(struct admissible_state *state)
+{
+        /* unused */
+}
+
+static inline
 uint16_t get_admitted_struct_size()
 {
         return sizeof(struct admitted_traffic);

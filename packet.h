@@ -15,9 +15,9 @@
  * A representation of an MTU-sized packet in the emulated network.
  */
 struct emu_packet {
-        uint16_t src;
-        uint16_t dst;
-        uint16_t id;
+	uint16_t src;
+	uint16_t dst;
+	uint16_t id;
 };
 
 /**
@@ -25,10 +25,10 @@ struct emu_packet {
  */
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
-                 uint16_t id) {
-        packet->src = src;
-        packet->dst = dst;
-        packet->id = id;
+		 uint16_t id) {
+	packet->src = src;
+	packet->dst = dst;
+	packet->id = id;
 }
 
 #endif /* PACKET_H_ */

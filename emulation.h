@@ -24,19 +24,19 @@
  * Data structure to store the state of the emulation.
  */
 struct emu_state {
-        struct emu_endpoint endpoints[EMU_NUM_ENDPOINTS];
-        struct emu_router routers[EMU_NUM_ROUTERS];
-        struct fp_mempool *admitted_traffic_mempool;
-        struct fp_ring *q_admitted_out;
-        struct fp_mempool *packet_mempool;
-        struct admission_statistics stat;
+	struct emu_endpoint endpoints[EMU_NUM_ENDPOINTS];
+	struct emu_router routers[EMU_NUM_ROUTERS];
+	struct fp_mempool *admitted_traffic_mempool;
+	struct fp_ring *q_admitted_out;
+	struct fp_mempool *packet_mempool;
+	struct admission_statistics stat;
 };
 
 /**
  * Add backlog from src to dst.
  */
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-                     uint32_t amount, uint16_t start_id);
+		     uint32_t amount, uint16_t start_id);
 
 /**
  * Emulate a single timeslot.
@@ -57,19 +57,19 @@ void emu_reset_sender(struct emu_state *state, uint16_t src);
  * Initialize an emulation state.
  */
 void emu_init_state(struct emu_state *state,
-                    struct fp_mempool *admitted_traffic_mempool,
-                    struct fp_ring *q_admitted_out,
-                    struct fp_mempool *packet_mempool,
-                    struct fp_ring **packet_queues,
-                    uint16_t router_output_port_capacity);
+		    struct fp_mempool *admitted_traffic_mempool,
+		    struct fp_ring *q_admitted_out,
+		    struct fp_mempool *packet_mempool,
+		    struct fp_ring **packet_queues,
+		    uint16_t router_output_port_capacity);
 
 /**
  * Returns an initialized emulation state, or NULL on error.
  */
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
-                                   struct fp_ring *q_admitted_out,
-                                   struct fp_mempool *packet_mempool,
-                                   struct fp_ring **packet_queues,
-                                   uint16_t router_output_port_capacity);
+				   struct fp_ring *q_admitted_out,
+				   struct fp_mempool *packet_mempool,
+				   struct fp_ring **packet_queues,
+				   uint16_t router_output_port_capacity);
 
 #endif /* EMULATION_H_ */

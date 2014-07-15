@@ -18,10 +18,10 @@
 #include <stdio.h>
 
 struct emu_admitted_edge {
-        uint16_t src;
-        uint16_t dst;
-        uint16_t id;
-        uint16_t flags;
+	uint16_t src;
+	uint16_t dst;
+	uint16_t id;
+	uint16_t flags;
 };
 
 /**
@@ -29,10 +29,10 @@ struct emu_admitted_edge {
  * communication cores. Holds both admitted and dropped edges.
  */
 struct emu_admitted_traffic {
-        uint16_t size;
-        uint16_t admitted;
-        uint16_t dropped;
-        struct emu_admitted_edge edges[2 * EMU_NUM_ENDPOINTS];
+	uint16_t size;
+	uint16_t admitted;
+	uint16_t dropped;
+	struct emu_admitted_edge edges[2 * EMU_NUM_ENDPOINTS];
 };
 
 /**
@@ -40,11 +40,11 @@ struct emu_admitted_traffic {
  */
 static inline
 void admitted_init(struct emu_admitted_traffic *admitted) {
-        assert(admitted != NULL);
+	assert(admitted != NULL);
 
-        admitted->size = 0;
-        admitted->admitted = 0;
-        admitted->dropped = 0;
+	admitted->size = 0;
+	admitted->admitted = 0;
+	admitted->dropped = 0;
 }
 
 /**
@@ -52,17 +52,17 @@ void admitted_init(struct emu_admitted_traffic *admitted) {
  */
 static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
-                          uint16_t dst, uint16_t id, uint16_t flags) {
-        assert(admitted != NULL);
-        assert(admitted->size < 2 * EMU_NUM_ENDPOINTS);
-        assert(src < EMU_NUM_ENDPOINTS);
-        assert(dst < EMU_NUM_ENDPOINTS);
+			  uint16_t dst, uint16_t id, uint16_t flags) {
+	assert(admitted != NULL);
+	assert(admitted->size < 2 * EMU_NUM_ENDPOINTS);
+	assert(src < EMU_NUM_ENDPOINTS);
+	assert(dst < EMU_NUM_ENDPOINTS);
 
-        struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
-        edge->src = src;
-        edge->dst = dst;
-        edge->id = id;
-        edge->flags = flags;
+	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
+	edge->src = src;
+	edge->dst = dst;
+	edge->id = id;
+	edge->flags = flags;
 }
 
 /**
@@ -70,11 +70,11 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
-                                   uint16_t src, uint16_t dst, uint16_t id) {
-        assert(admitted->admitted < EMU_NUM_ENDPOINTS);
+				   uint16_t src, uint16_t dst, uint16_t id) {
+	assert(admitted->admitted < EMU_NUM_ENDPOINTS);
 
-        admitted_insert_edge(admitted, src, dst, id, FLAGS_NONE);
-        admitted->admitted++;
+	admitted_insert_edge(admitted, src, dst, id, FLAGS_NONE);
+	admitted->admitted++;
 }
 
 /**
@@ -82,11 +82,11 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
-                                  uint16_t src, uint16_t dst, uint16_t id) {
-        assert(admitted->dropped < EMU_NUM_ENDPOINTS);
+				  uint16_t src, uint16_t dst, uint16_t id) {
+	assert(admitted->dropped < EMU_NUM_ENDPOINTS);
 
-        admitted_insert_edge(admitted, src, dst, id, FLAGS_DROP);
-        admitted->dropped++;
+	admitted_insert_edge(admitted, src, dst, id, FLAGS_DROP);
+	admitted->dropped++;
 }
 
 /**
@@ -94,25 +94,25 @@ void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
  */
 static inline
 void admitted_edge_print(struct emu_admitted_edge *edge) {
-        if (edge->flags & FLAGS_DROP) {
-                printf("\tDROP src %d to dst %d (id %d)\n", edge->src,
-                       edge->dst, edge->id);
-        } else {
-                printf("\tsrc %d to dst %d (id %d)\n", edge->src,
-                       edge->dst, edge->id);
-        }
- }
+	if (edge->flags & FLAGS_DROP) {
+		printf("\tDROP src %d to dst %d (id %d)\n", edge->src,
+		       edge->dst, edge->id);
+	} else {
+		printf("\tsrc %d to dst %d (id %d)\n", edge->src,
+		       edge->dst, edge->id);
+	}
+}
 
 /**
  * Print out all edges in an admitted struct, for debugging/testing
  */
 static inline
 void admitted_print(struct emu_admitted_traffic *admitted) {
-        uint16_t i;
+	uint16_t i;
 
-        printf("finished traffic:\n");
-        for (i = 0; i < admitted->size; i++)
-                admitted_edge_print(&admitted->edges[i]);
+	printf("finished traffic:\n");
+	for (i = 0; i < admitted->size; i++)
+		admitted_edge_print(&admitted->edges[i]);
 }
 
 #endif /* EMU_ADMITTED_H_ */

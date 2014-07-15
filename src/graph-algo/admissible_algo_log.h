@@ -26,32 +26,35 @@
  * Per-core statistics, in struct admission_core_state
  */
 struct admission_core_statistics {
+	/* pipelined-only stats */
 	uint64_t no_available_timeslots_for_bin_entry;
-	uint64_t allocated_backlog_remaining;
-	uint64_t backlog_sum;
-	uint64_t allocated_no_backlog;
-	uint64_t backlog_histogram[BACKLOG_HISTOGRAM_NUM_BINS];
 	uint64_t bin_size_histogram[BIN_SIZE_HISTOGRAM_NUM_BINS];
 	uint64_t core_bins_histogram[CORE_BIN_HISTOGRAM_NUM_BINS];
 
-	uint64_t admitted_traffic_alloc_failed;
 	uint64_t wait_for_space_in_q_bin_out;
 	uint64_t wait_for_space_in_q_spent;
-	uint64_t wait_for_space_in_q_admitted_out;
 	uint64_t out_bin_alloc_failed;
 	uint64_t q_out_flush_bin_full;
 	uint64_t q_out_flush_batch_finished;
 	uint64_t q_spent_flush_bin_full;
 	uint64_t q_spent_flush_batch_finished;
-	uint64_t new_request_bins;
-	uint64_t new_requests;
 	uint64_t waiting_to_pass_token;
 	uint64_t passed_bins_during_wrap_up;
 	uint64_t passed_bins_during_run;
 	uint64_t wrap_up_non_empty_bin;
 	uint64_t wrap_up_non_empty_bin_demands;
 
-        /* pim-specific statistics */
+	/* pipelined and pim stats */
+	uint64_t allocated_backlog_remaining;
+	uint64_t backlog_sum;
+	uint64_t allocated_no_backlog;
+	uint64_t backlog_histogram[BACKLOG_HISTOGRAM_NUM_BINS];
+	uint64_t admitted_traffic_alloc_failed;
+	uint64_t wait_for_space_in_q_admitted_out;
+	uint64_t new_request_bins;
+	uint64_t new_requests;
+
+        /* pim-only stats */
         uint64_t phase_finished;
         uint64_t phase_none_ready;
         uint64_t phase_out_of_order;
@@ -61,21 +64,21 @@ struct admission_core_statistics {
  * Global statistics in struct admissible_status
  */
 struct admission_statistics {
-	uint64_t wait_for_space_in_q_head;
-	uint64_t new_demands_bin_alloc_failed;
-	/* atomic increase statistics */
+	/* pipelined-only stats */
 	uint64_t added_backlog_atomically;
 	uint64_t backlog_sum_atomically;
 	uint64_t backlog_sum_inc_atomically;
-	/* to queue statistics */
 	uint64_t added_backlog_to_queue;
 	uint64_t backlog_sum_to_queue;
 	uint64_t backlog_sum_inc_to_queue;
-	uint64_t backlog_flush_forced;
-	uint64_t backlog_flush_bin_full;
-	/* spent demand handling */
 	uint64_t spent_bins;
 	uint64_t spent_demands;
+
+	/* pipelined and pim stats */
+	uint64_t wait_for_space_in_q_head;
+	uint64_t new_demands_bin_alloc_failed;
+	uint64_t backlog_flush_forced;
+	uint64_t backlog_flush_bin_full;
 };
 
 /* GLOBAL STATS (in admissible_status) */

@@ -30,6 +30,7 @@ struct emu_state {
 	struct fp_ring *q_admitted_out;
 	struct fp_mempool *packet_mempool;
 	struct admission_statistics stat;
+	struct admission_core_statistics core_stats; /* 1 core for now */
 };
 
 /**

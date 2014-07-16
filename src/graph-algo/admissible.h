@@ -213,6 +213,7 @@ uint16_t get_admitted_size(struct admitted_traffic *admitted)
 #ifdef EMULATION_ALGO
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
+#include "../emulation/packet.h"
 
 #define SMALL_BIN_SIZE 0
 #define BATCH_SIZE 1

@@ -14,6 +14,7 @@
 #include "admission_log.h"
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
+#include "../emulation/packet.h"
 #include "../graph-algo/algo_config.h"
 
 #define EMU_N_PACKET_QUEUES   (EMU_NUM_ENDPOINTS + EMU_NUM_ROUTERS + \

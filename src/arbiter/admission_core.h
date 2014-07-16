@@ -122,7 +122,7 @@ struct admissible_state *g_admissible_status(void) {
 
 static inline
 struct admission_core_statistics *g_admission_core_stats(uint16_t i) {
-        return NULL;
+        return &g_emu_state.core_stats;
 }
 
 static inline

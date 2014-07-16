@@ -79,6 +79,14 @@ struct admission_statistics {
 	uint64_t new_demands_bin_alloc_failed;
 	uint64_t backlog_flush_forced;
 	uint64_t backlog_flush_bin_full;
+
+	/* emulation stats */
+	uint64_t emu_packet_alloc_failed;
+	uint64_t emu_admitted_alloc_failed;
+	uint64_t emu_wait_for_endpoint_enqueue;
+	uint64_t emu_wait_for_router_enqueue;
+	uint64_t emu_wait_for_internal_router_enqueue;
+	uint64_t emu_wait_for_admitted_enqueue;
 };
 
 /* GLOBAL STATS (in admissible_status) */
@@ -138,6 +146,48 @@ void adm_log_processed_spent_demands(
 		st->spent_bins += num_bins;
 		st->spent_demands += num_demands;
 	}
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_packet_alloc_failed(
+		struct admission_statistics *st) {
+	if (MAINTAIN_ADM_LOG_COUNTERS)
+		st->emu_packet_alloc_failed++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_admitted_alloc_failed(
+		struct admission_statistics *st) {
+	if (MAINTAIN_ADM_LOG_COUNTERS)
+		st->emu_admitted_alloc_failed++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_wait_for_endpoint_enqueue(
+		struct admission_statistics *st) {
+	if (MAINTAIN_ADM_LOG_COUNTERS)
+		st->emu_wait_for_endpoint_enqueue++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_wait_for_router_enqueue(
+		struct admission_statistics *st) {
+	if (MAINTAIN_ADM_LOG_COUNTERS)
+		st->emu_wait_for_router_enqueue++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_wait_for_internal_router_enqueue(
+		struct admission_statistics *st) {
+	if (MAINTAIN_ADM_LOG_COUNTERS)
+		st->emu_wait_for_internal_router_enqueue++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_wait_for_admitted_enqueue(
+		struct admission_statistics *st) {
+	if (MAINTAIN_ADM_LOG_COUNTERS)
+		st->emu_wait_for_admitted_enqueue++;
 }
 
 /* PER CORE STATS */

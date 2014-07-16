@@ -22,5 +22,5 @@ clean:
 	rm -f emulation *.o *~
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o router.o
-	$(CC) $< emulation.o router.o -o $@ $(LDFLAGS)
+emulation: emulation_test.o emulation.o endpoint.o router.o
+	$(CC) $< emulation.o endpoint.o router.o -o $@ $(LDFLAGS)

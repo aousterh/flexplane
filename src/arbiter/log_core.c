@@ -170,7 +170,7 @@ void print_global_admission_log() {
 
 struct admission_core_statistics saved_admission_core_statistics[N_ADMISSION_CORES];
 
-void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
+void print_admission_core_log_parallel_or_pipelined(uint16_t lcore, uint16_t adm_core_index) {
 	int i;
 	struct admission_log *al = &admission_core_logs[lcore];
 	struct admission_core_statistics *st = g_admission_core_stats(adm_core_index);
@@ -232,6 +232,14 @@ void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 #endif
 }
 
+void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
+
+#if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
+	print_admission_core_log_parallel_or_pipelined(lcore, adm_core_index);
+#endif
+
+}
+
 int exec_log_core(void *void_cmd_p)
 {
 	struct log_core_cmd *cmd = (struct log_core_cmd *) void_cmd_p;
@@ -270,10 +278,8 @@ int exec_log_core(void *void_cmd_p)
 		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
 		print_global_admission_log();
 
-#if (defined(PIPELINED_ALGO) || defined(PARALLEL_ALGO))
 		for (i = 0; i < 2; i++)
 			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
-#endif
 		fflush(stdout);
 
 		/* write log */

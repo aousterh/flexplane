@@ -9,7 +9,6 @@
 #define PACKET_H_
 
 #include <inttypes.h>
-#include <stdio.h>
 
 /**
  * A representation of an MTU-sized packet in the emulated network.

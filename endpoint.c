@@ -7,16 +7,16 @@
 
 #include "endpoint.h"
 
+#include "emulation.h"
 #include "packet.h"
 #include "router.h"
-
-#include <stdio.h>
+#include "../graph-algo/admissible_algo_log.h"
 
 /**
  * Add backlog to dst at this endpoint.
  */
 void endpoint_add_backlog(struct emu_endpoint *endpoint,
-			  struct fp_mempool *packet_mempool, uint16_t dst,
+			  struct emu_state *state, uint16_t dst,
 			  uint32_t amount, uint16_t start_id) {
 
 	/* create and enqueue a packet for each MTU */
@@ -24,14 +24,14 @@ void endpoint_add_backlog(struct emu_endpoint *endpoint,
 	struct emu_packet *packet;
 	while (id != start_id + amount) {
 		/* create a packet */
-		while (fp_mempool_get(packet_mempool, (void **) &packet) == -ENOENT)
-			printf("error: failed to get packet from mempool\n");
+		while (fp_mempool_get(state->packet_mempool, (void **) &packet)
+		       == -ENOENT)
+			adm_log_emu_packet_alloc_failed(&state->stat);
 		packet_init(packet, endpoint->id, dst, id);
 
 		/* enqueue the packet to the endpoint queue */
 		while (fp_ring_enqueue(endpoint->q_in, packet) == -ENOBUFS)
-			printf("error: failed enqueue at endpoint %d\n",
-			       endpoint->id);
+			adm_log_emu_wait_for_endpoint_enqueue(&state->stat);
 
 		id++;
 	}
@@ -40,7 +40,8 @@ void endpoint_add_backlog(struct emu_endpoint *endpoint,
 /**
  * Emulate one timeslot at a given endpoint.
  */
-void endpoint_emulate_timeslot(struct emu_endpoint *endpoint) {
+void endpoint_emulate_timeslot(struct emu_endpoint *endpoint,
+			       struct emu_state *state) {
 	struct emu_packet *packet;
 	struct emu_router *router;
 
@@ -51,8 +52,7 @@ void endpoint_emulate_timeslot(struct emu_endpoint *endpoint) {
 	/* try to enqueue the packet to the next router */
 	router = endpoint->router;
 	while (fp_ring_enqueue(router->q_in, packet) == -ENOBUFS)
-		printf("error: failed enqueue at router\n");
-
+		adm_log_emu_wait_for_router_enqueue(&state->stat);
 }
 
 /**

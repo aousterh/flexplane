@@ -10,6 +10,7 @@
 #include "admitted.h"
 #include "emulation.h"
 #include "packet.h"
+#include "../graph-algo/admissible_algo_log.h"
 
 /**
  * Emulate one timeslot at a given router. For now, assume that routers
@@ -24,7 +25,7 @@ void router_emulate_timeslot(struct emu_router *router,
 	/* get admitted traffic, init it */
 	while (fp_mempool_get(state->admitted_traffic_mempool,
 			      (void **) &admitted) == -ENOENT)
-		printf("error: failed to get admitted traffic\n");
+		adm_log_emu_admitted_alloc_failed(&state->stat);
 	admitted_init(admitted);
 
 	/* try to output one packet per output port */
@@ -70,12 +71,11 @@ void router_emulate_timeslot(struct emu_router *router,
 		}
 
 		while (fp_ring_enqueue(output->q_out, packet) == -ENOBUFS)
-			printf("error: failed enqueue within router\n");
+			adm_log_emu_wait_for_internal_router_enqueue(&state->stat);
 		output->count++;
 	}
 
-
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(state->q_admitted_out, admitted) != 0)
-		printf("error: cannot enqueue admitted traffic\n");
+		adm_log_emu_wait_for_admitted_enqueue(&state->stat);
 }

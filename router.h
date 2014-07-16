@@ -12,8 +12,6 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
-#include <stdio.h>
-
 struct emu_endpoint;
 struct emu_router;
 struct emu_state;

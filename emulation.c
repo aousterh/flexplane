@@ -10,7 +10,6 @@
 #include "admitted.h"
 
 #include <assert.h>
-#include <stdio.h>
 
 /**
  * Add backlog from src to dst
@@ -20,8 +19,8 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
 
-	endpoint_add_backlog(&state->endpoints[src], state->packet_mempool, dst,
-			     amount, start_id);
+	endpoint_add_backlog(&state->endpoints[src], state, dst, amount,
+			     start_id);
 }
 
 /**
@@ -34,7 +33,7 @@ void emu_timeslot(struct emu_state *state) {
 	/* emulate one timeslot at each endpoint */
 	for (endpoint = &state->endpoints[0];
 	     endpoint < &state->endpoints[EMU_NUM_ENDPOINTS]; endpoint++) {
-		endpoint_emulate_timeslot(endpoint);
+		endpoint_emulate_timeslot(endpoint, state);
 	}
 
 	/* emulate one timeslot at each router */

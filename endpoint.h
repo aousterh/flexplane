@@ -12,7 +12,7 @@
 #include "../graph-algo/platform.h"
 
 struct emu_router;
-struct fp_mempool;
+struct emu_state;
 
 /**
  * A representation of an endpoint (server) in the emulated network.
@@ -27,13 +27,14 @@ struct emu_endpoint {
  * Add backlog to dst at this endpoint.
  */
 void endpoint_add_backlog(struct emu_endpoint *endpoint,
-			  struct fp_mempool *packet_mempool, uint16_t dst,
+			  struct emu_state *state, uint16_t dst,
 			  uint32_t amount, uint16_t start_id);
 
 /**
  * Emulate one timeslot at a given endpoint.
  */
-void endpoint_emulate_timeslot(struct emu_endpoint *endpoint);
+void endpoint_emulate_timeslot(struct emu_endpoint *endpoint,
+			       struct emu_state *state);
 
 /**
  * Reset the state of a single endpoint.

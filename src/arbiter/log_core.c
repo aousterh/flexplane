@@ -153,6 +153,23 @@ void print_global_admission_log_parallel_or_pipelined() {
 #undef D
 }
 
+void print_global_admission_log_emulation() {
+	struct admission_statistics *st = g_admission_stats();
+	struct admission_statistics *sv = &saved_admission_statistics;
+
+	printf("\nadmission core (emu with %d nodes)", STRESS_TEST_NUM_NODES);
+
+	printf("\n  allocation fails: %lu packet, %lu admitted",
+	       st->emu_packet_alloc_failed, st->emu_admitted_alloc_failed);
+	printf("\n  enqueue waits: %lu endpoint, %lu router, ",
+	       st->emu_wait_for_endpoint_enqueue,
+	       st->emu_wait_for_router_enqueue);
+	printf("%lu router internal, %lu admitted",
+	       st->emu_wait_for_internal_router_enqueue,
+	       st->emu_wait_for_admitted_enqueue);
+	printf("\n");
+}
+
 void print_global_admission_log() {
 	struct admission_statistics *st = g_admission_stats();
 	struct admission_statistics *sv = &saved_admission_statistics;
@@ -160,7 +177,7 @@ void print_global_admission_log() {
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	print_global_admission_log_parallel_or_pipelined();
 #elif defined(EMULATION_ALGO)
-	printf("\nadmission core (emu)");
+	print_global_admission_log_emulation();
 #else
 	printf("\nadmission core (UNKNOWN ALGO)");
 #endif

@@ -8,11 +8,14 @@
 #ifndef PATH_SELECTION_H_
 #define PATH_SELECTION_H_
 
-#include "admitted.h"
-
 #define NUM_PATHS 4  // if not 4, NUM_GRAPHS and related code must be modified
 #define PATH_MASK 0x3FFF  // 2^PATH_SHIFT - 1
 #define PATH_SHIFT 14
+
+#include <stdbool.h>
+
+/* dummy struct declaration */
+struct admitted_traffic;
 
 // Selects paths for traffic in admitted and writes the path ids
 // to the most significant bits of the destination ip addrs

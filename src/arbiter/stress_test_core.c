@@ -66,8 +66,8 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	for (i = 0; i < rc; i++) {
                 partition = get_admitted_partition(admitted[i]);
 		current_timeslot = ++core->latest_timeslot[partition];
-		comm_log_got_admitted_tslot(admitted[i]->size, current_timeslot,
-                                            partition);
+		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
+					    current_timeslot, partition);
 	}
 	/* free memory */
 	rte_mempool_put_bulk(admitted_traffic_pool[0], (void **) admitted, rc);

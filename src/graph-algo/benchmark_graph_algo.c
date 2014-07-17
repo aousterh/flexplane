@@ -16,6 +16,7 @@
 #include "path_selection.h"
 #include "platform.h"
 #include "rdtsc.h"  // For timing
+#include "../protocol/topology.h"
 
 #define NUM_FRACTIONS_A 11
 #define NUM_SIZES_A 1
@@ -89,7 +90,7 @@ uint32_t run_experiment(struct request_info *requests, uint32_t start_time, uint
         	/* get admitted traffic */
                 fp_ring_dequeue(get_q_admitted_out(status), (void **)&admitted);
         	/* update statistics */
-                num_admitted += get_admitted_size(admitted);
+                num_admitted += get_num_admitted(admitted);
         	/* return admitted traffic to core */
                 fp_mempool_put(get_admitted_traffic_mempool(status), admitted);
         }
@@ -378,7 +379,7 @@ int main(int argc, char **argv)
                     /* get admitted traffic */
                     fp_ring_dequeue(get_q_admitted_out(status), (void **)&admitted);
                     /* update statistics */
-                    num_admitted += get_admitted_size(admitted);
+                    num_admitted += get_num_admitted(admitted);
 
                     /* supply a new admitted traffic to core */
                     select_paths(admitted, num_nodes / MAX_NODES_PER_RACK);
@@ -390,7 +391,7 @@ int main(int argc, char **argv)
                     prev_time = time_now;
 
                     // Record num admitted
-                    per_timeslot_num_admitted[k] = get_admitted_size(admitted);
+                    per_timeslot_num_admitted[k] = get_num_admitted(admitted);
 
                     /* free the admitted_traffic */
                     fp_mempool_put(get_admitted_traffic_mempool(status), admitted);

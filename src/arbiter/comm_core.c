@@ -647,12 +647,18 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	for (i = 0; i < rc; i++) {
                 partition = get_admitted_partition(admitted[i]);
 		current_timeslot = ++core->latest_timeslot[partition];
-		comm_log_got_admitted_tslot(admitted[i]->size, current_timeslot,
-                                            partition);
-		for (j = 0; j < admitted[i]->size; j++) {
+		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
+					    current_timeslot, partition);
+		for (j = 0; j < get_num_admitted(admitted[i]); j++) {
 			/* process this node's allocation */
+#if defined(EMULATION_ALGO)
+			/* TODO: implement this for emulation */
+			src = 0;
+			dst = 0;
+#else
 			src = admitted[i]->edges[j].src;
 			dst = admitted[i]->edges[j].dst;
+#endif
 
 			/* get the node's structure */
 			en = &end_nodes[src];

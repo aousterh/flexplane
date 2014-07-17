@@ -8,16 +8,17 @@
 #ifndef ADMISSIBLE_H_
 #define ADMISSIBLE_H_
 
-#include "admitted.h"
 #include "algo_config.h"
 
 #include <stdbool.h>
 
-/* dummy struct definition */
+/* dummy struct declarations */
 struct admissible_state;
+struct admitted_traffic;
 
 /* parallel algo, e.g. pim */
 #ifdef PARALLEL_ALGO
+#include "admitted.h"
 #include "../grant-accept/partitioning.h"
 #include "../grant-accept/pim.h"
 #include "../grant-accept/pim_admissible_traffic.h"
@@ -99,23 +100,13 @@ void handle_spent_demands(struct admissible_state *state)
         /* unused */
 }
 
-static inline
-uint16_t get_admitted_struct_size()
-{
-        return sizeof(struct admitted_traffic);
-}
-
-static inline
-uint16_t get_admitted_size(struct admitted_traffic *admitted)
-{
-        return admitted->size;
-}
 #endif
 
 /* pipelined algo */
 #ifdef PIPELINED_ALGO
 #include "admissible_structures.h"
 #include "admissible_traffic.h"
+#include "admitted.h"
 #include "batch.h"
 
 #define ADMITTED_PER_BATCH BATCH_SIZE
@@ -196,17 +187,6 @@ void handle_spent_demands(struct admissible_state *state)
     seq_handle_spent(status);
 }
 
-static inline
-uint16_t get_admitted_struct_size()
-{
-        return sizeof(struct admitted_traffic);
-}
-
-static inline
-uint16_t get_admitted_size(struct admitted_traffic *admitted)
-{
-        return admitted->size;
-}
 #endif
 
 /* emulation algo */
@@ -293,17 +273,17 @@ void handle_spent_demands(struct admissible_state *state)
 }
 
 static inline
-uint16_t get_admitted_struct_size()
+uint16_t get_admitted_partition(struct admitted_traffic *admitted)
 {
-        return sizeof(struct emu_admitted_traffic);
+	return 0; /* emulation does not use partitions */
 }
 
 static inline
-uint16_t get_admitted_size(struct admitted_traffic *admitted)
+uint16_t get_num_admitted(struct admitted_traffic *admitted)
 {
-        struct emu_admitted_traffic *emu_admitted;
-        emu_admitted = (struct emu_admitted_traffic *) admitted;
-        return emu_admitted->admitted;
+	struct emu_admitted_traffic *emu_admitted;
+	emu_admitted = (struct emu_admitted_traffic *) admitted;
+	return emu_admitted->admitted;
 }
 
 static inline
@@ -312,6 +292,7 @@ uint32_t bin_num_bytes(uint32_t param)
         /* bin mempool used for packets instead */
         return sizeof(struct emu_packet);
 }
+
 #endif
 
 #endif /* ADMISSIBLE_H_ */

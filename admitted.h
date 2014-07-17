@@ -115,4 +115,12 @@ void admitted_print(struct emu_admitted_traffic *admitted) {
 		admitted_edge_print(&admitted->edges[i]);
 }
 
+/**
+ * Returns the size of an admitted struct.
+ */
+static inline
+uint16_t get_admitted_struct_size() {
+	return sizeof(struct emu_admitted_traffic);
+}
+
 #endif /* EMU_ADMITTED_H_ */

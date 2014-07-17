@@ -103,19 +103,27 @@ int exec_emu_admission_core(void *void_cmd_p)
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
 	uint64_t logical_timeslot = cmd->start_timeslot;
-	uint64_t start_time_first_timeslot;
+	uint64_t start_time_first_timeslot, time_now, tslot;
 
 	ADMISSION_DEBUG("core %d admission %d starting allocations\n",
 			rte_lcore_id(), core_ind);
 
 	/* do allocation loop */
-        while (1) {
+	time_now = fp_get_time_ns();
+	tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+	while (1) {
+		/* pace emulation */
+		while (tslot < logical_timeslot) {
+			time_now = fp_get_time_ns();
+			tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+		}
+
 		admission_log_allocation_begin(logical_timeslot,
-				start_time_first_timeslot);
+					       start_time_first_timeslot);
 
 		/* perform allocation */
-                /* use a single core for now */
-                emu_timeslot(&g_emu_state);
+		/* use a single core for now */
+		emu_timeslot(&g_emu_state);
 
 		admission_log_allocation_end(logical_timeslot);
 

@@ -76,9 +76,10 @@ extern bool fastpass_debug;
 #define FASTPASS_PTYPE_ACK			0x4
 
 /**
- * An A-REQ for a single destination
+ * An allocation request (to the arbiter) or report (from the arbiter) for a
+ * single destination
  * @src_dst_key: the key for the flow
- * @tslots: the total number of tslots requested
+ * @tslots: the total number of tslots
  */
 struct fpproto_areq_desc {
 	u64		src_dst_key;
@@ -86,8 +87,13 @@ struct fpproto_areq_desc {
 };
 
 /**
- * A full packet sent to the controller
+ * A full packet sent to or from the arbiter
  * @n_areq: number of filled in destinations for A-REQ
+ * @areq: an array of allocation requests
+ * @n_dsts: number of destinations that have allocs
+ * @dsts: the destinations that have allocs
+ * @dst_counts: number of ALLOCs per dst in dsts
+ * @alloc_tslot: number of allocs in this packet
  * @sent_timestamp: a timestamp when the request was sent
  */
 struct fpproto_pktdesc {

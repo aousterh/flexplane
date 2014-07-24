@@ -37,7 +37,12 @@
 #define IGMP_SEND_INTERVAL_SEC		10
 
 /**
- * A queue to know which reports to send to the end node
+ * A queue to record which destinations have reports that need to be sent to
+ * this endpoint.
+ * @is_pending: 1 or 0 indicating whether each dst is pending or not
+ * @q_pending: a queue of dsts that are pending
+ * @head: head index for q_pending
+ * @tail: tail index for q_pending
  */
 struct alloc_report_queue {
 	uint8_t is_pending[MAX_NODES];
@@ -54,7 +59,10 @@ struct alloc_report_queue {
  * @dst_ip: the destination IP for outgoing packets
  * @controller_ip: the controller IP outgoing packets should use
  * @pending: a windowed bitmask of which timeslots have allocations not yet sent out
- * @allocs: the destinations of the allocations
+ * @allocs: the destinations of the allocations in pending
+ * @demands: the total demand to each destination
+ * @alloc_to_dst: the total allocation to each destination
+ * @acked_allocs: the total acked allocation to each destination
  */
 struct end_node_state {
 	struct fpproto_conn conn;
@@ -185,14 +193,17 @@ void comm_init_core(uint16_t lcore_id, uint64_t first_time_slot)
 	}
 }
 
+/**
+ * Trigger a transmission to an endpoint @en to report unACKed info about @dst.
+ */
 static inline void trigger_report(struct end_node_state *en,
-		struct alloc_report_queue *q, uint16_t node) {
-	if (q->is_pending[node])
+		struct alloc_report_queue *q, uint16_t dst) {
+	if (q->is_pending[dst])
 		return;
-	q->is_pending[node] = 1;
-	q->q_pending[q->tail & ALLOC_REPORT_QUEUE_MASK] = node;
+	q->is_pending[dst] = 1;
+	q->q_pending[q->tail & ALLOC_REPORT_QUEUE_MASK] = dst;
 	q->tail++;
-	comm_log_triggered_report(en - end_nodes, node);
+	comm_log_triggered_report(en - end_nodes, dst);
 	trigger_request(en);
 }
 
@@ -376,7 +387,10 @@ static void trigger_request_voidp(void *param)
 	trigger_request(en);
 }
 
-
+/**
+ * Set a timer to send a request to the endpoint @en at the time specified by
+ * the pacer (does nothing if the pacer was already triggered).
+ */
 static void trigger_request(struct end_node_state *en)
 {
 	uint64_t now = rte_get_timer_cycles();
@@ -384,6 +398,8 @@ static void trigger_request(struct end_node_state *en)
 	const unsigned lcore_id = rte_lcore_id();
 	struct comm_core_state *core = &ccore_state[lcore_id];
 
+	/* trigger the pacer and set a timer for this endpoint if the pacer
+	 * wasn't already triggered */
 	if (pacer_trigger(&en->tx_pacer, now)) {
 	  COMM_DEBUG("setting trigger timer now %lu when %llu (diff=%lld)\n", now, 
 pacer_next_event(&en->tx_pacer), (pacer_next_event(&en->tx_pacer)-now));
@@ -395,6 +411,10 @@ pacer_next_event(&en->tx_pacer), (pacer_next_event(&en->tx_pacer)-now));
 	}
 }
 
+/**
+ * Allocates a packet to endpoint @en with payload @pd, populates the ethernet
+ * and IPv4 headers, and returns the packet.
+ */
 static inline struct rte_mbuf *
 make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
 {
@@ -620,6 +640,10 @@ static inline bool do_rx_burst(struct lcore_conf* qconf)
 	return saw_watchdog;
 }
 
+/**
+ * Record the allocations received in @q_admitted and trigger a report to each
+ * source endpoint that got a new allocation.
+ */
 static inline void process_allocated_traffic(struct comm_core_state *core,
 		struct rte_ring *q_admitted)
 {
@@ -660,7 +684,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			dst = admitted[i]->edges[j].dst;
 #endif
 
-			/* get the node's structure */
+			/* get the source endpoint's structure */
 			en = &end_nodes[src];
 			wnd = &en->pending;
 
@@ -809,6 +833,9 @@ out:
 	assert((pd->alloc_tslot & 1) == 0);
 }
 
+/**
+ * Transmit a report of allocations and ACKs to the endpoint @en.
+ */
 static inline void tx_end_node(struct end_node_state *en)
 {
 	const unsigned lcore_id = rte_lcore_id();

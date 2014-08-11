@@ -19,6 +19,6 @@ echo -----------------
 TEXT=`cat /sys/module/fastpass/sections/.text`
 DATA=`cat /sys/module/fastpass/sections/.data`
 BSS=`cat /sys/module/fastpass/sections/.bss`
-echo add-symbol-file /home/yonch/fastpass/src/kernel-mod/fastpass.ko $TEXT -s .data $DATA -s .bss $BSS
+echo add-symbol-file $FASTPASS_DIR/src/kernel-mod/fastpass.ko $TEXT -s .data $DATA -s .bss $BSS
 
 sudo $TC qdisc add dev $DEV root fastpass  req_cost 2000000 req_bucket 6000000 ctrl $CONTROLLER_IP rate 12500Kbps

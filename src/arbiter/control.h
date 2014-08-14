@@ -28,10 +28,15 @@
 #define LAUNCH_CONTROLLER_EXPT 			0x8
 #define LAUNCH_LOCAL_STRESS_TEST_EXPT	0x10
 
-//#define EXPT_RUN_MASK (LAUNCH_CONTROLLER_EXPT)
+/* don't set up ports for stress test */
+#if IS_STRESS_TEST == 1
 #define EXPT_RUN_MASK 0
-
 #define N_CONTROLLER_PORTS		0
+#else
+#define EXPT_RUN_MASK (LAUNCH_CONTROLLER_EXPT)
+#define N_CONTROLLER_PORTS		1
+#endif
+
 #define N_ADMISSION_CORES		ALGO_N_CORES
 #define N_PATH_SEL_CORES		0
 #define N_COMM_CORES			1

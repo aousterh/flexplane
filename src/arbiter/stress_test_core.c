@@ -128,7 +128,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
         cur_increase_factor = STRESS_TEST_RATE_INCREASE_FACTOR;
         comm_log_stress_test_increase_factor(cur_increase_factor);
 
-        if (IS_AUTOMATED_STRESS_TEST)
+        if (STRESS_TEST_IS_AUTOMATED)
                 comm_log_stress_test_mode(STRESS_TEST_RATE_MAINTAIN);
 
 	while (rte_get_timer_cycles() < cmd->start_time);
@@ -151,7 +151,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
                  * timeslot allocator is able to approximately match the demand. when the
                  * allocator fails, it increases the mean_t to the last successful value,
                  * decreases the constant factor, and repeats */     
-                if (IS_AUTOMATED_STRESS_TEST &&
+                if (STRESS_TEST_IS_AUTOMATED &&
                     (comm_log_get_total_demand() > comm_log_get_occupied_node_tslots() +
                      STRESS_TEST_MAX_ALLOWED_BACKLOG)) {
                         next_mean_t_btwn_requests = last_successful_mean_t;
@@ -167,7 +167,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		if (now >= next_rate_increase_time && !re_init_gen) {
                         prev_node_tslots = cur_node_tslots;
                         cur_node_tslots = comm_log_get_occupied_node_tslots();
-                        if (IS_AUTOMATED_STRESS_TEST && cur_node_tslots != 0) {
+                        if (STRESS_TEST_IS_AUTOMATED && cur_node_tslots != 0) {
                                 /* did successfully allocate the offerred demand */
                                 last_successful_mean_t = next_mean_t_btwn_requests;
                                 next_mean_t_btwn_requests /= cur_increase_factor;

@@ -83,7 +83,7 @@ module_param(req_min_gap, uint, 0444);
 MODULE_PARM_DESC(req_min_gap, "ns to wait from when data arrives to sending request");
 EXPORT_SYMBOL_GPL(req_min_gap);
 
-static char *ctrl_addr = "192.168.100.222";
+static char *ctrl_addr = "10.1.1.2";
 module_param(ctrl_addr, charp, 0444);
 MODULE_PARM_DESC(ctrl_addr, "IPv4 address of the controller");
 EXPORT_SYMBOL_GPL(ctrl_addr);

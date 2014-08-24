@@ -1005,7 +1005,8 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 	for (i = 0; i < qconf->n_rx_queue; i++) {
 		portid = qconf->rx_queue_list[i].port_id;
 		send_gratuitous_arp(portid, controller_ip());
-		send_igmp(portid, controller_ip());
+		if (RUN_WITH_BACKUP)
+			send_igmp(portid, controller_ip());
 	}
 
 	fp_init_timers(&core->timeout_timers, rte_get_timer_cycles());
@@ -1055,14 +1056,16 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 			tx_end_node(en);
 		}
 
-        /* send IGMP */
-		if (now - core->last_igmp > IGMP_SEND_INTERVAL_SEC * rte_get_timer_hz()) {
-          core->last_igmp = now;
-          send_igmp(portid, controller_ip());
-        }
+		/* send IGMP if using a backup */
+		if (RUN_WITH_BACKUP &&
+		    now - core->last_igmp > IGMP_SEND_INTERVAL_SEC * rte_get_timer_hz()) {
+			core->last_igmp = now;
+			send_igmp(portid, controller_ip());
+		}
 
-		/* send watchdog on controller */
-		if (now - core->last_tx_watchdog > WATCHDOG_PACKET_GAP_SEC * rte_get_timer_hz()) {
+		/* send watchdog if using an arbiter*/
+		if (RUN_WITH_BACKUP &&
+		    now - core->last_tx_watchdog > WATCHDOG_PACKET_GAP_SEC * rte_get_timer_hz()) {
 			send_watchdog(portid, controller_ip());
 			core->last_tx_watchdog = now;
 			comm_log_sent_watchdog();

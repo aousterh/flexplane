@@ -11,6 +11,7 @@
 
 #define I_AM_MASTER				1
 #define IS_STRESS_TEST			0
+#define RUN_WITH_BACKUP			0
 
 #define STRESS_TEST_IS_AUTOMATED        1
 #define STRESS_TEST_MEAN_T_BETWEEN_REQUESTS_SEC		.5e-3

@@ -14,8 +14,11 @@ ifconfig eth0
 
 # synchronize time
 echo "synchronizing time"
+cp ntp.conf /etc/ntp.conf
 service ntp stop
 ntpdate -d 10.1.1.3
+service ntp restart
+ntpq -p
 
 # clear logs
 echo "clearing logs"

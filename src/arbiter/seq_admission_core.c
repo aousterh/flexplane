@@ -36,6 +36,12 @@ void seq_admission_init_global(struct rte_ring *q_admitted_out)
     struct fp_ring *q_spent;
 	struct rte_mempool *bin_mempool;
 
+	/* check number of cores */
+	if (ALGO_N_CORES <= 1)
+		rte_exit(EXIT_FAILURE,
+			 "Invalid number of cores for sequential arbiter: %d\n",
+			 ALGO_N_CORES);
+
 	/* init q_head */
 	q_head = rte_ring_create("q_head", Q_HEAD_RING_SIZE, 0, 0);
 	if (q_head == NULL)

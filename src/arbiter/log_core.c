@@ -13,6 +13,7 @@
 #include "control.h"
 #include "comm_core.h"
 #include "admission_core.h"
+#include "admission_core_common.h"
 #include "admission_log.h"
 #include "../grant-accept/partitioning.h"
 #include "../graph-algo/algo_config.h"
@@ -130,7 +131,7 @@ void print_global_admission_log_parallel_or_pipelined() {
 	printf("\nadmission core (pim with %d ptns, %d nodes per ptn)", N_PARTITIONS, PARTITION_N_NODES);
 #else
 	printf("\nadmission core (seq with %d algo cores, %d batch size, %d nodes)",
-               ALGO_N_CORES, BATCH_SIZE, STRESS_TEST_NUM_NODES);
+               ALGO_N_CORES, BATCH_SIZE, NUM_NODES);
 #endif
 
 #define D(X) (st->X - sv->X)

@@ -1086,6 +1086,7 @@ void comm_dump_stat(uint16_t node_id, struct conn_log_struct *conn_log)
 	struct end_node_state *en = &end_nodes[node_id];
 
 	uint64_t now = rte_get_timer_cycles();
+	fpproto_update_internal_stats(&en->conn);
 	fpproto_dump_stats(&en->conn, &conn_log->stat);
 	conn_log->next_retrans_gap = en->timeout_timer.time * TIMER_GRANULARITY - now;
 	conn_log->next_tx_gap = en->tx_timer.time * TIMER_GRANULARITY - now;

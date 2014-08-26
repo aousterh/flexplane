@@ -998,7 +998,7 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 		while(1);
 	}
 
-	COMM_DEBUG("starting, current timeslot %lu\n", core->latest_timeslot);
+	COMM_DEBUG("starting, current timeslot %lu\n", core->latest_timeslot[0]);
 
 	for (i = 0; i < qconf->n_rx_queue; i++) {
 		portid = qconf->rx_queue_list[i].port_id;

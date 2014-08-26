@@ -268,7 +268,7 @@ static inline void comm_log_neg_ack(uint16_t src, uint16_t n_dsts,
 	CL->neg_ack_timeslots += n_tslots;
 	CL->neg_ack_triggered_reports += num_triggered;
 	COMM_DEBUG("neg ack node %d seqno %lX triggered %u reports and affected %d dsts %u timeslots\n",
-			src, seqno, n_dsts, n_tslots);
+		   src, seqno, num_triggered, n_dsts, n_tslots);
 }
 
 static inline void comm_log_ack(uint16_t src, uint16_t n_dsts,

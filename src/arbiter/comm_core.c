@@ -288,7 +288,11 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	for (i = 0; i < n; i++) {
 		dst = rte_be_to_cpu_16(dst_and_count[2*i]);
 		count = rte_be_to_cpu_16(dst_and_count[2*i + 1]);
-		if (unlikely(!(dst < MAX_NODES))) {
+		if (unlikely(!(node_id < NUM_NODES))) {
+			comm_log_areq_invalid_src(node_id);
+			return;
+		}
+		if (unlikely(!(dst < NUM_NODES))) {
 			comm_log_areq_invalid_dst(node_id, dst);
 			return;
 		}

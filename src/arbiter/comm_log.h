@@ -34,6 +34,7 @@ struct comm_log {
 	uint64_t tx_bytes;
 	uint64_t pktdesc_alloc_failed;
 	uint64_t rx_truncated_pkt;
+	uint64_t areq_invalid_src;
 	uint64_t areq_invalid_dst;
 	uint64_t demand_increased;
 	uint64_t demand_remained;
@@ -156,6 +157,12 @@ static inline void comm_log_rx_truncated_pkt(uint32_t ip_total_len,
 	CL->rx_truncated_pkt++;
 	COMM_DEBUG("packet from IP %08X is %u bytes, too short for its IP length %u\n",
 			src_ip, mbuf_len, ip_total_len);
+}
+
+static inline void comm_log_areq_invalid_src(uint32_t requesting_node) {
+	(void)requesting_node;
+	CL->areq_invalid_src++;
+	COMM_DEBUG("received A-REQ from invalid src id %u\n", requesting_node);
 }
 
 static inline void comm_log_areq_invalid_dst(uint32_t requesting_node,

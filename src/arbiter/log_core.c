@@ -94,8 +94,10 @@ void print_comm_log(uint16_t lcore_id)
 		printf("\n  %lu failures to allocate mbuf", cl->tx_cannot_alloc_mbuf);
 	if (cl->rx_truncated_pkt)
 		printf("\n  %lu rx packets were truncated", cl->rx_truncated_pkt);
+	if (cl->areq_invalid_src)
+		printf("\n  %lu A-REQ payloads from invalid src (check id map?)", cl->areq_invalid_src);
 	if (cl->areq_invalid_dst)
-		printf("\n  %lu A-REQ payloads with invalid dst", cl->areq_invalid_dst);
+		printf("\n  %lu A-REQ payloads with invalid dst (check id map?)", cl->areq_invalid_dst);
 	if (cl->dequeue_admitted_failed)
 		printf("\n  %lu times couldn't dequeue a struct admitted_traffic!",
 				cl->dequeue_admitted_failed);

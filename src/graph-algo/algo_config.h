@@ -5,8 +5,6 @@
 #ifndef ALGO_CONFIG_H_
 #define ALGO_CONFIG_H_
 
-#define tslot_alloc_add_backlog		lru_alloc_add_backlog
-
 #if ((defined(PARALLEL_ALGO) && defined(PIPELINED_ALGO)) || \
      (defined(PARALLEL_ALGO) && defined(EMULATION_ALGO)) ||  \
      (defined(EMULATION_ALGO) && defined(PIPELINED_ALGO)))

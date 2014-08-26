@@ -12,8 +12,6 @@
 
 #include "main.h"
 
-#define		NUM_NODES					32
-
 #define		ALLOWED_TIMESLOT_LAG		4
 
 /* admitted_traffic pool */

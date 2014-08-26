@@ -6,12 +6,15 @@
 
 //#define MAX_NODES 1024
 //#define FP_NODES_SHIFT 10  // 2^FP_NODES_SHIFT = MAX_NODES
+#define NUM_NODES 32
 #define MAX_NODES 256
 #define FP_NODES_SHIFT 8  // 2^FP_NODES_SHIFT = MAX_NODES
 #define MAX_RACKS 16
 #define TOR_SHIFT 8  // number of machines per rack is at most 2^TOR_SHIFT
 #define MAX_NODES_PER_RACK 256  // = 2^TOR_SHIFT
 #define OUT_OF_BOUNDARY_NODE_ID (MAX_NODES-1)  // highest node id
+
+#define FB_DEPLOYMENT			0
 
 #define FB_RACK_PERFECT_HASH_CONST	0x33
 
@@ -26,10 +29,14 @@ static inline u16 fp_map_ip_to_id(__be32 ipaddr) {
 
 /* translates MAC address to short FastPass ID */
 static inline u16 fp_map_mac_to_id(u64 mac) {
+#if (FB_DEPLOYMENT == 1)
 	u32 hash = fp_jhash_3words(mac & 0xFFFFFFFF, mac >> 32, 0,
-			FB_RACK_PERFECT_HASH_CONST);
+				   FB_RACK_PERFECT_HASH_CONST);
 
 	return hash & ((1 << 8) - 1);
+#else
+	return mac % NUM_NODES;
+#endif
 }
 
 

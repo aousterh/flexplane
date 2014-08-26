@@ -17,6 +17,7 @@
 #include "../protocol/fpproto.h"
 #include "../protocol/pacer.h"
 #include "../graph-algo/admissible.h"
+#include "../graph-algo/path_selection.h"
 #include "dpdk-platform.h"
 #include "bigmap.h"
 #include "admission_core.h"
@@ -656,6 +657,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	struct fp_window *wnd;
 	uint16_t src;
 	uint16_t dst;
+	uint16_t dst_encoding;
 	u64 tslot;
 	int32_t gap;
 
@@ -674,14 +676,20 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 					    current_timeslot, partition);
 		for (j = 0; j < get_num_admitted(admitted[i]); j++) {
-			/* process this node's allocation */
+			/* process this node's allocation - extract src, dst,
+			   dst_encoding (upper bits may be hijacked to indicate
+			   path, drop, etc.) */
+
 #if defined(EMULATION_ALGO)
 			/* TODO: implement this for emulation */
 			src = 0;
 			dst = 0;
+			dst_encoding = 0;
 #else
 			src = admitted[i]->edges[j].src;
-			dst = admitted[i]->edges[j].dst;
+			dst_encoding = admitted[i]->edges[j].dst;
+			/* the dst id is the encoding with path bits removed */
+			dst = dst_encoding & PATH_MASK;
 #endif
 
 			/* get the source endpoint's structure */
@@ -710,7 +718,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 
 			/* add the allocation */
 			wnd_mark(wnd, current_timeslot);
-			en->allocs[wnd_pos(current_timeslot)] = dst;
+			en->allocs[wnd_pos(current_timeslot)] = dst_encoding;
 			en->alloc_to_dst[dst % MAX_NODES]++;
 			en->total_alloc++;
 			trigger_report(en, &en->report_queue, dst % MAX_NODES);

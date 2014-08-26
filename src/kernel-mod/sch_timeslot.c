@@ -381,18 +381,16 @@ cannot_classify:
 static struct tsq_dst *classify_data(struct sk_buff *skb, struct tsq_sched_data *q)
 {
 	u64 src_dst_key;
-	u64 masked_mac;
+	u64 mac;
 
 	/* get MAC address */
-	src_dst_key = get_mac(skb);
+	mac = get_mac(skb);
 
 	/* get the skb's key (src_dst_key) */
-	masked_mac = src_dst_key & MANUFACTURER_MAC_MASK;
-	if (unlikely((masked_mac == VRRP_SWITCH_MAC_PREFIX)
-			  || (masked_mac == CISCO_SWITCH_MAC_PREFIX)))
+	if (unlikely(mac_is_out_of_rack(mac)))
 		src_dst_key = OUT_OF_BOUNDARY_NODE_ID;
 	else
-		src_dst_key = fp_map_mac_to_id(src_dst_key);
+		src_dst_key = fp_map_mac_to_id(mac);
 
 	q->stat.data_pkts++;
 	return dst_lookup(q, src_dst_key, true);

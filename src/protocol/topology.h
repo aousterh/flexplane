@@ -16,11 +16,12 @@
 
 #define FB_DEPLOYMENT			0
 
+#if (FB_DEPLOYMENT == 1)
 #define FB_RACK_PERFECT_HASH_CONST	0x33
-
 #define MANUFACTURER_MAC_MASK		0xFFFFFF000000
 #define VRRP_SWITCH_MAC_PREFIX 		0x00005e000000
 #define CISCO_SWITCH_MAC_PREFIX		0xa4934c000000
+#endif
 
 /* translates IP address to short FastPass ID */
 static inline u16 fp_map_ip_to_id(__be32 ipaddr) {
@@ -39,6 +40,16 @@ static inline u16 fp_map_mac_to_id(u64 mac) {
 #endif
 }
 
+/* returns true if this mac is out-of-rack */
+static inline bool mac_is_out_of_rack(u64 mac) {
+#if (FB_DEPLOYMENT == 1)
+	u64 masked_mac = mac & MANUFACTURER_MAC_MASK;
+	return ((masked_mac == VRRP_SWITCH_MAC_PREFIX) ||
+		(masked_mac == CISCO_SWITCH_MAC_PREFIX));
+#else
+	return false;
+#endif
+}
 
 /* returns the destination node from the allocated dst */
 static inline u16 fp_alloc_node(u16 alloc) {

@@ -933,6 +933,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->unwanted_alloc)
 		seq_printf(seq, "\n  %llu timeslots allocated beyond the demand of the flow (could happen due to reset / controller timeouts)",
 				scs->unwanted_alloc);
+	if (scs->alloc_too_late)
+		seq_printf(seq, "\n  %llu late allocations (something wrong with time-sync?)",
+				scs->alloc_too_late);
 	if (scs->alloc_premature)
 		seq_printf(seq, "\n  %llu premature allocations (something wrong with time-sync?)\n",
 				scs->alloc_premature);

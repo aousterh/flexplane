@@ -109,9 +109,15 @@ uint16_t get_admitted_struct_size() {
 	return sizeof(struct admitted_traffic);
 }
 
-// Get the number of edge admitted
+// Get the number of edges admitted
 static inline
 uint16_t get_num_admitted(struct admitted_traffic *admitted) {
+	return admitted->size;
+}
+
+// Get the size (same as number of edges admitted)
+static inline
+uint16_t get_size(struct admitted_traffic *admitted) {
 	return admitted->size;
 }
 

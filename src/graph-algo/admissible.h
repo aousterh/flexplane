@@ -278,12 +278,31 @@ uint16_t get_admitted_partition(struct admitted_traffic *admitted)
 	return 0; /* emulation does not use partitions */
 }
 
+/* get the number of edges admitted */
 static inline
 uint16_t get_num_admitted(struct admitted_traffic *admitted)
 {
 	struct emu_admitted_traffic *emu_admitted;
 	emu_admitted = (struct emu_admitted_traffic *) admitted;
 	return emu_admitted->admitted;
+}
+
+/* get the total size (edges admitted and dropped) */
+static inline
+uint16_t get_size(struct admitted_traffic *admitted)
+{
+	struct emu_admitted_traffic *emu_admitted;
+	emu_admitted = (struct emu_admitted_traffic *) admitted;
+	return emu_admitted->size;
+}
+
+static inline
+struct emu_admitted_edge *get_admitted_edge(struct admitted_traffic *admitted,
+					    uint16_t i)
+{
+	struct emu_admitted_traffic *emu_admitted;
+	emu_admitted = (struct emu_admitted_traffic *) admitted;
+	return &emu_admitted->edges[i];
 }
 
 static inline

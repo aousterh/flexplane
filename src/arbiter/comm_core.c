@@ -679,16 +679,17 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 		current_timeslot = ++core->latest_timeslot[partition];
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 					    current_timeslot, partition);
-		for (j = 0; j < get_num_admitted(admitted[i]); j++) {
+		for (j = 0; j < get_size(admitted[i]); j++) {
 			/* process this node's allocation - extract src, dst,
 			   dst_encoding (upper bits may be hijacked to indicate
 			   path, drop, etc.) */
 
 #if defined(EMULATION_ALGO)
-			/* TODO: implement this for emulation */
-			src = 0;
-			dst = 0;
-			dst_encoding = 0;
+			struct emu_admitted_edge *edge;
+			edge = get_admitted_edge(admitted[i], j);
+			src = edge->src;
+			dst = edge->dst;
+			dst_encoding = dst;
 #else
 			src = admitted[i]->edges[j].src;
 			dst_encoding = admitted[i]->edges[j].dst;

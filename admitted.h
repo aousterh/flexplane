@@ -8,14 +8,15 @@
 #ifndef EMU_ADMITTED_H_
 #define EMU_ADMITTED_H_
 
-#define FLAGS_NONE     0
-#define FLAGS_DROP     1
-
 #include "config.h"
+#include "../protocol/encoding.h"
 
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
+
+#define FLAGS_NONE	0
+#define FLAGS_DROP	0x8000
 
 struct emu_admitted_edge {
 	uint16_t src;

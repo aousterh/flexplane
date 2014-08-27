@@ -165,7 +165,7 @@ static void assign_to_path(struct racks_to_nodes_mapping *map,
         uint16_t admitted_index = rack_pair->admitted_indices[rack_pair->size - 1];
         assert(admitted_index < admitted->size);
         struct admitted_edge *edge = &admitted->edges[admitted_index];
-        edge->dst = (edge->dst & PATH_MASK) + (path << PATH_SHIFT);
+        edge->dst = (edge->dst & DST_MASK) + (path << PATH_SHIFT);
         rack_pair->size--;
     }
 } 
@@ -228,9 +228,9 @@ bool paths_are_valid(struct admitted_traffic *admitted, uint8_t num_racks) {
     // Count the number of times each path is used per src/dst rack
     for (i = 0; i < admitted->size; i++) {
         struct admitted_edge *edge = &admitted->edges[i];
-        uint8_t path = (edge->dst & ~PATH_MASK) >> PATH_SHIFT;
+        uint8_t path = (edge->dst & PATH_MASK) >> PATH_SHIFT;
         uint16_t src_rack = fp_rack_from_node_id(edge->src);
-        uint16_t dst_rack = fp_rack_from_node_id(edge->dst & PATH_MASK);
+        uint16_t dst_rack = fp_rack_from_node_id(edge->dst & DST_MASK);
         src_rack_path_counts[src_rack * NUM_PATHS + path]++;
         dst_rack_path_counts[dst_rack * NUM_PATHS + path]++;
     }

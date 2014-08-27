@@ -694,7 +694,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			src = admitted[i]->edges[j].src;
 			dst_encoding = admitted[i]->edges[j].dst;
 			/* the dst id is the encoding with path bits removed */
-			dst = dst_encoding & PATH_MASK;
+			dst = dst_encoding & DST_MASK;
 #endif
 
 			/* get the source endpoint's structure */

@@ -37,6 +37,7 @@
 #include "sch_fastpass.h"
 #include "sch_timeslot.h"
 #include "fastpass_proto.h"
+#include "../protocol/encoding.h"
 #include "../protocol/platform.h"
 #include "../protocol/pacer.h"
 #include "../protocol/window.h"
@@ -359,7 +360,9 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	int i;
 	u8 spec;
 	int dst_id_idx;
+	u32 dst_encoding;
 	u32 dst_id;
+	u32 flags;
 	u64 full_tslot;
 	u64 now_real = fp_get_time_ns();
 	u64 current_timeslot;
@@ -427,7 +430,11 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 //			continue;
 //		}
 
-		dst_id = dst_ids[dst_id_idx - 1];
+		dst_encoding = dst_ids[dst_id_idx - 1];
+		dst_id = get_dst_from_encoding(dst_encoding);
+		flags = get_flags_from_encoding(dst_encoding);
+		fp_debug("dst_id and flags: %d %d\n", dst_id, flags);
+
 		dst = get_dst(q, dst_id);
 		/* okay, allocate */
 //		wnd_mark(&q->alloc_wnd, full_tslot);

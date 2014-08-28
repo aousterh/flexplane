@@ -49,4 +49,25 @@
 #error "Invalid MASKs - some bits used multiple times"
 #endif
 
+/* Return the encoding of dst and flags */
+static inline
+uint16_t get_dst_encoding(uint16_t dst, uint16_t flags)
+{
+	return ((dst & DST_MASK) | (flags & FLAGS_MASK));
+}
+
+/* Return the dst encoded in encoding */
+static inline
+uint16_t get_dst_from_encoding(uint16_t encoding)
+{
+	return encoding & DST_MASK;
+}
+
+/* Return the flags encoded in encoding */
+static inline
+uint16_t get_flags_from_encoding(uint16_t encoding)
+{
+	return encoding & FLAGS_MASK;
+}
+
 #endif /* ENCODING_H_ */

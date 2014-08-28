@@ -14,17 +14,17 @@
 #include "comm_log.h"
 #include "main.h"
 #include "arp.h"
-#include "../protocol/fpproto.h"
-#include "../protocol/pacer.h"
-#include "../graph-algo/admissible.h"
-#include "../graph-algo/path_selection.h"
 #include "dpdk-platform.h"
 #include "bigmap.h"
 #include "admission_core.h"
 #include "admission_core_common.h"
 #include "fp_timer.h"
-#include "../protocol/stat_print.h"
 #include "igmp.h"
+#include "../graph-algo/admissible.h"
+#include "../protocol/encoding.h"
+#include "../protocol/fpproto.h"
+#include "../protocol/pacer.h"
+#include "../protocol/stat_print.h"
 #include "../protocol/topology.h"
 
 /* number of elements to keep in the pktdesc local core cache */
@@ -689,7 +689,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			edge = get_admitted_edge(admitted[i], j);
 			src = edge->src;
 			dst = edge->dst;
-			dst_encoding = dst;
+			dst_encoding = get_dst_encoding(edge->dst, edge->flags);
 #else
 			src = admitted[i]->edges[j].src;
 			dst_encoding = admitted[i]->edges[j].dst;
@@ -798,6 +798,7 @@ next_alloc:
 
 	/* find the destination for this flow */
 	dst = en->allocs[wnd_pos(cur_tslot)];
+	/* TODO: don't assume paths are encoded in top 2 bits */
 	index = (dst % NUM_NODES) + NUM_NODES * (dst >> 14);
 
 	if (core->alloc_enc_space[index] == 0) {

@@ -433,7 +433,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 		dst_encoding = dst_ids[dst_id_idx - 1];
 		dst_id = get_dst_from_encoding(dst_encoding);
 		flags = get_flags_from_encoding(dst_encoding);
-		fp_debug("dst_id and flags: %d %d\n", dst_id, flags);
+		fp_debug("admitting timeslot to dst %d with flags %x\n", dst_id, flags);
 
 		dst = get_dst(q, dst_id);
 		/* okay, allocate */
@@ -445,7 +445,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			tsq_admit_now(q, dst_id);
+			tsq_admit_now(q, dst_id, flags);
 
 			atomic_inc(&q->alloc_tslots);
 			q->stat.admitted_timeslots++;

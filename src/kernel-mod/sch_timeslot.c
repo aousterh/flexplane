@@ -673,7 +673,24 @@ done:
 }
 #endif
 
-void tsq_admit_now(void *priv, u64 src_dst_key)
+/**
+ * Corrupt the IP checksums of all packets in timeslot_q so that the sending
+ * NIC will drop them.
+ */
+void mark_packets_to_drop(struct timeslot_skb_q *timeslot_q)
+{
+	struct sk_buff *skb;
+	struct iphdr *ip_header;
+
+	/* set ip header to all zeroes */
+	for (skb = timeslot_q->head; skb != NULL; skb = skb->next) {
+		fp_debug("marking packet to be dropped\n");
+		ip_header = ip_hdr(skb);
+		ip_header->check = ip_header->check + 1;
+	}
+}
+
+void tsq_admit_now(void *priv, u64 src_dst_key, u16 flags)
 {
 	struct tsq_sched_data *q = priv_to_sched_data(priv);
 	struct tsq_dst *dst;
@@ -707,6 +724,10 @@ void tsq_admit_now(void *priv, u64 src_dst_key)
 	}
 	q->stat.used_timeslots++;
 	spin_unlock(&q->hash_tbl_lock);
+
+	/* mark packets so they will be dropped by the NIC */
+	if (unlikely(flags != 0))
+		mark_packets_to_drop(timeslot_q);
 
 	/* put in prequeue */
 	spin_lock(&q->prequeue_lock);

@@ -44,9 +44,10 @@ void tsq_unregister_qdisc(struct tsq_qdisc_entry *reg);
 void tsq_schedule(void *priv, u64 src_dst_key, u64 timeslot);
 
 /**
- * Admits a timeslot from a flow right now
+ * Admits a timeslot from a flow (specified by src_dst_key) right now. flags
+ * indicate drop or path info.
  */
-void tsq_admit_now(void *priv, u64 src_dst_key);
+void tsq_admit_now(void *priv, u64 src_dst_key, u16 flags);
 
 /**
  * Garbage-collects information for empty queues.

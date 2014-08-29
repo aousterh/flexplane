@@ -892,6 +892,11 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", proc_dump_dst %u", proc_dump_dst);
 	seq_printf(seq, ", miss_threshold %u", miss_threshold);
 	seq_printf(seq, ", max_preload %u", max_preload);
+#if defined(EMULATION_ALGO)
+	seq_printf(seq, ", algo emulation");
+#elif defined(PIPELINED_ALGO)
+	seq_printf(seq, ", algo sequential");
+#endif
 
 	/* timeslot statistics */
 	seq_printf(seq, "\n  horizon mask 0x%016llx",

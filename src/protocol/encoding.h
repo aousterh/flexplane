@@ -8,6 +8,8 @@
 #ifndef ENCODING_H_
 #define ENCODING_H_
 
+#include <inttypes.h>
+
 /* This file contains information about encoding/decoding payloads in Fastpass
  * control packets. */
 

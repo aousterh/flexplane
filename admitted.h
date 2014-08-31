@@ -21,7 +21,6 @@
 struct emu_admitted_edge {
 	uint16_t src;
 	uint16_t dst;
-	uint16_t id;
 	uint16_t flags;
 };
 
@@ -53,7 +52,7 @@ void admitted_init(struct emu_admitted_traffic *admitted) {
  */
 static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
-			  uint16_t dst, uint16_t id, uint16_t flags) {
+			  uint16_t dst, uint16_t flags) {
 	assert(admitted != NULL);
 	assert(admitted->size < 2 * EMU_NUM_ENDPOINTS);
 	assert(src < EMU_NUM_ENDPOINTS);
@@ -62,7 +61,6 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
 	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
 	edge->src = src;
 	edge->dst = dst;
-	edge->id = id;
 	edge->flags = flags;
 }
 
@@ -71,10 +69,10 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
-				   uint16_t src, uint16_t dst, uint16_t id) {
+				   uint16_t src, uint16_t dst) {
 	assert(admitted->admitted < EMU_NUM_ENDPOINTS);
 
-	admitted_insert_edge(admitted, src, dst, id, FLAGS_NONE);
+	admitted_insert_edge(admitted, src, dst, FLAGS_NONE);
 	admitted->admitted++;
 }
 
@@ -83,10 +81,10 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
-				  uint16_t src, uint16_t dst, uint16_t id) {
+				  uint16_t src, uint16_t dst) {
 	assert(admitted->dropped < EMU_NUM_ENDPOINTS);
 
-	admitted_insert_edge(admitted, src, dst, id, FLAGS_DROP);
+	admitted_insert_edge(admitted, src, dst, FLAGS_DROP);
 	admitted->dropped++;
 }
 
@@ -96,11 +94,9 @@ void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
 static inline
 void admitted_edge_print(struct emu_admitted_edge *edge) {
 	if (edge->flags & FLAGS_DROP) {
-		printf("\tDROP src %d to dst %d (id %d)\n", edge->src,
-		       edge->dst, edge->id);
+		printf("\tDROP src %d to dst %d\n", edge->src, edge->dst);
 	} else {
-		printf("\tsrc %d to dst %d (id %d)\n", edge->src,
-		       edge->dst, edge->id);
+		printf("\tsrc %d to dst %d\n", edge->src, edge->dst);
 	}
 }
 

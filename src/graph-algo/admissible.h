@@ -15,6 +15,8 @@
 /* dummy struct declarations */
 struct admissible_state;
 struct admitted_traffic;
+struct endpoint_ops;
+struct router_ops;
 
 /* parallel algo, e.g. pim */
 #ifdef PARALLEL_ALGO
@@ -57,7 +59,8 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
                         struct fp_mempool *bin_mempool,
                         struct fp_mempool *admitted_traffic_mempool,
                         struct fp_ring **f, struct fp_ring **q_new_demands,
-                        struct fp_ring **q_ready_partitions, uint16_t g)
+                        struct fp_ring **q_ready_partitions,
+                        struct endpoint_ops *f, struct router_ops *g)
 {
 		(void) q_spent; /* unused */
         struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
@@ -140,8 +143,9 @@ create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
                         struct fp_ring *q_spent,
                         struct fp_mempool *head_bin_mempool,
                         struct fp_mempool *admitted_traffic_mempool,
-                        struct fp_ring **q_bin, struct fp_ring **a, struct fp_ring **b,
-                        uint16_t c)
+                        struct fp_ring **q_bin, struct fp_ring **a,
+                        struct fp_ring **b, struct endpoint_ops *c,
+                        struct router_ops *d)
 {
         struct seq_admissible_status *status;
         status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
@@ -192,6 +196,7 @@ void handle_spent_demands(struct admissible_state *state)
 /* emulation algo */
 #ifdef EMULATION_ALGO
 #include "../emulation/admitted.h"
+#include "../emulation/api.h"
 #include "../emulation/emulation.h"
 #include "../emulation/packet.h"
 
@@ -199,15 +204,15 @@ void handle_spent_demands(struct admissible_state *state)
 #define BATCH_SIZE 1
 #define BATCH_SHIFT 0
 #define ADMITTED_PER_BATCH 1
-#define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS + EMU_NUM_ROUTERS + \
-                       EMU_NUM_ROUTERS * EMU_ROUTER_MAX_ENDPOINT_PORTS)
+#define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS + \
+                       EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2)
 #define BIN_RING_SHIFT PACKET_Q_LOG_SIZE
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,
                  uint16_t dst, uint32_t amount) {
         /* use arbitrary id for now */
-        emu_add_backlog((struct emu_state *) state, src, dst, amount, 0);
+        emu_add_backlog((struct emu_state *) state, src, dst, amount);
 }
 
 static inline
@@ -218,7 +223,7 @@ void flush_backlog(struct admissible_state *state) {
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
                             uint64_t b, uint32_t c, uint32_t d) {
-        emu_timeslot((struct emu_state *) state);
+        emu_emulate((struct emu_state *) state);
 }
 
 static inline
@@ -229,13 +234,14 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
                         struct fp_mempool *packet_mempool,
                         struct fp_mempool *admitted_traffic_mempool,
                         struct fp_ring **g, struct fp_ring **packet_queues,
-                        struct fp_ring **h, uint16_t router_output_port_capacity)
+                        struct fp_ring **h, struct endpoint_ops *ep_ops,
+                        struct router_ops *rtr_ops)
 {
         struct emu_state *state = emu_create_state(admitted_traffic_mempool,
                                                    q_admitted_out,
                                                    packet_mempool,
                                                    packet_queues,
-                                                   router_output_port_capacity);
+                                                   ep_ops, rtr_ops);
         return (struct admissible_state *) state;
 }
 

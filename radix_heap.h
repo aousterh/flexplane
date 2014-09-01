@@ -55,11 +55,13 @@ static inline struct list_node *rheap_find_min(struct radix_heap *rh)
 		mask &= (mask - 1);
 
 		if (!list_empty(&rh->q[prio])) {
+			rh->mask = mask;
 			return rh->q[prio].n.next;
 		}
 	}
 
 	/* rheap is empty */
+	rh->mask = 0uLL;
 	return NULL;
 }
 

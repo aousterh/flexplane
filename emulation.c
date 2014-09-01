@@ -61,6 +61,7 @@ void emu_emulate(struct emu_state *state) {
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)
 		adm_log_emu_wait_for_admitted_enqueue(&state->stat);
+	state->admitted = NULL;
 }
 
 /**
@@ -73,16 +74,26 @@ void emu_cleanup(struct emu_state *state) {
 	/* reset all endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		endpoint_cleanup(state->endpoints[i]);
+		fp_free(state->endpoints[i]);
 	}
 
 	/* reset all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		router_cleanup(state->routers[i]);
+		fp_free(state->routers[i]);
 	}
+
+	fp_free(state->admitted_traffic_mempool);
+
+	if (state->admitted != NULL)
+		fp_mempool_put(state->admitted_traffic_mempool, state->admitted);
 
 	/* empty queue of admitted traffic, return structs to the mempool */
 	while (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) == 0)
 		fp_mempool_put(state->admitted_traffic_mempool, admitted);
+	fp_free(state->q_admitted_out);
+
+	fp_free(state->packet_mempool);
 }
 
 /**

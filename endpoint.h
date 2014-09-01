@@ -9,43 +9,56 @@
 #define ENDPOINT_H_
 
 #include "../graph-algo/fp_ring.h"
-#include "../graph-algo/platform.h"
 
-struct emu_router;
+struct emu_port;
 struct emu_state;
+struct endpoint_ops;
 
 /**
  * A representation of an endpoint (server) in the emulated network.
+ * @id: the unique id of this endpoint
+ * @q_egress: the queue of outgoing packets
+ * @port: the egress port of this endpoint
+ * @state: the global emulation state
+ * @ops: endpoint functions implemented by the emulation algorithm
  */
 struct emu_endpoint {
-	uint16_t id;
-	struct fp_ring *q_in;
-	struct emu_router *router;
+	uint16_t			id;
+	struct fp_ring		*q_egress;
+	struct emu_port		*port;
+	struct emu_state	*state;
+	struct endpoint_ops	*ops;
 };
 
 /**
- * Add backlog to dst at this endpoint.
+ * Initialize an endpoint.
+ * @return 0 on success, negative value on error.
  */
-void endpoint_add_backlog(struct emu_endpoint *endpoint,
-			  struct emu_state *state, uint16_t dst,
-			  uint32_t amount, uint16_t start_id);
+int endpoint_init(struct emu_endpoint *ep, uint16_t id,
+			struct fp_ring *q_egress, struct emu_port *port,
+			struct emu_state *state, struct endpoint_ops *ops);
+
+/**
+ * Reset an endpoint. This happens when endpoints lose sync with the
+ * arbiter. To resync, a reset occurs, then backlogs are re-added based
+ * on endpoint reports.
+ */
+void endpoint_reset(struct emu_endpoint *ep);
+
+/**
+ * Cleanup state and memory. Called when emulation terminates.
+ */
+void endpoint_cleanup(struct emu_endpoint *ep);
 
 /**
  * Emulate one timeslot at a given endpoint.
  */
-void endpoint_emulate_timeslot(struct emu_endpoint *endpoint,
-			       struct emu_state *state);
+void endpoint_emulate(struct emu_endpoint *ep);
 
 /**
- * Reset the state of a single endpoint.
+ * Add backlog to dst at this endpoint.
  */
-void endpoint_reset_state(struct emu_endpoint *endpoint,
-			  struct fp_mempool * packet_mempool);
-
-/**
- * Initialize the state of a single endpoint.
- */
-void endpoint_init_state(struct emu_endpoint *endpoint, uint16_t id,
-			 struct fp_ring *q_in, struct emu_router *router);
+void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
+						  uint32_t amount);
 
 #endif /* ENDPOINT_H_ */

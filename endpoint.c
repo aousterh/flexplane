@@ -7,74 +7,130 @@
 
 #include "endpoint.h"
 
-#include "emulation.h"
+#include "api.h"
 #include "packet.h"
-#include "router.h"
+#include "emulation.h"
 #include "../graph-algo/admissible_algo_log.h"
+#include "../graph-algo/platform.h"
+#include "assert.h"
 
 /**
- * Add backlog to dst at this endpoint.
+ * Functions provided by the emulation framework for emulation algorithms to
+ * call.
  */
-void endpoint_add_backlog(struct emu_endpoint *endpoint,
-			  struct emu_state *state, uint16_t dst,
-			  uint32_t amount, uint16_t start_id) {
 
-	/* create and enqueue a packet for each MTU */
-	uint16_t id = start_id;
-	struct emu_packet *packet;
-	while (id != start_id + amount) {
-		/* create a packet */
-		while (fp_mempool_get(state->packet_mempool, (void **) &packet)
-		       == -ENOENT)
-			adm_log_emu_packet_alloc_failed(&state->stat);
-		packet_init(packet, endpoint->id, dst, id);
-
-		/* enqueue the packet to the endpoint queue */
-		while (fp_ring_enqueue(endpoint->q_in, packet) == -ENOBUFS)
-			adm_log_emu_wait_for_endpoint_enqueue(&state->stat);
-
-		id++;
-	}
+/**
+ * Returns a pointer to the port at endpoint ep.
+ */
+struct emu_port *endpoint_port(struct emu_endpoint *ep) {
+	return ep->port;
 }
 
 /**
- * Emulate one timeslot at a given endpoint.
+ * Returns the id of endpoint ep.
  */
-void endpoint_emulate_timeslot(struct emu_endpoint *endpoint,
-			       struct emu_state *state) {
-	struct emu_packet *packet;
-	struct emu_router *router;
-
-	/* try to dequeue one packet - return if there are none */
-	if (fp_ring_dequeue(endpoint->q_in, (void **) &packet) != 0)
-		return;
-
-	/* try to enqueue the packet to the next router */
-	router = endpoint->router;
-	while (fp_ring_enqueue(router->q_in, packet) == -ENOBUFS)
-		adm_log_emu_wait_for_router_enqueue(&state->stat);
+uint32_t endpoint_id(struct emu_endpoint *ep) {
+	return ep->id;
 }
 
 /**
- * Reset the state of a single endpoint.
+ * Dequeues a packet at an endpoint from the network stack. Returns a pointer
+ * to the packet, or NULL if none are available.
  */
-void endpoint_reset_state(struct emu_endpoint *endpoint,
-			  struct fp_mempool * packet_mempool) {
+struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
 	struct emu_packet *packet;
+
+	if (fp_ring_dequeue(ep->q_egress, (void **) &packet) != 0)
+		return NULL;
+
+	return packet;
+}
+
+
+/**
+ * Functions declared in endpoint.h, used only within the framework
+ */
+
+/**
+ * Initialize an endpoint.
+ * @return 0 on success, negative value on error.
+ */
+int endpoint_init(struct emu_endpoint *ep, uint16_t id,
+				  struct fp_ring *q_egress, struct emu_port *port,
+				  struct emu_state *state, struct endpoint_ops *ops) {
+	assert(ep != NULL);
+	assert(q_egress != NULL);
+	assert(port != NULL);
+	assert(state != NULL);
+	assert(ops != NULL);
+
+	ep->id = id;
+	ep->q_egress = q_egress;
+	ep->port = port;
+	ep->state = state;
+	ep->ops = ops;
+
+	return ep->ops->init(ep);
+}
+
+/**
+ * Reset an endpoint. This happens when endpoints lose sync with the
+ * arbiter. To resync, a reset occurs, then backlogs are re-added based
+ * on endpoint reports.
+ */
+void endpoint_reset(struct emu_endpoint *ep) {
+	struct emu_packet *packet;
+	struct fp_mempool *packet_mempool;
+
+	ep->ops->reset(ep);
 
 	/* return all queued packets to the mempool */
-	while (fp_ring_dequeue(endpoint->q_in, (void **) &packet) == 0) {
-		/* return queued packets to the mempool */
+	packet_mempool = ep->state->packet_mempool;
+	while (fp_ring_dequeue(ep->q_egress, (void **) &packet) == 0) {
 		fp_mempool_put(packet_mempool, packet);
 	}
 }
 
 /**
- * Initialize the state of a single endpoint.
+ * Cleanup state and memory. Called when emulation terminates.
  */
-void endpoint_init_state(struct emu_endpoint *endpoint, uint16_t id,
-			 struct fp_ring *q_in, struct emu_router *router) {
-	endpoint->id = id;
-	endpoint->q_in = q_in;
-	endpoint->router = router;
+void endpoint_cleanup(struct emu_endpoint *ep) {
+	struct emu_packet *packet;
+
+	ep->ops->cleanup(ep);
+
+	/* free all currently queued packets */
+	while (fp_ring_dequeue(ep->q_egress, (void **) &packet) == 0) {
+		free_packet(packet);
+	}
+};
+
+/**
+ * Emulate one timeslot at a given endpoint.
+ */
+void endpoint_emulate(struct emu_endpoint *ep) {
+	ep->ops->emulate(ep);
+}
+
+/**
+ * Add backlog to dst at this endpoint.
+ */
+void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
+						  uint32_t amount) {
+	uint32_t i;
+
+	/* create and enqueue a packet for each MTU */
+	struct emu_packet *packet;
+	for (i = 0; i < amount; i++) {
+		packet = create_packet(ep->state, ep->id, dst);
+		if (packet == NULL)
+			drop_demand(ep->state, ep->id, dst);
+
+		/* enqueue the packet to the endpoint queue */
+		if (fp_ring_enqueue(ep->q_egress, packet) == -ENOBUFS) {
+			/* no space to enqueue this packet at the endpoint, drop it */
+			adm_log_emu_wait_for_endpoint_enqueue(&ep->state->stat);
+			drop_packet(packet);
+		}
+	}
 }

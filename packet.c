@@ -7,6 +7,7 @@
 
 #include "packet.h"
 #include "api.h"
+#include "admitted.h"
 #include "emulation.h"
 #include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/platform.h"

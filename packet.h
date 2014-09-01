@@ -8,8 +8,6 @@
 #ifndef PACKET_H_
 #define PACKET_H_
 
-#include "admitted.h"
-
 #include <inttypes.h>
 
 struct emu_state;

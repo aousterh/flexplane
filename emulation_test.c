@@ -10,31 +10,13 @@
 #include "packet.h"
 #include "drop_tail_router.h"
 #include "drop_tail_endpoint.h"
+#include "drop_tail_packet.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
 #include <stdio.h>
 
 #define ROUTER_OUTPUT_PORT_CAPACITY 5
-
-struct router_ops drop_tail_router_ops = {
-		.priv_size	= sizeof(struct drop_tail_router),
-		.init		= &drop_tail_router_init,
-		.cleanup	= &drop_tail_router_cleanup,
-		.emulate	= &drop_tail_router_emulate,
-};
-
-struct endpoint_ops drop_tail_endpoint_ops = {
-		.priv_size	= 0, /* no private state necessary */
-		.init		= &drop_tail_endpoint_init,
-		.reset		= &drop_tail_endpoint_reset,
-		.cleanup	= &drop_tail_endpoint_cleanup,
-		.emulate	= &drop_tail_endpoint_emulate,
-};
-
-struct packet_ops drop_tail_packet_ops = {
-		.priv_size	= 0, /* no private state necessary */
-};
 
 /**
  * Emulate one timeslot and print out the admitted and dropped traffic

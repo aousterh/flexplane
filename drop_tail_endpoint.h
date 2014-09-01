@@ -33,4 +33,12 @@ void drop_tail_endpoint_cleanup(struct emu_endpoint *ep);
  */
 void drop_tail_endpoint_emulate(struct emu_endpoint *endpoint);
 
+static struct endpoint_ops drop_tail_endpoint_ops = {
+		.priv_size	= 0, /* no private state necessary */
+		.init		= &drop_tail_endpoint_init,
+		.reset		= &drop_tail_endpoint_reset,
+		.cleanup	= &drop_tail_endpoint_cleanup,
+		.emulate	= &drop_tail_endpoint_emulate,
+};
+
 #endif /* DROP_TAIL_ENDPOINT_H_ */

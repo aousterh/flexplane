@@ -39,4 +39,11 @@ void drop_tail_router_cleanup(struct emu_router *rtr);
  */
 void drop_tail_router_emulate(struct emu_router *rtr);
 
+static struct router_ops drop_tail_router_ops = {
+		.priv_size	= sizeof(struct drop_tail_router),
+		.init		= &drop_tail_router_init,
+		.cleanup	= &drop_tail_router_cleanup,
+		.emulate	= &drop_tail_router_emulate,
+};
+
 #endif /* DROP_TAIL_ROUTER_H_ */

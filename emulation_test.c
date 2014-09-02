@@ -8,9 +8,7 @@
 #include "admitted.h"
 #include "emulation.h"
 #include "packet.h"
-#include "drop_tail_router.h"
-#include "drop_tail_endpoint.h"
-#include "drop_tail_packet.h"
+#include "drop_tail.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 

@@ -144,6 +144,55 @@ void run_admissible(struct request_info *requests, uint32_t start_time, uint32_t
     *next_request = current_request;
 }
 
+struct admissible_state *setup_state(bool oversubscribed,
+		uint16_t inter_rack_capacity, uint16_t out_of_boundary_capacity,
+		uint16_t num_nodes, struct fp_ring **q_bin,
+		struct fp_mempool **bin_mempool) {
+	uint16_t i;
+
+    // Data structures
+    struct admissible_state *status;
+    struct fp_ring *q_head;
+    struct fp_ring *q_admitted_out;
+    struct fp_ring *q_spent;
+    struct fp_mempool *admitted_traffic_mempool;
+    struct fp_ring *q_new_demands[NUM_BIN_RINGS];
+    struct fp_ring *q_ready_partitions[NUM_BIN_RINGS];
+
+    /* init queues */
+    *q_bin = fp_ring_create(2 * FP_NODES_SHIFT);
+    q_head = fp_ring_create(2 * FP_NODES_SHIFT);
+    q_admitted_out = fp_ring_create(ADMITTED_OUT_RING_LOG_SIZE);
+    q_spent = fp_ring_create(2 * FP_NODES_SHIFT);
+    *bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
+    admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
+                                                 get_admitted_struct_size());
+    for (i = 0; i < NUM_BIN_RINGS; i++) {
+            q_new_demands[i] = fp_ring_create(BIN_RING_SHIFT);
+            if (!q_new_demands[i]) exit(-1);
+            q_ready_partitions[i] = fp_ring_create(READY_PARTITIONS_Q_SIZE);
+            if (!q_ready_partitions[i]) exit(-1);
+    }
+    if (!*q_bin || !q_head || !q_admitted_out || !q_spent || !*bin_mempool ||
+        !admitted_traffic_mempool)
+            exit(-1);
+
+    /* init global status */
+    status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
+                                     q_spent, *bin_mempool,
+                                     admitted_traffic_mempool,
+                                     q_bin, &q_new_demands[0],
+                                     &q_ready_partitions[0],
+                                     &drop_tail_endpoint_ops,
+                                     &drop_tail_router_ops);
+    if (status == NULL) {
+        printf("Error initializing admissible_status!\n");
+        exit(-1);
+    }
+
+    return status;
+}
+
 void print_usage(char **argv) {
     printf("usage: %s benchmark_type\n", argv[0]);
     printf("\tbenchmark_type=0 for admissible traffic benchmark, benchmark_type=1 for path selection benchmark (vary oversubscription ratio), benchmark_type=2 for path selection (vary #racks)\n");
@@ -227,47 +276,10 @@ int main(int argc, char **argv)
         racks = path_num_racks;
     }
 
-    // Data structures
-    struct admissible_state *status;
     struct fp_ring *q_bin;
-    struct fp_ring *q_head;
-    struct fp_ring *q_admitted_out;
-    struct fp_ring *q_spent;
     struct fp_mempool *bin_mempool;
-    struct fp_mempool *admitted_traffic_mempool;
-    struct fp_ring *q_new_demands[NUM_BIN_RINGS];
-    struct fp_ring *q_ready_partitions[NUM_BIN_RINGS];
-
-    /* init queues */
-    q_bin = fp_ring_create(2 * FP_NODES_SHIFT);
-    q_head = fp_ring_create(2 * FP_NODES_SHIFT);
-    q_admitted_out = fp_ring_create(ADMITTED_OUT_RING_LOG_SIZE);
-    q_spent = fp_ring_create(2 * FP_NODES_SHIFT);
-    bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
-    admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
-                                                 get_admitted_struct_size());
-    for (i = 0; i < NUM_BIN_RINGS; i++) {
-            q_new_demands[i] = fp_ring_create(BIN_RING_SHIFT);
-            if (!q_new_demands[i]) exit(-1);
-            q_ready_partitions[i] = fp_ring_create(READY_PARTITIONS_Q_SIZE);
-            if (!q_ready_partitions[i]) exit(-1);
-    }
-    if (!q_bin || !q_head || !q_admitted_out || !q_spent || !bin_mempool ||
-        !admitted_traffic_mempool)
-            exit(-1);
-
-    /* init global status */
-    status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
-                                     q_spent, bin_mempool,
-                                     admitted_traffic_mempool,
-                                     &q_bin, &q_new_demands[0],
-                                     &q_ready_partitions[0],
-                                     &drop_tail_endpoint_ops,
-                                     &drop_tail_router_ops);
-    if (status == NULL) {
-        printf("Error initializing admissible_status!\n");
-        exit(-1);
-    }
+    struct admissible_state *status = setup_state(false, 0, 0, 0, &q_bin,
+    		&bin_mempool);
 
     /* allocate space to record times */
     uint16_t num_batches = (duration - warm_up_duration) / BATCH_SIZE;

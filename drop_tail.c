@@ -17,7 +17,7 @@
  * Initialize a router.
  * @return 0 on success, negative value on error
  */
-int drop_tail_router_init(struct emu_router *rtr) {
+int drop_tail_router_init(struct emu_router *rtr, void *args) {
 	struct drop_tail_router *rtr_priv;
 	uint16_t i;
 
@@ -94,7 +94,7 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
  * Initialize an endpoint.
  * @return 0 on success, negative value on error.
  */
-int drop_tail_endpoint_init(struct emu_endpoint *ep) {
+int drop_tail_endpoint_init(struct emu_endpoint *ep, void *args) {
 	return 0;
 };
 

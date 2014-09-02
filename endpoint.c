@@ -57,7 +57,7 @@ struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
  */
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
 				  struct fp_ring *q_egress, struct emu_port *port,
-				  struct emu_state *state, struct endpoint_ops *ops) {
+				  struct emu_state *state, struct emu_ops *ops) {
 	assert(ep != NULL);
 	assert(q_egress != NULL);
 	assert(port != NULL);
@@ -68,9 +68,9 @@ int endpoint_init(struct emu_endpoint *ep, uint16_t id,
 	ep->q_egress = q_egress;
 	ep->port = port;
 	ep->state = state;
-	ep->ops = ops;
+	ep->ops = &ops->ep_ops;
 
-	return ep->ops->init(ep);
+	return ep->ops->init(ep, ops->args);
 }
 
 /**

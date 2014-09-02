@@ -14,6 +14,7 @@
 struct emu_port;
 struct emu_state;
 struct router_ops;
+struct emu_ops;
 
 /**
  * A representation of a router in the emulated network.
@@ -36,7 +37,7 @@ struct emu_router {
  * @return 0 on success, negative value on error
  */
 int router_init(struct emu_router *rtr, uint16_t id, struct emu_port *ports,
-				struct emu_state *state, struct router_ops *ops);
+				struct emu_state *state, struct emu_ops *ops);
 
 /**
  * Cleanup state and memory. Called when emulation terminates.

@@ -51,7 +51,7 @@ uint32_t router_id(struct emu_router *rtr) {
  * @return 0 on success, negative value on error
  */
 int router_init(struct emu_router *rtr, uint16_t id, struct emu_port *ports,
-				struct emu_state *state, struct router_ops *ops) {
+				struct emu_state *state, struct emu_ops *ops) {
 	uint16_t i;
 
 	assert(rtr != NULL);
@@ -65,9 +65,9 @@ int router_init(struct emu_router *rtr, uint16_t id, struct emu_port *ports,
 		rtr->output_ports[i] = &ports[EMU_ROUTER_NUM_PORTS + i];
 	}
 	rtr->state = state;
-	rtr->ops = ops;
+	rtr->ops = &ops->rtr_ops;
 
-	return rtr->ops->init(rtr);
+	return rtr->ops->init(rtr, ops->args);
 }
 
 /**

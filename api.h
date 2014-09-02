@@ -95,7 +95,7 @@ struct router_ops {
 	 * Initialize a router.
 	 * @return 0 on success, negative value on error
 	 */
-	int (*init)(struct emu_router *rtr);
+	int (*init)(struct emu_router *rtr, void * args);
 
 	/**
 	 * Cleanup state and memory. Called when emulation terminates.
@@ -123,7 +123,7 @@ struct endpoint_ops {
 	 * Initialize an endpoint.
 	 * @return 0 on success, negative value on error
 	 */
-	int (*init)(struct emu_endpoint *ep);
+	int (*init)(struct emu_endpoint *ep, void *args);
 
 	/**
 	 * Reset an endpoint. This happens when endpoints lose sync with the
@@ -143,15 +143,14 @@ struct endpoint_ops {
 	void (*emulate)(struct emu_endpoint *ep);
 };
 
-
-/* Packet functions that an emulation algorithm must implement. */
-
-struct packet_ops {
-	/**
-	 * Number of bytes to reserve in a packet struct for implementation-
-	 * specific data. This private data can be accessed using packet_priv().
-	 */
-	uint32_t priv_size;
+/*
+ * One struct to hold all functions and parameters for an emulation algorithm.
+ */
+struct emu_ops {
+	struct router_ops	rtr_ops;
+	struct endpoint_ops	ep_ops;
+	uint32_t			packet_priv_size;
+	void				*args; /* struct for any algo-specific args */
 };
 
 

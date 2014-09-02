@@ -13,6 +13,7 @@
 struct emu_port;
 struct emu_state;
 struct endpoint_ops;
+struct emu_ops;
 
 /**
  * A representation of an endpoint (server) in the emulated network.
@@ -36,7 +37,7 @@ struct emu_endpoint {
  */
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
 			struct fp_ring *q_egress, struct emu_port *port,
-			struct emu_state *state, struct endpoint_ops *ops);
+			struct emu_state *state, struct emu_ops *ops);
 
 /**
  * Reset an endpoint. This happens when endpoints lose sync with the

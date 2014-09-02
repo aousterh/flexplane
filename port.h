@@ -9,6 +9,7 @@
 #define PORT_H_
 
 #include <assert.h>
+#include <stdlib.h>
 
 struct emu_endpoint;
 struct emu_router;
@@ -55,7 +56,6 @@ int port_init(struct emu_port *port, struct fp_ring *q,
 	assert(q != NULL);
 	assert(ingress != NULL);
 	assert(egress != NULL);
-	assert((uint64_t) q > 10);
 
 	port->q = q;
 

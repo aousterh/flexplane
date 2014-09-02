@@ -26,7 +26,7 @@ struct drop_tail_router {
  * Initialize a router.
  * @return 0 on success, negative value on error
  */
-int drop_tail_router_init(struct emu_router *rtr);
+int drop_tail_router_init(struct emu_router *rtr, void *args);
 
 /**
  * Cleanup state and memory. Called when emulation terminates.
@@ -39,18 +39,11 @@ void drop_tail_router_cleanup(struct emu_router *rtr);
  */
 void drop_tail_router_emulate(struct emu_router *rtr);
 
-static struct router_ops drop_tail_router_ops = {
-		.priv_size	= sizeof(struct drop_tail_router),
-		.init		= &drop_tail_router_init,
-		.cleanup	= &drop_tail_router_cleanup,
-		.emulate	= &drop_tail_router_emulate,
-};
-
 /**
  * Initialize an endpoint.
  * @return 0 on success, negative value on error.
  */
-int drop_tail_endpoint_init(struct emu_endpoint *ep);
+int drop_tail_endpoint_init(struct emu_endpoint *ep, void *args);
 
 /**
  * Reset an endpoint. This happens when endpoints lose sync with the
@@ -69,16 +62,25 @@ void drop_tail_endpoint_cleanup(struct emu_endpoint *ep);
  */
 void drop_tail_endpoint_emulate(struct emu_endpoint *endpoint);
 
-static struct endpoint_ops drop_tail_endpoint_ops = {
-		.priv_size	= 0, /* no private state necessary */
-		.init		= &drop_tail_endpoint_init,
-		.reset		= &drop_tail_endpoint_reset,
-		.cleanup	= &drop_tail_endpoint_cleanup,
-		.emulate	= &drop_tail_endpoint_emulate,
-};
-
-static struct packet_ops drop_tail_packet_ops = {
-		.priv_size	= 0, /* no private state necessary */
+/**
+ * Drop tail functions and parameters.
+ */
+static struct emu_ops drop_tail_ops = {
+		.rtr_ops = {
+				.priv_size	= sizeof(struct drop_tail_router),
+				.init		= &drop_tail_router_init,
+				.cleanup	= &drop_tail_router_cleanup,
+				.emulate	= &drop_tail_router_emulate,
+		},
+		.ep_ops = {
+				.priv_size	= 0, /* no private state necessary */
+				.init		= &drop_tail_endpoint_init,
+				.reset		= &drop_tail_endpoint_reset,
+				.cleanup	= &drop_tail_endpoint_cleanup,
+				.emulate	= &drop_tail_endpoint_emulate,
+		},
+		.packet_priv_size	=	0,
+		.args				= NULL,
 };
 
 #endif /* DROP_TAIL_H_ */

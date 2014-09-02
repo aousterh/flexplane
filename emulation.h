@@ -9,6 +9,7 @@
 #define EMULATION_H_
 
 #include "config.h"
+#include "api.h"
 #include "endpoint.h"
 #include "router.h"
 #include "port.h"
@@ -65,8 +66,7 @@ void emu_init_state(struct emu_state *state,
 	    struct fp_ring *q_admitted_out,
 	    struct fp_mempool *packet_mempool,
 	    struct fp_ring **packet_queues,
-	    struct endpoint_ops *ep_ops,
-	    struct router_ops *rtr_ops);
+	    struct emu_ops *ops);
 
 /**
  * Returns an initialized emulation state, or NULL on error.
@@ -75,7 +75,6 @@ struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 		   struct fp_ring *q_admitted_out,
 		   struct fp_mempool *packet_mempool,
 		   struct fp_ring **packet_queues,
-		   struct endpoint_ops *ep_ops,
-		   struct router_ops *rtr_ops);
+		    struct emu_ops *ops);
 
 #endif /* EMULATION_H_ */

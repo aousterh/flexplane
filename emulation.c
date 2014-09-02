@@ -113,8 +113,7 @@ void emu_init_state(struct emu_state *state,
 		    struct fp_ring *q_admitted_out,
 		    struct fp_mempool *packet_mempool,
 		    struct fp_ring **packet_queues,
-		    struct endpoint_ops *ep_ops,
-		    struct router_ops *rtr_ops) {
+		    struct emu_ops *ops) {
 	uint32_t i, pq;
 	uint32_t size;
 
@@ -127,19 +126,19 @@ void emu_init_state(struct emu_state *state,
 
 	/* initialize all the endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ep_ops->priv_size;
+		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ops->ep_ops.priv_size;
 		state->endpoints[i] = fp_malloc("emu_endpoint", size);
 		assert(state->endpoints[i] != NULL);
 		endpoint_init(state->endpoints[i], i, packet_queues[pq++],
-				&state->ports[i], state, ep_ops);
+				&state->ports[i], state, ops);
 	}
 
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		size = EMU_ALIGN(sizeof(struct emu_router)) + rtr_ops->priv_size;
+		size = EMU_ALIGN(sizeof(struct emu_router)) + ops->rtr_ops.priv_size;
 		state->routers[i] = fp_malloc("emu_router", size);
 		assert(state->routers[i] != NULL);
-		router_init(state->routers[i], i, &state->ports[0], state, rtr_ops);
+		router_init(state->routers[i], i, &state->ports[0], state, ops);
 	}
 
 	/* initialize all the endpoint ports */
@@ -163,15 +162,14 @@ struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 				   struct fp_ring *q_admitted_out,
 				   struct fp_mempool *packet_mempool,
 				   struct fp_ring **packet_queues,
-				   struct endpoint_ops *ep_ops,
-				   struct router_ops *rtr_ops) {
+				   struct emu_ops *ops) {
 	struct emu_state *state = fp_malloc("emu_state",
 					    sizeof(struct emu_state));
 	if (state == NULL)
 		return NULL;
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, ep_ops, rtr_ops);
+			packet_mempool, packet_queues, ops);
 
 	return state;
 }

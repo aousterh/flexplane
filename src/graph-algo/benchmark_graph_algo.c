@@ -193,6 +193,28 @@ struct admissible_state *setup_state(bool oversubscribed,
     return status;
 }
 
+/*
+ * Reset state, or teardown old state and create a new one, depending on which
+ * api this arbiter algorithm supports.
+ */
+struct admissible_state *reset_state(struct admissible_state *state,
+		bool oversubscribed, uint16_t inter_rack_capacity,
+		uint16_t out_of_boundary_capacity, uint16_t num_nodes,
+		struct fp_ring **q_bin, struct fp_mempool **bin_mempool) {
+#if defined(EMULATION_ALGO)
+	/* emulation, cleanup and create a new status */
+	emu_cleanup((struct emu_state *) state);
+    state = setup_state(oversubscribed, inter_rack_capacity,
+    		out_of_boundary_capacity, num_nodes, q_bin, bin_mempool);
+#else
+	/* pipelined or parallel algo */
+    reset_admissible_state(state, oversubscribed, inter_rack_capacity,
+    		out_of_boundary_capacity, num_nodes);
+#endif
+
+    return state;
+}
+
 void print_usage(char **argv) {
     printf("usage: %s benchmark_type\n", argv[0]);
     printf("\tbenchmark_type=0 for admissible traffic benchmark, benchmark_type=1 for path selection benchmark (vary oversubscription ratio), benchmark_type=2 for path selection (vary #racks)\n");
@@ -312,19 +334,21 @@ int main(int argc, char **argv)
             // Initialize data structures
             if (benchmark_type == ADMISSIBLE) {
                 num_nodes = sizes[j];
-                reset_admissible_state(status, false, 0, 0, num_nodes);
+                status = reset_state(status, false, 0, 0, num_nodes, &q_bin,
+                		&bin_mempool);
             }
             else if (benchmark_type == PATH_SELECTION_OVERSUBSCRIPTION) {
                 num_nodes = NUM_NODES_P;
                 inter_rack_capacity = capacities[j];
-                reset_admissible_state(status, true, inter_rack_capacity, 0,
-                                       num_nodes);
+                status = reset_state(status, true, inter_rack_capacity, 0,
+                		num_nodes, &q_bin, &bin_mempool);
                 fraction = fraction * ((double) inter_rack_capacity) / MAX_NODES_PER_RACK;
             } else if (benchmark_type == PATH_SELECTION_RACKS) {
                 num_racks = racks[j];
                 num_nodes = MAX_NODES_PER_RACK * num_racks;
                 inter_rack_capacity = MAX_NODES_PER_RACK;
-                reset_admissible_state(status, false, 0, 0, num_nodes);
+                status = reset_state(status, false, 0, 0, num_nodes, &q_bin,
+                		&bin_mempool);
             }
 
             struct bin *b;

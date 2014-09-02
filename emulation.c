@@ -12,9 +12,6 @@
 
 #include <assert.h>
 
-/**
- * Add backlog from src to dst
- */
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 					 uint32_t amount) {
 	assert(src < EMU_NUM_ENDPOINTS);
@@ -23,9 +20,6 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	endpoint_add_backlog(state->endpoints[src], dst, amount);
 }
 
-/**
- * Emulate a single timeslot.
- */
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
 	struct emu_packet *packet;
@@ -64,9 +58,6 @@ void emu_emulate(struct emu_state *state) {
 	state->admitted = NULL;
 }
 
-/**
- * Cleanup state and memory. Called when emulation terminates.
- */
 void emu_cleanup(struct emu_state *state) {
 	uint32_t i;
 	struct emu_admitted_traffic *admitted;
@@ -96,18 +87,12 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
-/**
- * Reset the emulation state for a single sender.
- */
 void emu_reset_sender(struct emu_state *state, uint16_t src) {
 
 	/* TODO: clear the packets in the routers too? */
 	endpoint_reset(state->endpoints[src]);
 }
 
-/**
- * Initialize an emulation state.
- */
 void emu_init_state(struct emu_state *state,
 		    struct fp_mempool *admitted_traffic_mempool,
 		    struct fp_ring *q_admitted_out,
@@ -155,9 +140,6 @@ void emu_init_state(struct emu_state *state,
 	}
 }
 
-/**
- * Returns an initialized emulation state, or NULL on error.
- */
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 				   struct fp_ring *q_admitted_out,
 				   struct fp_mempool *packet_mempool,

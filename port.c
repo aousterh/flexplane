@@ -16,9 +16,6 @@
  * call.
  */
 
-/**
- * Sends packet out port.
- */
 void send_packet(struct emu_port *port, struct emu_packet *packet) {
 	if (fp_ring_enqueue(port->q, packet) == -ENOBUFS) {
 		// TODO: log failure
@@ -26,10 +23,6 @@ void send_packet(struct emu_port *port, struct emu_packet *packet) {
 	}
 }
 
-/**
- * Receives a packet from a port. Returns a pointer to the packet, or NULL if
- * none are available at this port.
- */
 struct emu_packet *receive_packet(struct emu_port *port) {
 	struct emu_packet *packet;
 

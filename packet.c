@@ -17,9 +17,6 @@
  * call.
  */
 
-/**
- * Add a dropped demand to the 'admitted' list to be passed to the comm cores
- */
 void drop_demand(struct emu_state *state, uint16_t src, uint16_t dst) {
 	/* this packet should be dropped */
 	admitted_insert_dropped_edge(state->admitted, src, dst);
@@ -31,26 +28,17 @@ void drop_demand(struct emu_state *state, uint16_t src, uint16_t dst) {
 	#endif
 }
 
-/**
- * Frees packet memory, instructs physical endpoint to drop the packet
- */
 void drop_packet(struct emu_packet *packet) {
 	drop_demand(packet->state, packet->src, packet->dst);
 
 	free_packet(packet);
 }
 
-/**
- * Frees a packet when an emulation algorithm is done running.
- */
 void free_packet(struct emu_packet *packet) {
 	/* return the packet to the mempool */
 	fp_mempool_put(packet->state->packet_mempool, packet);
 }
 
-/**
- * Creates a packet, returns a pointer to the packet, or NULL on failure
- */
 struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
 		uint16_t dst) {
 	struct emu_packet *packet;

@@ -11,6 +11,7 @@
 #include "config.h"
 #include "endpoint.h"
 #include "router.h"
+#include "port.h"
 #include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
@@ -24,30 +25,32 @@
  * Data structure to store the state of the emulation.
  */
 struct emu_state {
-	struct emu_endpoint endpoints[EMU_NUM_ENDPOINTS];
-	struct emu_router routers[EMU_NUM_ROUTERS];
-	struct fp_mempool *admitted_traffic_mempool;
-	struct fp_ring *q_admitted_out;
-	struct fp_mempool *packet_mempool;
-	struct admission_statistics stat;
-	struct admission_core_statistics core_stats; /* 1 core for now */
+	struct emu_endpoint					*endpoints[EMU_NUM_ENDPOINTS];
+	struct emu_router					*routers[EMU_NUM_ROUTERS];
+	struct emu_port						ports[EMU_NUM_PORTS];
+	struct fp_mempool					*admitted_traffic_mempool;
+	struct emu_admitted_traffic			*admitted;
+	struct fp_ring						*q_admitted_out;
+	struct fp_mempool					*packet_mempool;
+	struct admission_statistics			stat;
+	struct admission_core_statistics	core_stats; /* 1 core for now */
 };
 
 /**
  * Add backlog from src to dst.
  */
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		     uint32_t amount, uint16_t start_id);
+					 uint32_t amount);
 
 /**
  * Emulate a single timeslot.
  */
-void emu_timeslot(struct emu_state *state);
+void emu_emulate(struct emu_state *state);
 
 /**
- * Reset the emulation state (clear all demands, packets, etc.).
+ * Cleanup state and memory. Called when emulation terminates.
  */
-void emu_reset_state(struct emu_state *state);
+void emu_cleanup(struct emu_state *state);
 
 /**
  * Reset the emulation state for a single sender.
@@ -58,19 +61,21 @@ void emu_reset_sender(struct emu_state *state, uint16_t src);
  * Initialize an emulation state.
  */
 void emu_init_state(struct emu_state *state,
-		    struct fp_mempool *admitted_traffic_mempool,
-		    struct fp_ring *q_admitted_out,
-		    struct fp_mempool *packet_mempool,
-		    struct fp_ring **packet_queues,
-		    uint16_t router_output_port_capacity);
+	    struct fp_mempool *admitted_traffic_mempool,
+	    struct fp_ring *q_admitted_out,
+	    struct fp_mempool *packet_mempool,
+	    struct fp_ring **packet_queues,
+	    struct endpoint_ops *ep_ops,
+	    struct router_ops *rtr_ops);
 
 /**
  * Returns an initialized emulation state, or NULL on error.
  */
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
-				   struct fp_ring *q_admitted_out,
-				   struct fp_mempool *packet_mempool,
-				   struct fp_ring **packet_queues,
-				   uint16_t router_output_port_capacity);
+		   struct fp_ring *q_admitted_out,
+		   struct fp_mempool *packet_mempool,
+		   struct fp_ring **packet_queues,
+		   struct endpoint_ops *ep_ops,
+		   struct router_ops *rtr_ops);
 
 #endif /* EMULATION_H_ */

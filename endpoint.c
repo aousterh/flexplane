@@ -43,17 +43,15 @@ struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
 
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
 				  struct fp_ring *q_egress, struct emu_port *port,
-				  struct emu_state *state, struct emu_ops *ops) {
+				  struct emu_ops *ops) {
 	assert(ep != NULL);
 	assert(q_egress != NULL);
 	assert(port != NULL);
-	assert(state != NULL);
 	assert(ops != NULL);
 
 	ep->id = id;
 	ep->q_egress = q_egress;
 	ep->port = port;
-	ep->state = state;
 	ep->ops = &ops->ep_ops;
 
 	return ep->ops->init(ep, ops->args);
@@ -66,7 +64,7 @@ void endpoint_reset(struct emu_endpoint *ep) {
 	ep->ops->reset(ep);
 
 	/* return all queued packets to the mempool */
-	packet_mempool = ep->state->packet_mempool;
+	packet_mempool = g_state->packet_mempool;
 	while (fp_ring_dequeue(ep->q_egress, (void **) &packet) == 0) {
 		fp_mempool_put(packet_mempool, packet);
 	}
@@ -94,14 +92,14 @@ void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
 	/* create and enqueue a packet for each MTU */
 	struct emu_packet *packet;
 	for (i = 0; i < amount; i++) {
-		packet = create_packet(ep->state, ep->id, dst);
+		packet = create_packet(ep->id, dst);
 		if (packet == NULL)
-			drop_demand(ep->state, ep->id, dst);
+			drop_demand(ep->id, dst);
 
 		/* enqueue the packet to the endpoint queue */
 		if (fp_ring_enqueue(ep->q_egress, packet) == -ENOBUFS) {
 			/* no space to enqueue this packet at the endpoint, drop it */
-			adm_log_emu_wait_for_endpoint_enqueue(&ep->state->stat);
+			adm_log_emu_wait_for_endpoint_enqueue(&g_state->stat);
 			drop_packet(packet);
 		}
 	}

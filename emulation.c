@@ -12,6 +12,8 @@
 
 #include <assert.h>
 
+struct emu_state *g_state; /* global emulation state */
+
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 					 uint32_t amount) {
 	assert(src < EMU_NUM_ENDPOINTS);
@@ -102,6 +104,8 @@ void emu_init_state(struct emu_state *state,
 	uint32_t i, pq;
 	uint32_t size;
 
+	g_state = state;
+
 	pq = 0;
 	state->admitted_traffic_mempool = admitted_traffic_mempool;
 	state->q_admitted_out = q_admitted_out;
@@ -115,7 +119,7 @@ void emu_init_state(struct emu_state *state,
 		state->endpoints[i] = fp_malloc("emu_endpoint", size);
 		assert(state->endpoints[i] != NULL);
 		endpoint_init(state->endpoints[i], i, packet_queues[pq++],
-				&state->ports[i], state, ops);
+				&state->ports[i], ops);
 	}
 
 	/* initialize all the routers */
@@ -123,7 +127,7 @@ void emu_init_state(struct emu_state *state,
 		size = EMU_ALIGN(sizeof(struct emu_router)) + ops->rtr_ops.priv_size;
 		state->routers[i] = fp_malloc("emu_router", size);
 		assert(state->routers[i] != NULL);
-		router_init(state->routers[i], i, &state->ports[0], state, ops);
+		router_init(state->routers[i], i, &state->ports[0], ops);
 	}
 
 	/* initialize all the endpoint ports */

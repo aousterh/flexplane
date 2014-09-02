@@ -11,7 +11,6 @@
 #include "../graph-algo/fp_ring.h"
 
 struct emu_port;
-struct emu_state;
 struct endpoint_ops;
 struct emu_ops;
 
@@ -27,7 +26,6 @@ struct emu_endpoint {
 	uint16_t			id;
 	struct fp_ring		*q_egress;
 	struct emu_port		*port;
-	struct emu_state	*state;
 	struct endpoint_ops	*ops;
 };
 
@@ -37,7 +35,7 @@ struct emu_endpoint {
  */
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
 			struct fp_ring *q_egress, struct emu_port *port,
-			struct emu_state *state, struct emu_ops *ops);
+			struct emu_ops *ops);
 
 /**
  * Reset an endpoint. This happens when endpoints lose sync with the

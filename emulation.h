@@ -22,6 +22,8 @@
 #define PACKET_MEMPOOL_SIZE (1024 * 32)
 #define PACKET_Q_LOG_SIZE 12
 
+extern struct emu_state *g_state;
+
 /**
  * Data structure to store the state of the emulation.
  */

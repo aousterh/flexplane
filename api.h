@@ -78,8 +78,7 @@ uint32_t endpoint_id(struct emu_endpoint *ep);
 /**
  * Creates a packet, returns a pointer to the packet.
  */
-struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
-		uint16_t dst);
+struct emu_packet *create_packet(uint16_t src, uint16_t dst);
 
 
 /* Router functions that an emulation algorithm must implement. */

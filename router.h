@@ -12,7 +12,6 @@
 #include <inttypes.h>
 
 struct emu_port;
-struct emu_state;
 struct router_ops;
 struct emu_ops;
 
@@ -28,7 +27,6 @@ struct emu_router {
 	uint16_t			id;
 	struct emu_port		*input_ports[EMU_ROUTER_NUM_PORTS];
 	struct emu_port		*output_ports[EMU_ROUTER_NUM_PORTS];
-	struct emu_state	*state;
 	struct router_ops	*ops;
 };
 
@@ -37,7 +35,7 @@ struct emu_router {
  * @return 0 on success, negative value on error
  */
 int router_init(struct emu_router *rtr, uint16_t id, struct emu_port *ports,
-				struct emu_state *state, struct emu_ops *ops);
+				struct emu_ops *ops);
 
 /**
  * Cleanup state and memory. Called when emulation terminates.

@@ -17,9 +17,7 @@
 #include "platform.h"
 #include "rdtsc.h"  // For timing
 #include "../protocol/topology.h"
-#include "../emulation/drop_tail_router.h"
-#include "../emulation/drop_tail_endpoint.h"
-#include "../emulation/drop_tail_packet.h"
+#include "../emulation/drop_tail.h"
 
 #define NUM_FRACTIONS_A 11
 #define NUM_SIZES_A 1
@@ -183,8 +181,7 @@ struct admissible_state *setup_state(bool oversubscribed,
                                      admitted_traffic_mempool,
                                      q_bin, &q_new_demands[0],
                                      &q_ready_partitions[0],
-                                     &drop_tail_endpoint_ops,
-                                     &drop_tail_router_ops);
+                                     &drop_tail_ops);
     if (status == NULL) {
         printf("Error initializing admissible_status!\n");
         exit(-1);

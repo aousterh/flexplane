@@ -32,7 +32,7 @@ struct emu_admitted_traffic {
 	uint16_t size;
 	uint16_t admitted;
 	uint16_t dropped;
-	struct emu_admitted_edge edges[2 * EMU_NUM_ENDPOINTS];
+	struct emu_admitted_edge edges[EMU_NUM_ENDPOINTS + EMU_MAX_DROPS];
 };
 
 /**

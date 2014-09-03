@@ -8,38 +8,12 @@
 #include "endpoint.h"
 
 #include "api.h"
+#include "api_impl.h"
 #include "packet.h"
 #include "emulation.h"
 #include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/platform.h"
 #include "assert.h"
-
-/**
- * Functions provided by the emulation framework for emulation algorithms to
- * call.
- */
-
-struct emu_port *endpoint_port(struct emu_endpoint *ep) {
-	return &ep->port;
-}
-
-uint32_t endpoint_id(struct emu_endpoint *ep) {
-	return ep->id;
-}
-
-struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
-	struct emu_packet *packet;
-
-	if (fp_ring_dequeue(ep->q_egress, (void **) &packet) != 0)
-		return NULL;
-
-	return packet;
-}
-
-
-/**
- * Functions declared in endpoint.h, used only within the framework
- */
 
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
 				  struct fp_ring *q_egress, struct emu_ops *ops) {

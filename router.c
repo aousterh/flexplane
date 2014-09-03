@@ -7,29 +7,11 @@
 
 #include "router.h"
 #include "api.h"
+#include "api_impl.h"
 #include "port.h"
 #include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/platform.h"
 #include "assert.h"
-
-
-/**
- * Functions provided by the emulation framework for emulation algorithms to
- * call.
- */
-
-struct emu_port *router_port(struct emu_router *rtr, uint32_t port_ind) {
-	return &rtr->ports[port_ind];
-}
-
-uint32_t router_id(struct emu_router *rtr) {
-	return rtr->id;
-}
-
-
-/**
- * Functions declared in router.h, used only within the framework
- */
 
 int router_init(struct emu_router *rtr, uint16_t id, struct emu_ops *ops) {
 	uint16_t i;

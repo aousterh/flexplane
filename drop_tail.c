@@ -6,8 +6,8 @@
  */
 
 #include "drop_tail.h"
+#include "api_impl.h"
 #include "port.h"
-
 #include "../graph-algo/admissible_algo_log.h"
 
 /* TODO: make this a parameter that can be passed in */

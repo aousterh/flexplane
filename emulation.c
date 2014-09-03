@@ -7,6 +7,7 @@
 
 #include "emulation.h"
 #include "api.h"
+#include "api_impl.h"
 #include "admitted.h"
 #include "port.h"
 

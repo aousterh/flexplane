@@ -14,6 +14,10 @@
 
 struct packet_queue;
 
+struct drop_tail_args {
+	uint16_t port_capacity;
+};
+
 /**
  * State maintained by each drop tail router.
  * @output_queue: a queue of packets for each output port

@@ -14,7 +14,11 @@
 
 #include <stdio.h>
 
-#define ROUTER_OUTPUT_PORT_CAPACITY 5
+struct emu_ops ops;
+
+struct drop_tail_args args = {
+		.port_capacity	= 5,
+};
 
 /**
  * Emulate one timeslot and print out the admitted and dropped traffic
@@ -60,8 +64,11 @@ struct emu_state *setup_state() {
 		packet_queues[i] = fp_ring_create(PACKET_Q_LOG_SIZE);
 	}
 
+	ops = drop_tail_ops;
+	ops.args = &args;
+
 	state = emu_create_state(admitted_traffic_mempool, q_admitted_out,
-				 packet_mempool, packet_queues, &drop_tail_ops);
+				 packet_mempool, packet_queues, &ops);
 
 	return state;
 }

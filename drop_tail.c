@@ -10,18 +10,25 @@
 #include "port.h"
 #include "../graph-algo/admissible_algo_log.h"
 
-/* TODO: make this a parameter that can be passed in */
 #define DROP_TAIL_PORT_CAPACITY 5
 
 int drop_tail_router_init(struct emu_router *rtr, void *args) {
 	struct drop_tail_router *rtr_priv;
-	uint16_t i;
+	struct drop_tail_args *drop_tail_args;
+	uint16_t i, port_capacity;
 
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
+	/* use args if supplied, otherwise use defaults */
+	if (args != NULL) {
+		drop_tail_args = (struct drop_tail_args *) args;
+		port_capacity = drop_tail_args->port_capacity;
+	} else
+		port_capacity = DROP_TAIL_PORT_CAPACITY;
+
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++)
-		queue_create(&rtr_priv->output_queue[i], DROP_TAIL_PORT_CAPACITY);
+		queue_create(&rtr_priv->output_queue[i], port_capacity);
 
 	return 0;
 }

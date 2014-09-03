@@ -202,7 +202,7 @@ void handle_spent_demands(struct admissible_state *state)
 #define BATCH_SIZE 1
 #define BATCH_SHIFT 0
 #define ADMITTED_PER_BATCH 1
-#define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS + \
+#define NUM_BIN_RINGS (EMU_NUM_ENDPOINTS * 2 + \
                        EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2)
 #define BIN_RING_SHIFT PACKET_Q_LOG_SIZE
 

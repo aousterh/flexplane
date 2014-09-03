@@ -19,7 +19,7 @@ void drop_demand(uint16_t src, uint16_t dst) {
 	#ifdef AUTO_RE_REQUEST_BACKLOG
 	/* backlog for dropped packets will not be re-requested,
 	 * so automatically request the backlog again */
-	emu_add_backlog(state, src, dst, 1);
+	emu_add_backlog(g_state, src, dst, 1);
 	#endif
 }
 

@@ -54,6 +54,11 @@ enum benchmark_type {
     PATH_SELECTION_RACKS
 };
 
+struct emu_ops ops;
+struct drop_tail_args emu_args = {
+		.port_capacity = 10,
+};
+
 // Runs one experiment. Returns the number of packets admitted.
 uint32_t run_experiment(struct request_info *requests, uint32_t start_time, uint32_t end_time,
                         uint32_t num_requests, struct admissible_state *status,
@@ -176,12 +181,15 @@ struct admissible_state *setup_state(bool oversubscribed,
             exit(-1);
 
     /* init global status */
+    ops = drop_tail_ops;
+    ops.args = &emu_args;
+
     status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
                                      q_spent, *bin_mempool,
                                      admitted_traffic_mempool,
                                      q_bin, &q_new_demands[0],
                                      &q_ready_partitions[0],
-                                     &drop_tail_ops);
+                                     &ops);
     if (status == NULL) {
         printf("Error initializing admissible_status!\n");
         exit(-1);

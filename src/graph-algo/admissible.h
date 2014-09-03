@@ -243,13 +243,6 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 }
 
 static inline
-void reset_admissible_state(struct admissible_state *state, bool a, uint16_t b,
-                            uint16_t c, uint16_t d)
-{
-        emu_reset_state((struct emu_state *) state);
-}
-
-static inline
 void reset_sender(struct admissible_state *status, uint16_t src)
 {
         emu_reset_sender((struct emu_state *) status, src);

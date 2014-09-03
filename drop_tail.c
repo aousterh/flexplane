@@ -51,6 +51,17 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
+	/* try to transmit one packet per output port */
+	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+		output_q = &rtr_priv->output_queue[i];
+
+		/* dequeue one packet for this port, send it */
+		if (queue_dequeue(output_q, &packet) == 0) {
+			port = router_port(rtr, i);
+			send_packet(port, packet);
+		}
+	}
+
 	/* move packets from the input ports to the output queues */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
 		port = router_port(rtr, i);
@@ -66,17 +77,6 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 			}
 		}
 	}
-
-	/* try to transmit one packet per output port */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		output_q = &rtr_priv->output_queue[i];
-
-		/* dequeue one packet for this port, send it */
-		if (queue_dequeue(output_q, &packet) == 0) {
-			port = router_port(rtr, i);
-			send_packet(port, packet);
-		}	
-	}
 }
 
 int drop_tail_endpoint_init(struct emu_endpoint *ep, void *args) {
@@ -91,12 +91,16 @@ void drop_tail_endpoint_emulate(struct emu_endpoint *ep) {
 	struct emu_packet *packet;
 	struct emu_port *port;
 
-	/* try to dequeue one packet - return if there are none */
+	/* try to dequeue one packet from network stack */
 	packet = dequeue_packet_at_endpoint(ep);
-	if (packet == NULL)
-		return;
-
-	/* try to transmit the packet to the next router */
 	port = endpoint_port(ep);
-	send_packet(port, packet);
+	if (packet != NULL) {
+		/* try to transmit the packet to the next router */
+		send_packet(port, packet);
+	}
+
+	/* pass all incoming packets up the network stack */
+	while ((packet = receive_packet(port)) != NULL) {
+		enqueue_packet_at_endpoint(ep, packet);
+	}
 }

@@ -59,6 +59,15 @@ struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
 }
 
 static inline
+void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
+		struct emu_packet *packet) {
+	if (fp_ring_enqueue(ep->q_ingress, packet) == -ENOBUFS) {
+		// TODO: log failure
+		drop_packet(packet);
+	}
+}
+
+static inline
 void free_packet(struct emu_packet *packet) {
 	/* return the packet to the mempool */
 	fp_mempool_put(g_state->packet_mempool, packet);

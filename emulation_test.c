@@ -82,8 +82,8 @@ int main() {
 	emu_cleanup(state);
 
 	/* test drop-tail behavior at routers */
-	state = setup_state();
 	printf("\nTEST 2: drop-tail\n");
+	state = setup_state();
 	for (i = 0; i < 10; i++) {
 		emu_add_backlog(state, i, 13, 3);
 		emulate_and_print_admitted(state);

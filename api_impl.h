@@ -13,6 +13,8 @@
 #include "packet.h"
 #include "router.h"
 
+#include <assert.h>
+
 static inline
 struct emu_port *router_port(struct emu_router *rtr, uint32_t port_ind) {
 	return &rtr->ports[port_ind];
@@ -61,6 +63,8 @@ struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
 static inline
 void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
 		struct emu_packet *packet) {
+	assert(packet->dst == ep->id);
+
 	if (fp_ring_enqueue(ep->q_ingress, packet) == -ENOBUFS) {
 		// TODO: log failure
 		drop_packet(packet);

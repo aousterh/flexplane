@@ -15,7 +15,7 @@
 int drop_tail_router_init(struct emu_router *rtr, void *args) {
 	struct drop_tail_router *rtr_priv;
 	struct drop_tail_args *drop_tail_args;
-	uint16_t i, port_capacity;
+	uint32_t i, port_capacity;
 
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);

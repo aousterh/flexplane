@@ -8,6 +8,9 @@
 #ifndef PACKET_QUEUE_H_
 #define PACKET_QUEUE_H_
 
+#include <assert.h>
+#include <stdlib.h>
+
 #define MAX_PACKET_QUEUE_LEN	16
 
 struct emu_packet;

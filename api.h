@@ -10,9 +10,11 @@
 #ifndef API_H_
 #define API_H_
 
-#include "router.h"
-#include "endpoint.h"
-#include "packet.h"
+#include <inttypes.h>
+
+struct emu_endpoint;
+struct emu_packet;
+struct emu_router;
 
 /* alignment macros based on /net/pkt_sched.h */
 #define EMU_ALIGNTO				64
@@ -24,62 +26,65 @@
  */
 
 /**
- * Returns a pointer to the ingress port with index port_ind at router rtr.
+ * Returns a pointer to the port with index port_ind at router rtr.
  */
-struct emu_port *router_ingress_port(struct emu_router *rtr, uint32_t port_ind);
-
-/**
- * Returns a pointer to the egress port with index port_ind at router rtr.
- */
-struct emu_port *router_egress_port(struct emu_router *rtr, uint32_t port_ind);
+static inline
+struct emu_port *router_port(struct emu_router *rtr, uint32_t port_ind);
 
 /**
  * Returns a pointer to the port at endpoint ep.
  */
+static inline
 struct emu_port *endpoint_port(struct emu_endpoint *ep);
 
 /**
  * Sends packet out port.
  */
+static inline
 void send_packet(struct emu_port *port, struct emu_packet *packet);
 
 /**
- * Drops packet.
+ * Notifies physical endpoint to drop packet and frees packet memory.
  */
+static inline
 void drop_packet(struct emu_packet *packet);
 
 /**
  * Receives a packet from a port. Returns a pointer to the packet, or NULL if
  * none are available at this port.
  */
+static inline
 struct emu_packet *receive_packet(struct emu_port *port);
 
 /**
  * Dequeues a packet at an endpoint from the network stack. Returns a pointer
  * to the packet, or NULL if none are available.
  */
+static inline
 struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep);
 
 /**
  * Frees a packet when an emulation algorithm is done running.
  */
+static inline
 void free_packet(struct emu_packet *packet);
 
 /**
  * Returns the id of router rtr.
  */
+static inline
 uint32_t router_id(struct emu_router *rtr);
 
 /**
  * Returns the id of endpoint ep.
  */
+static inline
 uint32_t endpoint_id(struct emu_endpoint *ep);
 
 /**
  * Creates a packet, returns a pointer to the packet.
  */
-struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
-		uint16_t dst);
+struct emu_packet *create_packet(uint16_t src, uint16_t dst);
 
 
 /* Router functions that an emulation algorithm must implement. */
@@ -95,7 +100,7 @@ struct router_ops {
 	 * Initialize a router.
 	 * @return 0 on success, negative value on error
 	 */
-	int (*init)(struct emu_router *rtr);
+	int (*init)(struct emu_router *rtr, void * args);
 
 	/**
 	 * Cleanup state and memory. Called when emulation terminates.
@@ -123,7 +128,7 @@ struct endpoint_ops {
 	 * Initialize an endpoint.
 	 * @return 0 on success, negative value on error
 	 */
-	int (*init)(struct emu_endpoint *ep);
+	int (*init)(struct emu_endpoint *ep, void *args);
 
 	/**
 	 * Reset an endpoint. This happens when endpoints lose sync with the
@@ -143,15 +148,14 @@ struct endpoint_ops {
 	void (*emulate)(struct emu_endpoint *ep);
 };
 
-
-/* Packet functions that an emulation algorithm must implement. */
-
-struct packet_ops {
-	/**
-	 * Number of bytes to reserve in a packet struct for implementation-
-	 * specific data. This private data can be accessed using packet_priv().
-	 */
-	uint32_t priv_size;
+/*
+ * One struct to hold all functions and parameters for an emulation algorithm.
+ */
+struct emu_ops {
+	struct router_ops	rtr_ops;
+	struct endpoint_ops	ep_ops;
+	uint32_t			packet_priv_size;
+	void				*args; /* struct for any algo-specific args */
 };
 
 
@@ -164,25 +168,19 @@ struct packet_ops {
  * Returns the private part of the router struct.
  */
 static inline
-void *router_priv(struct emu_router *rtr) {
-	return (char *) rtr + EMU_ALIGN(sizeof(struct emu_router));
-}
+void *router_priv(struct emu_router *rtr);
 
 /**
  * Returns the private part of the endpoint struct.
  */
 static inline
-void *endpoint_priv(struct emu_endpoint *ep) {
-	return (char *) ep + EMU_ALIGN(sizeof(struct emu_endpoint));
-}
+void *endpoint_priv(struct emu_endpoint *ep);
 
 /**
  * Returns the private part of the endpoint struct.
  */
 static inline
-void *packet_priv(struct emu_packet *packet) {
-	return (char *) packet + EMU_ALIGN(sizeof(struct emu_packet));
-}
+void *packet_priv(struct emu_packet *packet);
 
 
 #endif /* API_H_ */

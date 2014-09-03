@@ -9,6 +9,7 @@
 #define EMULATION_H_
 
 #include "config.h"
+#include "api.h"
 #include "endpoint.h"
 #include "router.h"
 #include "port.h"
@@ -21,13 +22,14 @@
 #define PACKET_MEMPOOL_SIZE (1024 * 32)
 #define PACKET_Q_LOG_SIZE 12
 
+extern struct emu_state *g_state;
+
 /**
  * Data structure to store the state of the emulation.
  */
 struct emu_state {
 	struct emu_endpoint					*endpoints[EMU_NUM_ENDPOINTS];
 	struct emu_router					*routers[EMU_NUM_ROUTERS];
-	struct emu_port						ports[EMU_NUM_PORTS];
 	struct fp_mempool					*admitted_traffic_mempool;
 	struct emu_admitted_traffic			*admitted;
 	struct fp_ring						*q_admitted_out;
@@ -65,8 +67,7 @@ void emu_init_state(struct emu_state *state,
 	    struct fp_ring *q_admitted_out,
 	    struct fp_mempool *packet_mempool,
 	    struct fp_ring **packet_queues,
-	    struct endpoint_ops *ep_ops,
-	    struct router_ops *rtr_ops);
+	    struct emu_ops *ops);
 
 /**
  * Returns an initialized emulation state, or NULL on error.
@@ -75,7 +76,6 @@ struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 		   struct fp_ring *q_admitted_out,
 		   struct fp_mempool *packet_mempool,
 		   struct fp_ring **packet_queues,
-		   struct endpoint_ops *ep_ops,
-		   struct router_ops *rtr_ops);
+		    struct emu_ops *ops);
 
 #endif /* EMULATION_H_ */

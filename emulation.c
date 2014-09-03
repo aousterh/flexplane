@@ -7,14 +7,14 @@
 
 #include "emulation.h"
 #include "api.h"
+#include "api_impl.h"
 #include "admitted.h"
 #include "port.h"
 
 #include <assert.h>
 
-/**
- * Add backlog from src to dst
- */
+struct emu_state *g_state; /* global emulation state */
+
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 					 uint32_t amount) {
 	assert(src < EMU_NUM_ENDPOINTS);
@@ -23,9 +23,6 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	endpoint_add_backlog(state->endpoints[src], dst, amount);
 }
 
-/**
- * Emulate a single timeslot.
- */
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
 	struct emu_packet *packet;
@@ -47,10 +44,11 @@ void emu_emulate(struct emu_state *state) {
 	}
 
 	/* process all traffic that has arrived at endpoint ports */
-	for (i = EMU_NUM_ENDPOINTS; i < EMU_NUM_PORTS; i++) {
+	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		/* dequeue all packets at this port, add them to admitted traffic,
 		 * and free them */
-		while (fp_ring_dequeue(state->ports[i].q, (void **) &packet) == 0) {
+		while (fp_ring_dequeue(state->endpoints[i]->port.q_ingress,
+				       (void **) &packet) == 0) {
 			admitted_insert_admitted_edge(state->admitted, packet->src,
 					packet->dst);
 
@@ -64,20 +62,17 @@ void emu_emulate(struct emu_state *state) {
 	state->admitted = NULL;
 }
 
-/**
- * Cleanup state and memory. Called when emulation terminates.
- */
 void emu_cleanup(struct emu_state *state) {
 	uint32_t i;
 	struct emu_admitted_traffic *admitted;
 
-	/* reset all endpoints */
+	/* free all endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		endpoint_cleanup(state->endpoints[i]);
 		fp_free(state->endpoints[i]);
 	}
 
-	/* reset all routers */
+	/* free all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		router_cleanup(state->routers[i]);
 		fp_free(state->routers[i]);
@@ -96,27 +91,24 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
-/**
- * Reset the emulation state for a single sender.
- */
 void emu_reset_sender(struct emu_state *state, uint16_t src) {
 
 	/* TODO: clear the packets in the routers too? */
 	endpoint_reset(state->endpoints[src]);
 }
 
-/**
- * Initialize an emulation state.
- */
 void emu_init_state(struct emu_state *state,
 		    struct fp_mempool *admitted_traffic_mempool,
 		    struct fp_ring *q_admitted_out,
 		    struct fp_mempool *packet_mempool,
 		    struct fp_ring **packet_queues,
-		    struct endpoint_ops *ep_ops,
-		    struct router_ops *rtr_ops) {
+		    struct emu_ops *ops) {
 	uint32_t i, pq;
 	uint32_t size;
+	struct emu_router *router;
+	struct emu_port *port_at_router;
+
+	g_state = state;
 
 	pq = 0;
 	state->admitted_traffic_mempool = admitted_traffic_mempool;
@@ -127,51 +119,42 @@ void emu_init_state(struct emu_state *state,
 
 	/* initialize all the endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ep_ops->priv_size;
+		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ops->ep_ops.priv_size;
 		state->endpoints[i] = fp_malloc("emu_endpoint", size);
 		assert(state->endpoints[i] != NULL);
-		endpoint_init(state->endpoints[i], i, packet_queues[pq++],
-				&state->ports[i], state, ep_ops);
+		endpoint_init(state->endpoints[i], i, packet_queues[pq++], ops);
 	}
 
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		size = EMU_ALIGN(sizeof(struct emu_router)) + rtr_ops->priv_size;
+		size = EMU_ALIGN(sizeof(struct emu_router)) + ops->rtr_ops.priv_size;
 		state->routers[i] = fp_malloc("emu_router", size);
 		assert(state->routers[i] != NULL);
-		router_init(state->routers[i], i, &state->ports[0], state, rtr_ops);
+		router_init(state->routers[i], i, ops);
 	}
 
-	/* initialize all the endpoint ports */
+	/* initialize all the ports */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		port_init(&state->ports[i], packet_queues[pq++], NIC_TYPE_ENDPOINT,
-				&state->endpoints[i], NIC_TYPE_ROUTER,
-				&state->routers[i / EMU_ROUTER_NUM_PORTS]);
-	}
-	/* initialize all the router ports */
-	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		port_init(&state->ports[EMU_NUM_ENDPOINTS + i], packet_queues[pq++],
-				NIC_TYPE_ROUTER, &state->routers[i / EMU_ROUTER_NUM_PORTS],
-				NIC_TYPE_ENDPOINT, &state->endpoints[i]);
+		router = state->routers[i / EMU_ROUTER_NUM_PORTS];
+		port_at_router = &router->ports[i % EMU_ROUTER_NUM_PORTS];
+		port_pair_init(port_at_router, &state->endpoints[i]->port,
+			       packet_queues[pq], packet_queues[pq + 1]);
+		pq += 2;
 	}
 }
 
-/**
- * Returns an initialized emulation state, or NULL on error.
- */
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 				   struct fp_ring *q_admitted_out,
 				   struct fp_mempool *packet_mempool,
 				   struct fp_ring **packet_queues,
-				   struct endpoint_ops *ep_ops,
-				   struct router_ops *rtr_ops) {
+				   struct emu_ops *ops) {
 	struct emu_state *state = fp_malloc("emu_state",
 					    sizeof(struct emu_state));
 	if (state == NULL)
 		return NULL;
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, ep_ops, rtr_ops);
+			packet_mempool, packet_queues, ops);
 
 	return state;
 }

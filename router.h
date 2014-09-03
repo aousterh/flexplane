@@ -9,25 +9,21 @@
 #define ROUTER_H_
 
 #include "config.h"
+#include "port.h"
 #include <inttypes.h>
 
-struct emu_port;
-struct emu_state;
 struct router_ops;
+struct emu_ops;
 
 /**
  * A representation of a router in the emulated network.
  * @id: the unique id of this router
- * @input_ports: ports that deliver packets to this router
- * @output_ports: ports this router may transmit packets out of
- * @state: the global emulation state
+ * @ports: ports that transmit/receive packets
  * @ops: router functions implemented by the emulation algorithm
  */
 struct emu_router {
 	uint16_t			id;
-	struct emu_port		*input_ports[EMU_ROUTER_NUM_PORTS];
-	struct emu_port		*output_ports[EMU_ROUTER_NUM_PORTS];
-	struct emu_state	*state;
+	struct emu_port		ports[EMU_ROUTER_NUM_PORTS];
 	struct router_ops	*ops;
 };
 
@@ -35,8 +31,7 @@ struct emu_router {
  * Initialize a router.
  * @return 0 on success, negative value on error
  */
-int router_init(struct emu_router *rtr, uint16_t id, struct emu_port *ports,
-				struct emu_state *state, struct router_ops *ops);
+int router_init(struct emu_router *rtr, uint16_t id, struct emu_ops *ops);
 
 /**
  * Cleanup state and memory. Called when emulation terminates.

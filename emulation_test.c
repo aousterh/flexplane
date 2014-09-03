@@ -8,9 +8,7 @@
 #include "admitted.h"
 #include "emulation.h"
 #include "packet.h"
-#include "drop_tail_router.h"
-#include "drop_tail_endpoint.h"
-#include "drop_tail_packet.h"
+#include "drop_tail.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
@@ -43,11 +41,11 @@ struct emu_state *setup_state() {
 	uint32_t packet_size;
 
 	/* initialize state */
-	/* packet queues for: endpoints, router inputs, router outputs */
+	/* packet queues for: endpoints and ports */
 	num_packet_qs = EMU_NUM_ENDPOINTS +
 		EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2;
 	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) +
-		drop_tail_packet_ops.priv_size;
+		drop_tail_ops.packet_priv_size;
 	struct fp_mempool *admitted_traffic_mempool;
 	struct fp_ring *q_admitted_out;
 	struct fp_mempool *packet_mempool;
@@ -63,8 +61,7 @@ struct emu_state *setup_state() {
 	}
 
 	state = emu_create_state(admitted_traffic_mempool, q_admitted_out,
-				 packet_mempool, packet_queues, &drop_tail_endpoint_ops,
-				 &drop_tail_router_ops);
+				 packet_mempool, packet_queues, &drop_tail_ops);
 
 	return state;
 }

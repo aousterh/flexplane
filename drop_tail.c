@@ -53,7 +53,7 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 
 	/* move packets from the input ports to the output queues */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		port = router_ingress_port(rtr, i);
+		port = router_port(rtr, i);
 
 		/* try to receive all packets from this port */
 		while ((packet = receive_packet(port)) != NULL) {
@@ -73,7 +73,7 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 
 		/* dequeue one packet for this port, send it */
 		if (queue_dequeue(output_q, &packet) == 0) {
-			port = router_egress_port(rtr, i);
+			port = router_port(rtr, i);
 			send_packet(port, packet);
 		}	
 	}

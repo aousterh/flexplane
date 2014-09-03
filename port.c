@@ -17,7 +17,7 @@
  */
 
 void send_packet(struct emu_port *port, struct emu_packet *packet) {
-	if (fp_ring_enqueue(port->q, packet) == -ENOBUFS) {
+	if (fp_ring_enqueue(port->q_egress, packet) == -ENOBUFS) {
 		// TODO: log failure
 		drop_packet(packet);
 	}
@@ -26,7 +26,7 @@ void send_packet(struct emu_port *port, struct emu_packet *packet) {
 struct emu_packet *receive_packet(struct emu_port *port) {
 	struct emu_packet *packet;
 
-	if (fp_ring_dequeue(port->q, (void **) &packet) != 0)
+	if (fp_ring_dequeue(port->q_ingress, (void **) &packet) != 0)
 		return NULL;
 
 	return packet;

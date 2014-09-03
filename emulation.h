@@ -30,7 +30,6 @@ extern struct emu_state *g_state;
 struct emu_state {
 	struct emu_endpoint					*endpoints[EMU_NUM_ENDPOINTS];
 	struct emu_router					*routers[EMU_NUM_ROUTERS];
-	struct emu_port						ports[EMU_NUM_PORTS];
 	struct fp_mempool					*admitted_traffic_mempool;
 	struct emu_admitted_traffic			*admitted;
 	struct fp_ring						*q_admitted_out;

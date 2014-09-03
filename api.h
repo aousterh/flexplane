@@ -24,14 +24,9 @@
  */
 
 /**
- * Returns a pointer to the ingress port with index port_ind at router rtr.
+ * Returns a pointer to the port with index port_ind at router rtr.
  */
-struct emu_port *router_ingress_port(struct emu_router *rtr, uint32_t port_ind);
-
-/**
- * Returns a pointer to the egress port with index port_ind at router rtr.
- */
-struct emu_port *router_egress_port(struct emu_router *rtr, uint32_t port_ind);
+struct emu_port *router_port(struct emu_router *rtr, uint32_t port_ind);
 
 /**
  * Returns a pointer to the port at endpoint ep.

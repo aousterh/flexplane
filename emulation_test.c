@@ -41,7 +41,7 @@ struct emu_state *setup_state() {
 	uint32_t packet_size;
 
 	/* initialize state */
-	/* packet queues for: endpoints, router inputs, router outputs */
+	/* packet queues for: endpoints and ports */
 	num_packet_qs = EMU_NUM_ENDPOINTS +
 		EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2;
 	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) +

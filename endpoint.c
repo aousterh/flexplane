@@ -20,7 +20,7 @@
  */
 
 struct emu_port *endpoint_port(struct emu_endpoint *ep) {
-	return ep->port;
+	return &ep->port;
 }
 
 uint32_t endpoint_id(struct emu_endpoint *ep) {
@@ -42,16 +42,13 @@ struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
  */
 
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
-				  struct fp_ring *q_egress, struct emu_port *port,
-				  struct emu_ops *ops) {
+				  struct fp_ring *q_egress, struct emu_ops *ops) {
 	assert(ep != NULL);
 	assert(q_egress != NULL);
-	assert(port != NULL);
 	assert(ops != NULL);
 
 	ep->id = id;
 	ep->q_egress = q_egress;
-	ep->port = port;
 	ep->ops = &ops->ep_ops;
 
 	return ep->ops->init(ep, ops->args);
@@ -75,10 +72,17 @@ void endpoint_cleanup(struct emu_endpoint *ep) {
 
 	ep->ops->cleanup(ep);
 
-	/* free all currently queued packets */
+	/* free queue of packets from the endpoint application */
 	while (fp_ring_dequeue(ep->q_egress, (void **) &packet) == 0) {
 		free_packet(packet);
 	}
+	fp_free(ep->q_egress);
+
+	/* free egress queue in port (ingress will be freed by other port) */
+	while (fp_ring_dequeue(ep->port.q_egress, (void **) &packet) == 0) {
+		free_packet(packet);
+	}
+	fp_free(ep->port.q_egress);
 };
 
 void endpoint_emulate(struct emu_endpoint *ep) {

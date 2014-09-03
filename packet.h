@@ -15,7 +15,6 @@
  * A representation of an MTU-sized packet in the emulated network.
  * @src: the id of the source endpoint in the emulation
  * @dst: the id of the destination endpoint in the emulation
- * @state: the global emulation state (to enable freeing of this packet)
  */
 struct emu_packet {
 	uint16_t			src;

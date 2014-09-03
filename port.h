@@ -11,65 +11,37 @@
 #include <assert.h>
 #include <stdlib.h>
 
-struct emu_endpoint;
-struct emu_router;
-
-/* NICs can be at either at endpoint or a router */
-enum nic_type {
-	NIC_TYPE_ENDPOINT,
-	NIC_TYPE_ROUTER,
-};
-
 /**
  * A port in the emulated network.
- * @q: a queue of packets traversing this port
- * @ingress_type: the type of ingress (endpoint or router)
- * @ingress_ep: a pointer to the ingress enpoint
- * @ingress_rtr: a pointer to the ingress router
- * @egress_type: the type of egress (endpoint or router)
- * @egress_ep: a pointer to the egress endpoint
- * @egress_rtr: a pointer to the egress router
+ * @q_ingress: a queue of packets arriving at this port
+ * @q_egress: a queue of packets departing this port
  */
 struct emu_port {
-	struct fp_ring			*q;
-	enum nic_type			ingress_type;
-	union {
-		struct emu_endpoint *ingress_ep;
-		struct emu_router *ingress_rtr;
-	};
-	enum nic_type			egress_type;
-	union {
-		struct emu_endpoint *egress_ep;
-		struct emu_router *egress_rtr;
-	};
+	struct fp_ring			*q_ingress;
+	struct fp_ring			*q_egress;
 };
 
 /**
- * Initialize a port.
+ * Initialize a pair of connected ports by assigning their shared queues.
+ * @port_top: the port at the top of the link
+ * @port_bottom: the port at the bottom of the link
+ * @q_up: the queue of packets from the bottom port to the top port
+ * @q_down: the queue of packets from the top port to the bottom port
  * @return 0 on success, negative value on error.
  */
 static inline
-int port_init(struct emu_port *port, struct fp_ring *q,
-		enum nic_type ingress_type, void *ingress,
-		enum nic_type egress_type, void *egress) {
-	assert(port != NULL);
-	assert(q != NULL);
-	assert(ingress != NULL);
-	assert(egress != NULL);
+int port_pair_init(struct emu_port *port_top, struct emu_port *port_bottom,
+		   struct fp_ring *q_up, struct fp_ring *q_down)
+{
+	assert(port_top != NULL);
+	assert(port_bottom != NULL);
+	assert(q_up != NULL);
+	assert(q_down != NULL);
 
-	port->q = q;
-
-	port->ingress_type = ingress_type;
-	if (port->ingress_type == NIC_TYPE_ENDPOINT)
-		port->ingress_ep = (struct emu_endpoint *) ingress;
-	else
-		port->ingress_rtr = (struct emu_router *) ingress;
-
-	port->egress_type = egress_type;
-	if (port->egress_type == NIC_TYPE_ENDPOINT)
-		port->egress_ep = (struct emu_endpoint *) egress;
-	else
-		port->egress_rtr = (struct emu_router *) egress;
+	port_top->q_ingress = q_up;
+	port_top->q_egress = q_down;
+	port_bottom->q_ingress = q_down;
+	port_bottom->q_egress = q_up;
 
 	return 0;
 }

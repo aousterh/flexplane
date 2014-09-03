@@ -8,9 +8,9 @@
 #ifndef ENDPOINT_H_
 #define ENDPOINT_H_
 
+#include "port.h"
 #include "../graph-algo/fp_ring.h"
 
-struct emu_port;
 struct endpoint_ops;
 struct emu_ops;
 
@@ -19,13 +19,12 @@ struct emu_ops;
  * @id: the unique id of this endpoint
  * @q_egress: the queue of outgoing packets
  * @port: the egress port of this endpoint
- * @state: the global emulation state
  * @ops: endpoint functions implemented by the emulation algorithm
  */
 struct emu_endpoint {
 	uint16_t			id;
 	struct fp_ring		*q_egress;
-	struct emu_port		*port;
+	struct emu_port		port;
 	struct endpoint_ops	*ops;
 };
 
@@ -34,8 +33,7 @@ struct emu_endpoint {
  * @return 0 on success, negative value on error.
  */
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
-			struct fp_ring *q_egress, struct emu_port *port,
-			struct emu_ops *ops);
+			struct fp_ring *q_egress, struct emu_ops *ops);
 
 /**
  * Reset an endpoint. This happens when endpoints lose sync with the

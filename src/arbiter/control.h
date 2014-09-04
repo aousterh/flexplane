@@ -12,6 +12,7 @@
 #define I_AM_MASTER				1
 #define IS_STRESS_TEST			0
 #define RUN_WITH_BACKUP			0
+#define USE_1_US_TIMESLOTS		0
 
 #define STRESS_TEST_IS_AUTOMATED        1
 #define STRESS_TEST_MEAN_T_BETWEEN_REQUESTS_SEC		.5e-3
@@ -56,10 +57,16 @@
 #define		PREALLOC_DURATION_TIMESLOTS		40
 
 /* getting timeslot from time is ((NOW_NS * MUL) >> SHIFT) */
+#if (IS_STRESS_TEST || USE_1_US_TIMESLOTS == 1)
+/* use 1-MTU (1500 byte) timeslot size on 10 Gbps links */
+/* stress test requires this size of timeslot */
+#define		TIMESLOT_MUL		419
+#define		TIMESLOT_SHIFT		19
+#else
+/* use larger timeslot size for testing */
 #define		TIMESLOT_MUL		1
 #define		TIMESLOT_SHIFT		20
-//#define		TIMESLOT_MUL		419
-//#define		TIMESLOT_SHIFT		19
+#endif
 
 /* give the controller some time to initialize before starting allocation */
 #define		INIT_MAX_TIME_NS		(200*1000*1000)

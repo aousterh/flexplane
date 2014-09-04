@@ -39,6 +39,7 @@ void print_comm_log(uint16_t lcore_id)
 	printf("\ncomm_log lcore %d timeslot 0x%lX (now_timeslot 0x%llX, now - served %lld)",
 			lcore_id, ccs->latest_timeslot[0], now_timeslot,
 			(s64)(now_timeslot - ccs->latest_timeslot[0]));
+	printf("\ntimeslot mul: %d, timeslot shift: %d", TIMESLOT_MUL, TIMESLOT_SHIFT);
 
 #define D(X) (cl->X - sv->X)
 

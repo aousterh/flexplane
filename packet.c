@@ -15,12 +15,6 @@
 void drop_demand(uint16_t src, uint16_t dst) {
 	/* this packet should be dropped */
 	admitted_insert_dropped_edge(g_state->admitted, src, dst);
-
-	#ifdef AUTO_RE_REQUEST_BACKLOG
-	/* backlog for dropped packets will not be re-requested,
-	 * so automatically request the backlog again */
-	emu_add_backlog(g_state, src, dst, 1);
-	#endif
 }
 
 struct emu_packet *create_packet(uint16_t src, uint16_t dst) {

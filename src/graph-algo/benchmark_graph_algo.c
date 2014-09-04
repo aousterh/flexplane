@@ -56,7 +56,7 @@ enum benchmark_type {
 
 struct emu_ops ops;
 struct drop_tail_args emu_args = {
-		.port_capacity = 10,
+		.port_capacity = 128,
 };
 
 // Runs one experiment. Returns the number of packets admitted.

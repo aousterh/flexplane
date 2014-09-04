@@ -12,6 +12,7 @@
 #include "endpoint.h"
 #include "packet.h"
 #include "router.h"
+#include "../graph-algo/fp_ring.h"
 
 #include <assert.h>
 

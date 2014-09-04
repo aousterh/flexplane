@@ -18,8 +18,10 @@ SRCS-y := main.c \
           ../graph-algo/path_selection.c \
           ../graph-algo/euler_split.c \
           emu_admission_core.c \
+          $(EMU_DIR)/drop_tail.c \
           $(EMU_DIR)/emulation.c \
           $(EMU_DIR)/endpoint.c \
+          $(EMU_DIR)/packet.c \
           $(EMU_DIR)/router.c \
 
 #          pim_admission_core.c \

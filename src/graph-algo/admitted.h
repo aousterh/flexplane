@@ -105,7 +105,7 @@ struct admitted_traffic *get_admitted_struct(struct admitted_traffic *admitted,
 
 // Get the size of an admitted traffic struct
 static inline
-uint16_t get_admitted_struct_size() {
+uint32_t get_admitted_struct_size() {
 	return sizeof(struct admitted_traffic);
 }
 

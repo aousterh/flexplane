@@ -116,7 +116,8 @@ void admitted_print(struct emu_admitted_traffic *admitted) {
  * Returns the size of an admitted struct.
  */
 static inline
-uint16_t get_admitted_struct_size() {
+uint32_t get_admitted_struct_size() {
+
 	return sizeof(struct emu_admitted_traffic);
 }
 

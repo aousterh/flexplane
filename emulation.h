@@ -17,10 +17,12 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
-#define ADMITTED_MEMPOOL_SIZE 10
-#define ADMITTED_Q_LOG_SIZE 4
-#define PACKET_MEMPOOL_SIZE (1024 * 32)
-#define PACKET_Q_LOG_SIZE 12
+#define ADMITTED_MEMPOOL_SIZE	10
+#define ADMITTED_Q_LOG_SIZE		4
+#define PACKET_MEMPOOL_SIZE		(1024 * 32)
+#define PACKET_Q_LOG_SIZE		12
+#define EMU_NUM_PACKET_QS		(EMU_NUM_ENDPOINTS * 2 + \
+								EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2)
 
 extern struct emu_state *g_state;
 

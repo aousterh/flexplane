@@ -46,8 +46,7 @@ struct emu_state *setup_state() {
 
 	/* initialize state */
 	/* packet queues for: endpoints and ports */
-	num_packet_qs = EMU_NUM_ENDPOINTS * 2 +
-		EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2;
+	num_packet_qs = EMU_NUM_PACKET_QS;
 	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) +
 		drop_tail_ops.packet_priv_size;
 	struct fp_mempool *admitted_traffic_mempool;

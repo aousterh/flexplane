@@ -15,7 +15,9 @@
 #include "admission_core.h"
 #include "admission_core_common.h"
 #include "admission_log.h"
+#include "../emulation/admissible_log.h"
 #include "../grant-accept/partitioning.h"
+#include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/algo_config.h"
 #include "../protocol/fpproto.h"
 #include "../protocol/platform.h"
@@ -157,26 +159,16 @@ void print_global_admission_log_parallel_or_pipelined() {
 #undef D
 }
 
-void print_global_admission_log_emulation() {
-	struct admission_statistics *st = g_admission_stats();
-	struct admission_statistics *sv = &saved_admission_statistics;
-
-	printf("\nadmission core (emu with %d nodes)", STRESS_TEST_NUM_NODES);
-
-	printf("\n  allocation fails: %lu packet, %lu admitted",
-	       st->emu_packet_alloc_failed, st->emu_admitted_alloc_failed);
-	printf("\n  enqueue waits: %lu endpoint, %lu router, ",
-	       st->emu_wait_for_endpoint_enqueue,
-	       st->emu_wait_for_router_enqueue);
-	printf("%lu router internal, %lu admitted",
-	       st->emu_wait_for_internal_router_enqueue,
-	       st->emu_wait_for_admitted_enqueue);
-	printf("\n");
+void save_admission_stats () {
+#if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
+	memcpy(&saved_admission_statistics, g_admission_stats(),
+			sizeof(saved_admission_statistics));
+#else
+	emu_save_admission_stats();
+#endif
 }
 
 void print_global_admission_log() {
-	struct admission_statistics *st = g_admission_stats();
-	struct admission_statistics *sv = &saved_admission_statistics;
 
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	print_global_admission_log_parallel_or_pipelined();
@@ -186,7 +178,7 @@ void print_global_admission_log() {
 	printf("\nadmission core (UNKNOWN ALGO)");
 #endif
 
-	memcpy(sv, st, sizeof(*sv));
+	save_admission_stats();
 }
 
 struct admission_core_statistics saved_admission_core_statistics[N_ADMISSION_CORES];
@@ -252,6 +244,16 @@ void print_admission_core_log_parallel_or_pipelined(uint16_t lcore, uint16_t adm
 #endif
 }
 
+void save_admission_core_stats(int i) {
+#if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
+	memcpy(&saved_admission_core_statistics[i],
+	       g_admission_core_stats(i),
+			sizeof(saved_admission_core_statistics[i]));
+#else
+	emu_save_admission_core_stats(i);
+#endif
+}
+
 void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
@@ -283,12 +285,9 @@ int exec_log_core(void *void_cmd_p)
 	/* copy baseline statistics */
 	memcpy(&saved_comm_log, &comm_core_logs[enabled_lcore[FIRST_COMM_CORE]],
 			sizeof(saved_comm_log));
-	memcpy(&saved_admission_statistics, g_admission_stats(),
-			sizeof(saved_admission_statistics));
+	save_admission_stats();
 	for (i = 0; i < N_ADMISSION_CORES; i++)
-		memcpy(&saved_admission_core_statistics[i],
-		       g_admission_core_stats(i),
-				sizeof(saved_admission_core_statistics[i]));
+		save_admission_core_stats(i);
 
 	while (1) {
 		/* wait until proper time */

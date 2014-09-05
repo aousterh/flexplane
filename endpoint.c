@@ -11,7 +11,7 @@
 #include "api_impl.h"
 #include "packet.h"
 #include "emulation.h"
-#include "../graph-algo/admissible_algo_log.h"
+#include "admissible_log.h"
 #include "../graph-algo/platform.h"
 #include "assert.h"
 

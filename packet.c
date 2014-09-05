@@ -9,7 +9,7 @@
 #include "api.h"
 #include "admitted.h"
 #include "emulation.h"
-#include "../graph-algo/admissible_algo_log.h"
+#include "admissible_log.h"
 #include "../graph-algo/platform.h"
 
 void drop_demand(uint16_t src, uint16_t dst) {

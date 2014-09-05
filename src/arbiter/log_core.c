@@ -203,8 +203,7 @@ void print_admission_core_log_parallel_or_pipelined(uint16_t lcore, uint16_t adm
 			st->allocated_backlog_remaining,
 			(float)st->backlog_sum / (float)(st->allocated_backlog_remaining+1),
 			st->allocated_no_backlog);
-	printf("\n  %lu skipped %lu fail_alloc_admitted, %lu q_admitted_full. %lu bin_alloc_fail, %lu q_out_full, %lu q_spent_full, %lu wait_token",
-			al->batches_skipped,
+	printf("\n  %lu fail_alloc_admitted, %lu q_admitted_full. %lu bin_alloc_fail, %lu q_out_full, %lu q_spent_full, %lu wait_token",
 			st->admitted_traffic_alloc_failed, st->wait_for_space_in_q_admitted_out,
 			st->out_bin_alloc_failed, st->wait_for_space_in_q_bin_out,
 			st->wait_for_space_in_q_spent, st->waiting_to_pass_token);

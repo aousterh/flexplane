@@ -27,7 +27,6 @@
 struct admission_log {
 	uint64_t batches_started;
 	uint64_t last_started_alloc_tsc;
-	uint64_t batches_skipped;
 	uint64_t after_tslots_histogram[AFTER_TSLOTS_HISTOGRAM_NUM_BINS];
 };
 
@@ -79,12 +78,6 @@ static inline void admission_log_allocation_end(uint64_t logical_timeslot) {
 		AL->after_tslots_histogram[hist_bin]++;
 	}
 }
-
-static inline
-void admission_log_skipped_batch() {
-	AL->batches_skipped++;
-}
-
 
 #undef CL
 

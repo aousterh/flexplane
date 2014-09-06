@@ -21,6 +21,21 @@ void print_global_admission_log_emulation() {
 
 	printf("\nadmission core (emu with %d nodes)", NUM_NODES);
 
+#define D(X) (st->X - sv->X)
+	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
+	       D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
+	printf("\n  demands: %lu admitted, %lu dropped",
+	       D(admitted_packet), D(dropped_demand));
+	printf("\n  drops: %lu packet alloc fail, %lu ep enqueue, ",
+	       D(packet_alloc_failed), D(endpoint_enqueue_backlog_failed));
+	dropped_in_algo = D(dropped_demand) - D(packet_alloc_failed) -
+		D(endpoint_enqueue_backlog_failed) - D(send_packet_failed) -
+		D(endpoint_enqueue_received_failed);
+	printf("%lu send, %lu ep receive, %lu in algo", D(send_packet_failed),
+	       D(endpoint_enqueue_received_failed), dropped_in_algo);
+	printf("\n");
+#undef D
+
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
 	printf("\n  demands: %lu admitted, %lu dropped",

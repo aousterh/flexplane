@@ -45,6 +45,7 @@ void emu_emulate(struct emu_state *state) {
 				       (void **) &packet) == 0) {
 			admitted_insert_admitted_edge(state->admitted, packet->src,
 					packet->dst);
+			adm_log_emu_admitted_packet(&state->stat);
 
 			free_packet(packet);
 		}

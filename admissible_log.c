@@ -15,22 +15,24 @@
 struct emu_admission_statistics emu_saved_admission_statistics;
 
 void print_global_admission_log_emulation() {
+	uint64_t dropped_in_algo;
 	struct emu_admission_statistics *st = &g_emu_state.stat;
 	struct emu_admission_statistics *sv = &emu_saved_admission_statistics;
 
 	printf("\nadmission core (emu with %d nodes)", NUM_NODES);
 
-	printf("\n  allocation fails: %lu packet, %lu admitted",
-	       st->emu_packet_alloc_failed, st->emu_admitted_alloc_failed);
-	printf("\n  enqueue waits: %lu endpoint, %lu router, ",
-	       st->emu_wait_for_endpoint_enqueue,
-	       st->emu_wait_for_router_enqueue);
-	printf("%lu router internal, %lu admitted",
-	       st->emu_wait_for_internal_router_enqueue,
-	       st->emu_wait_for_admitted_enqueue);
+	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
+			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
+	printf("\n  demands: %lu admitted, %lu dropped",
+			st->admitted_packet, st->dropped_demand);
+	printf("\n  drops: %lu packet alloc fail, %lu ep enqueue, ",
+			st->packet_alloc_failed, st->endpoint_enqueue_backlog_failed);
+	dropped_in_algo = st->dropped_demand - st->packet_alloc_failed -
+			st->endpoint_enqueue_backlog_failed - st->send_packet_failed -
+			st->endpoint_enqueue_received_failed;
+	printf("%lu send, %lu ep receive, %lu in algo", st->send_packet_failed,
+			st->endpoint_enqueue_received_failed, dropped_in_algo);
 	printf("\n");
-
-	memcpy(sv, st, sizeof(*sv));
 }
 
 void emu_save_admission_stats() {

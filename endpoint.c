@@ -86,7 +86,7 @@ void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
 		/* enqueue the packet to the endpoint queue */
 		if (fp_ring_enqueue(ep->q_egress, packet) == -ENOBUFS) {
 			/* no space to enqueue this packet at the endpoint, drop it */
-			adm_log_emu_wait_for_endpoint_enqueue(&g_state->stat);
+			adm_log_emu_endpoint_enqueue_backlog_failed(&g_state->stat);
 			drop_packet(packet);
 		}
 	}

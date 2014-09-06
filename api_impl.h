@@ -29,7 +29,7 @@ struct emu_port *endpoint_port(struct emu_endpoint *ep) {
 static inline
 void send_packet(struct emu_port *port, struct emu_packet *packet) {
 	if (fp_ring_enqueue(port->q_egress, packet) == -ENOBUFS) {
-		// TODO: log failure
+		adm_log_emu_send_packet_failed(&g_state->stat);
 		drop_packet(packet);
 	}
 }
@@ -39,6 +39,8 @@ void drop_packet(struct emu_packet *packet) {
 	drop_demand(packet->src, packet->dst);
 
 	free_packet(packet);
+
+	adm_log_emu_dropped_packet(&g_state->stat);
 }
 
 static inline
@@ -67,7 +69,7 @@ void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
 	assert(packet->dst == ep->id);
 
 	if (fp_ring_enqueue(ep->q_ingress, packet) == -ENOBUFS) {
-		// TODO: log failure
+		adm_log_emu_endpoint_enqueue_received_failed(&g_state->stat);
 		drop_packet(packet);
 	}
 }

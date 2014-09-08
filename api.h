@@ -64,6 +64,13 @@ static inline
 struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep);
 
 /**
+ * Enqueues a packet at an endpoint to pass up the network stack.
+ */
+static inline
+void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
+		struct emu_packet *packet);
+
+/**
  * Frees a packet when an emulation algorithm is done running.
  */
 static inline

@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define MAX_PACKET_QUEUE_LEN	16
+#define MAX_PACKET_QUEUE_LEN	128
 
 struct emu_packet;
 
@@ -36,6 +36,7 @@ struct packet_queue {
  */
 static inline
 void queue_create(struct packet_queue *q, uint32_t num_elems) {
+	assert(num_elems <= MAX_PACKET_QUEUE_LEN);
 	assert(q != NULL);
 
 	q->capacity = num_elems;

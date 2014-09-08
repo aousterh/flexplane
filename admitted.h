@@ -54,7 +54,7 @@ static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
 			  uint16_t dst, uint16_t flags) {
 	assert(admitted != NULL);
-	assert(admitted->size < 2 * EMU_NUM_ENDPOINTS);
+	assert(admitted->size < EMU_NUM_ENDPOINTS + EMU_MAX_DROPS);
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
 
@@ -82,7 +82,7 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
 				  uint16_t src, uint16_t dst) {
-	assert(admitted->dropped < EMU_NUM_ENDPOINTS);
+	assert(admitted->dropped < EMU_MAX_DROPS);
 
 	admitted_insert_edge(admitted, src, dst, FLAGS_DROP);
 	admitted->dropped++;
@@ -116,7 +116,8 @@ void admitted_print(struct emu_admitted_traffic *admitted) {
  * Returns the size of an admitted struct.
  */
 static inline
-uint16_t get_admitted_struct_size() {
+uint32_t get_admitted_struct_size() {
+
 	return sizeof(struct emu_admitted_traffic);
 }
 

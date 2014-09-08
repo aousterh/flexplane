@@ -8,7 +8,6 @@ CCFLAGS += -DNO_DPDK
 #CCFLAGS += -debug inline-debug-info
 CCFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
 CCFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
-#CCFLAGS += -DAUTO_RE_REQUEST_BACKLOG
 CCFLAGS += -DEMULATION_ALGO
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info

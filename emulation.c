@@ -27,12 +27,6 @@ void emu_emulate(struct emu_state *state) {
 	uint32_t i;
 	struct emu_packet *packet;
 
-	/* get 1 admitted traffic for the core, init it */
-	while (fp_mempool_get(state->admitted_traffic_mempool,
-				(void **) &state->admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(&state->stat);
-	admitted_init(state->admitted);
-
 	/* emulate one timeslot at each endpoint */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		endpoint_emulate(state->endpoints[i]);
@@ -47,10 +41,11 @@ void emu_emulate(struct emu_state *state) {
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		/* dequeue all packets at this port, add them to admitted traffic,
 		 * and free them */
-		while (fp_ring_dequeue(state->endpoints[i]->port.q_ingress,
+		while (fp_ring_dequeue(state->endpoints[i]->q_ingress,
 				       (void **) &packet) == 0) {
 			admitted_insert_admitted_edge(state->admitted, packet->src,
 					packet->dst);
+			adm_log_emu_admitted_packet(&state->stat);
 
 			free_packet(packet);
 		}
@@ -59,7 +54,12 @@ void emu_emulate(struct emu_state *state) {
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)
 		adm_log_emu_wait_for_admitted_enqueue(&state->stat);
-	state->admitted = NULL;
+
+	/* get 1 new admitted traffic for the core, init it */
+	while (fp_mempool_get(state->admitted_traffic_mempool,
+				(void **) &state->admitted) == -ENOENT)
+		adm_log_emu_admitted_alloc_failed(&state->stat);
+	admitted_init(state->admitted);
 }
 
 void emu_cleanup(struct emu_state *state) {
@@ -78,8 +78,6 @@ void emu_cleanup(struct emu_state *state) {
 		fp_free(state->routers[i]);
 	}
 
-	fp_free(state->admitted_traffic_mempool);
-
 	if (state->admitted != NULL)
 		fp_mempool_put(state->admitted_traffic_mempool, state->admitted);
 
@@ -88,6 +86,7 @@ void emu_cleanup(struct emu_state *state) {
 		fp_mempool_put(state->admitted_traffic_mempool, admitted);
 	fp_free(state->q_admitted_out);
 
+	fp_free(state->admitted_traffic_mempool);
 	fp_free(state->packet_mempool);
 }
 
@@ -122,7 +121,9 @@ void emu_init_state(struct emu_state *state,
 		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ops->ep_ops.priv_size;
 		state->endpoints[i] = fp_malloc("emu_endpoint", size);
 		assert(state->endpoints[i] != NULL);
-		endpoint_init(state->endpoints[i], i, packet_queues[pq++], ops);
+		endpoint_init(state->endpoints[i], i, packet_queues[pq],
+				packet_queues[pq + 1], ops);
+		pq += 2;
 	}
 
 	/* initialize all the routers */
@@ -141,6 +142,12 @@ void emu_init_state(struct emu_state *state,
 			       packet_queues[pq], packet_queues[pq + 1]);
 		pq += 2;
 	}
+
+	/* get 1 admitted traffic for the core, init it */
+	while (fp_mempool_get(state->admitted_traffic_mempool,
+				(void **) &state->admitted) == -ENOENT)
+		adm_log_emu_admitted_alloc_failed(&state->stat);
+	admitted_init(state->admitted);
 }
 
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,

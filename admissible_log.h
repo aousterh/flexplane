@@ -1,0 +1,120 @@
+/*
+ * admissible_log.h
+ *
+ * Logging for admission control in the emulation arbiter.
+ *
+ *  Created on: September 5, 2014
+ *      Author: aousterh
+ */
+
+#ifndef EMU_ADMISSIBLE_LOG_H__
+#define EMU_ADMISSIBLE_LOG_H__
+
+#include "../protocol/platform/generic.h"
+
+#define		MAINTAIN_EMU_ADM_LOG_COUNTERS	1
+
+/**
+ * Per-core statistics for emulation
+ * TODO: populate this when using multiple cores
+ */
+struct emu_admission_core_statistics {
+};
+
+/**
+ * Global statistics for emulation
+ */
+struct emu_admission_statistics {
+	/* admitted structs */
+	uint64_t wait_for_admitted_enqueue;
+	uint64_t admitted_alloc_failed;
+
+	/* packets */
+	uint64_t admitted_packet;
+	uint64_t dropped_demand;
+	uint64_t dropped_packet;
+	uint64_t packet_alloc_failed;
+
+	/* enqueue failures */
+	uint64_t endpoint_enqueue_backlog_failed;
+	uint64_t endpoint_enqueue_received_failed;
+	uint64_t send_packet_failed;
+};
+
+/*
+ * Copy the global admission statistics to use to compute the difference
+ * over the logging time interval.
+ */
+void emu_save_admission_stats();
+
+/*
+ * Copy the per-core admission statistics to use to compute the difference
+ * over the logging time interval.
+ */
+void emu_save_admission_core_stats(int i);
+
+
+static inline __attribute__((always_inline))
+void adm_log_emu_wait_for_admitted_enqueue(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->wait_for_admitted_enqueue++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_admitted_alloc_failed(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->admitted_alloc_failed++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_admitted_packet(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->admitted_packet++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_dropped_demand(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->dropped_demand++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_dropped_packet(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->dropped_packet++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_packet_alloc_failed(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->packet_alloc_failed++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_enqueue_backlog_failed(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->endpoint_enqueue_backlog_failed++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_enqueue_received_failed(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->endpoint_enqueue_received_failed++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_send_packet_failed(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->send_packet_failed++;
+}
+
+#endif /* EMU_ADMISSIBLE_LOG_H__ */

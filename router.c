@@ -9,7 +9,7 @@
 #include "api.h"
 #include "api_impl.h"
 #include "port.h"
-#include "../graph-algo/admissible_algo_log.h"
+#include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include "assert.h"
 

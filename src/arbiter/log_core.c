@@ -113,6 +113,9 @@ void print_comm_log(uint16_t lcore_id)
 	if (cl->failed_to_burst_watchdog)
 		printf("\n  %lu failed to burst watchdog packet",
 				cl->failed_to_burst_watchdog);
+	if (cl->admitted_too_many)
+		printf("\n  %lu timeslots admitted more than allowed",
+				cl->admitted_too_many);
 
 	printf("\n warnings:");
 	if (cl->alloc_fell_off_window)

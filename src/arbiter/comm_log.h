@@ -14,6 +14,7 @@
 #include <rte_cycles.h>
 
 #include "control.h"
+#include "../graph-algo/admissible.h"
 #include "../protocol/platform.h"
 #include "dpdk-time.h"
 
@@ -63,10 +64,11 @@ struct comm_log {
 	uint64_t dropped_rx_due_to_deadline;
 	uint64_t failed_to_allocate_watchdog;
 	uint64_t failed_to_burst_watchdog;
-        double mean_t_btwn_requests; /* used only in stress test */
-        uint64_t stress_test_mode; /* used only in stress test */
-        uint64_t stress_test_max_node_tslots; /* used only in stress test */
-        double stress_test_increase_factor; /* used only in stress test */
+	uint64_t admitted_too_many;
+	double mean_t_btwn_requests; /* used only in stress test */
+	uint64_t stress_test_mode; /* used only in stress test */
+	uint64_t stress_test_max_node_tslots; /* used only in stress test */
+	double stress_test_increase_factor; /* used only in stress test */
 };
 
 extern struct comm_log comm_core_logs[RTE_MAX_LCORE];
@@ -219,6 +221,9 @@ static inline void comm_log_got_admitted_tslot(uint16_t size, uint64_t timeslot,
 				CL->processed_tslots);
 #endif
 	}
+
+	if (size > MAX_ADMITTED_PER_TIMESLOT)
+		CL->admitted_too_many++;
 }
 
 static inline void comm_log_alloc_fell_off_window(uint64_t thrown_tslot,

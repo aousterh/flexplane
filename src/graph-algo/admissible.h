@@ -24,14 +24,15 @@ struct emu_ops;
 #include "../grant-accept/pim.h"
 #include "../grant-accept/pim_admissible_traffic.h"
 
-#define NUM_BINS_SHIFT 0
-#define NUM_BINS 1
-#define LARGE_BIN_SIZE 0 /* unused */
-#define BATCH_SIZE 1
-#define BATCH_SHIFT 0
-#define ADMITTED_PER_BATCH N_PARTITIONS
-#define NUM_BIN_RINGS N_PARTITIONS
-#define BIN_RING_SHIFT 16
+#define NUM_BINS_SHIFT				0
+#define NUM_BINS					1
+#define LARGE_BIN_SIZE				0 /* unused */
+#define BATCH_SIZE					1
+#define BATCH_SHIFT					0
+#define ADMITTED_PER_BATCH			N_PARTITIONS
+#define NUM_BIN_RINGS				N_PARTITIONS
+#define BIN_RING_SHIFT				16
+#define MAX_ADMITTED_PER_TIMESLOT	NUM_NODES
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,
@@ -111,9 +112,10 @@ void handle_spent_demands(struct admissible_state *state)
 #include "admitted.h"
 #include "batch.h"
 
-#define ADMITTED_PER_BATCH BATCH_SIZE
-#define NUM_BIN_RINGS 0
-#define BIN_RING_SHIFT 0
+#define ADMITTED_PER_BATCH			BATCH_SIZE
+#define NUM_BIN_RINGS				0
+#define BIN_RING_SHIFT				0
+#define MAX_ADMITTED_PER_TIMESLOT	NUM_NODES
 
 static inline
 void add_backlog(struct admissible_state *status, uint16_t src,
@@ -198,12 +200,13 @@ void handle_spent_demands(struct admissible_state *state)
 #include "../emulation/emulation.h"
 #include "../emulation/packet.h"
 
-#define SMALL_BIN_SIZE		0
-#define BATCH_SIZE			1
-#define BATCH_SHIFT			0
-#define ADMITTED_PER_BATCH	1
-#define NUM_BIN_RINGS		EMU_NUM_PACKET_QS
-#define BIN_RING_SHIFT		PACKET_Q_LOG_SIZE
+#define SMALL_BIN_SIZE				0
+#define BATCH_SIZE					1
+#define BATCH_SHIFT					0
+#define ADMITTED_PER_BATCH			1
+#define NUM_BIN_RINGS				EMU_NUM_PACKET_QS
+#define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
+#define MAX_ADMITTED_PER_TIMESLOT	(EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,

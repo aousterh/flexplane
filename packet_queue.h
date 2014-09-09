@@ -93,4 +93,14 @@ int queue_empty(struct packet_queue *q) {
 	return (q->occupancy == 0);
 }
 
+/**
+ * Returns the current occupancy of the queue.
+ */
+static inline
+uint32_t queue_occupancy(struct packet_queue *q) {
+	assert(q != NULL);
+
+	return q->occupancy;
+}
+
 #endif /* PACKET_QUEUE_H_ */

@@ -64,6 +64,7 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 		/* dequeue one packet for this port, send it */
 		if (queue_dequeue(output_q, &packet) == 0) {
 			port = router_port(rtr, i);
+			adm_log_emu_router_sent_packet(&g_state->stat);
 			send_packet(port, packet);
 		}
 	}
@@ -102,6 +103,7 @@ void drop_tail_endpoint_emulate(struct emu_endpoint *ep) {
 	port = endpoint_port(ep);
 	if (packet != NULL) {
 		/* try to transmit the packet to the next router */
+		adm_log_emu_endpoint_sent_packet(&g_state->stat);
 		send_packet(port, packet);
 	}
 

@@ -33,6 +33,8 @@ void print_global_admission_log_emulation() {
 		D(endpoint_enqueue_received_failed);
 	printf("%lu send, %lu ep receive, %lu in algo", D(send_packet_failed),
 	       D(endpoint_enqueue_received_failed), dropped_in_algo);
+	printf("\n  algo sent %lu from endpoints, %lu from routers",
+			D(endpoint_sent_packet), D(router_sent_packet));
 	printf("\n");
 #undef D
 
@@ -47,6 +49,8 @@ void print_global_admission_log_emulation() {
 			st->endpoint_enqueue_received_failed;
 	printf("%lu send, %lu ep receive, %lu in algo", st->send_packet_failed,
 			st->endpoint_enqueue_received_failed, dropped_in_algo);
+	printf("\n  algo sent %lu from endpoints, %lu from routers",
+			st->endpoint_sent_packet, st->router_sent_packet);
 	printf("\n");
 }
 

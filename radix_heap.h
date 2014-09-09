@@ -36,6 +36,19 @@ static inline void rheap_init(struct radix_heap *rh)
 }
 
 /**
+ * Retrieves a pointer to the struct holding the list_node used to link into
+ *   the rheap.
+ *
+ * e.g., if struct my_struct contains a member "struct list_node rheap_elem",
+ *   and rheap_find_min returned a "struct list_node *p", then use:
+ *   	rheap_entry(p, struct my_struct, rheap_elem)
+ *   to get a pointer to the struct my_struct.
+ *
+ * (see also CCAN's contrainer_of)
+ */
+#define rheap_entry(elem, type, member) list_entry(elem, type, member)
+
+/**
  * Finds the element in the heap with the smallest priority value (or the
  *   element added earliest, if there is more than one element with smallest
  *   priority)
@@ -55,11 +68,13 @@ static inline struct list_node *rheap_find_min(struct radix_heap *rh)
 		mask &= (mask - 1);
 
 		if (!list_empty(&rh->q[prio])) {
+			rh->mask = mask;
 			return rh->q[prio].n.next;
 		}
 	}
 
 	/* rheap is empty */
+	rh->mask = 0uLL;
 	return NULL;
 }
 

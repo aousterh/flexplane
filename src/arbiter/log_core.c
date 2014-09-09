@@ -46,13 +46,17 @@ void print_comm_log(uint16_t lcore_id)
 #define D(X) (cl->X - sv->X)
 
 #if IS_STRESS_TEST
-        double mean_t_btwn_requests_sec = cl->mean_t_btwn_requests / rte_get_timer_hz();
-        double gbps = D(occupied_node_tslots) * 1500 * 8 / (0.1 * 1000 * 1000 * 1000);
-        double best_gbps = cl->stress_test_max_node_tslots * 1500 * 8 / (STRESS_TEST_RATE_INCREASE_GAP_SEC * 1000 * 1000 * 1000.0);
-        printf("\ncurrent stress test mean t btwn requests: %f, current gbps: %f, best gbps: %f",
-               mean_t_btwn_requests_sec, gbps, best_gbps);
-        printf("\nstress test rate status (1:increase, 2:maintain, 3:decrease): %lu, increase factor: %f\n",
-               cl->stress_test_mode, cl->stress_test_increase_factor);
+	double mean_t_btwn_requests_sec, gbps, dropped_gbps, best_gbps;
+	mean_t_btwn_requests_sec = cl->mean_t_btwn_requests / rte_get_timer_hz();
+	gbps = D(occupied_node_tslots) * 1500 * 8 / (0.1 * 1000 * 1000 * 1000);
+	dropped_gbps = D(dropped_node_tslots) * 1500 * 8 /
+			(0.1 * 1000 * 1000 * 1000);
+	best_gbps = cl->stress_test_max_node_tslots * 1500 * 8 /
+			(STRESS_TEST_RATE_INCREASE_GAP_SEC * 1000 * 1000 * 1000.0);
+	printf("\ncurrent stress test mean t btwn requests: %f, current gbps: %f (dropped: %f), best gbps: %f",
+			mean_t_btwn_requests_sec, gbps, dropped_gbps, best_gbps);
+	printf("\nstress test rate status (1:increase, 2:maintain, 3:decrease): %lu, increase factor: %f\n",
+			cl->stress_test_mode, cl->stress_test_increase_factor);
 #endif
 
 	printf("\n  RX %lu pkts, %lu bytes in %lu batches (%lu non-empty batches), %lu dropped",

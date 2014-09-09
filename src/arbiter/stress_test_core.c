@@ -51,7 +51,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	int rc;
 	int i;
 	struct admitted_traffic* admitted[MAX_ADMITTED_PER_LOOP];
-        uint16_t partition;
+	uint16_t partition;
 	uint64_t current_timeslot;
 
 	/* Process newly allocated timeslots */
@@ -64,10 +64,15 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	}
 
 	for (i = 0; i < rc; i++) {
-                partition = get_admitted_partition(admitted[i]);
+		partition = get_admitted_partition(admitted[i]);
 		current_timeslot = ++core->latest_timeslot[partition];
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 					    current_timeslot, partition);
+#if defined(EMULATION_ALGO)
+		struct emu_admitted_traffic *emu_admitted;
+		emu_admitted = (struct emu_admitted_traffic *) admitted[i];
+		comm_log_dropped_tslots(emu_admitted->dropped);
+#endif
 	}
 	/* free memory */
 	rte_mempool_put_bulk(admitted_traffic_pool[0], (void **) admitted, rc);

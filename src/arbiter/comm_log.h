@@ -44,6 +44,7 @@ struct comm_log {
 	uint64_t processed_tslots;
 	uint64_t non_empty_tslots;
 	uint64_t occupied_node_tslots;
+	uint64_t dropped_node_tslots;
 	uint64_t alloc_fell_off_window;
 	uint64_t handle_reset;
 	uint64_t timer_cancel;
@@ -207,11 +208,14 @@ static inline void comm_log_dequeue_admitted_failed(int rc) {
 static inline void comm_log_got_admitted_tslot(uint16_t size, uint64_t timeslot,
                                                uint16_t partition) {
 	(void)size;(void)timeslot;
-        if (partition == 0)
-                CL->processed_tslots++;
+	if (partition == 0)
+		CL->processed_tslots++;
 	if (size > 0) {
 		CL->non_empty_tslots++;
 		CL->occupied_node_tslots += size;
+
+		if (size > MAX_ADMITTED_PER_TIMESLOT)
+			CL->admitted_too_many++;
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 		uint64_t now = fp_get_time_ns(); /* TODO: disable this */
@@ -221,9 +225,10 @@ static inline void comm_log_got_admitted_tslot(uint16_t size, uint64_t timeslot,
 				CL->processed_tslots);
 #endif
 	}
+}
 
-	if (size > MAX_ADMITTED_PER_TIMESLOT)
-		CL->admitted_too_many++;
+static inline void comm_log_dropped_tslots(uint16_t dropped) {
+	CL->dropped_node_tslots += dropped;
 }
 
 static inline void comm_log_alloc_fell_off_window(uint64_t thrown_tslot,

@@ -8,7 +8,7 @@
 #ifndef ENCODING_H_
 #define ENCODING_H_
 
-#include <inttypes.h>
+#include "platform/generic.h"
 
 /* This file contains information about encoding/decoding payloads in Fastpass
  * control packets. */
@@ -53,21 +53,21 @@
 
 /* Return the encoding of dst and flags */
 static inline
-uint16_t get_dst_encoding(uint16_t dst, uint16_t flags)
+u16 get_dst_encoding(u16 dst, u16 flags)
 {
 	return ((dst & DST_MASK) | (flags & FLAGS_MASK));
 }
 
 /* Return the dst encoded in encoding */
 static inline
-uint16_t get_dst_from_encoding(uint16_t encoding)
+u16 get_dst_from_encoding(u16 encoding)
 {
 	return encoding & DST_MASK;
 }
 
 /* Return the flags encoded in encoding */
 static inline
-uint16_t get_flags_from_encoding(uint16_t encoding)
+u16 get_flags_from_encoding(u16 encoding)
 {
 	return encoding & FLAGS_MASK;
 }

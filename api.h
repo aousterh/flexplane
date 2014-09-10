@@ -15,6 +15,7 @@
 struct emu_endpoint;
 struct emu_packet;
 struct emu_router;
+struct emu_admission_statistics;
 
 /* alignment macros based on /net/pkt_sched.h */
 #define EMU_ALIGNTO				64
@@ -93,6 +94,34 @@ uint32_t endpoint_id(struct emu_endpoint *ep);
  */
 struct emu_packet *create_packet(uint16_t src, uint16_t dst);
 
+
+/*
+ * Logging functions that emulation algorithms may call.
+ */
+
+/**
+ * Logs that an endpoint sent a packet out a port.
+ */
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_sent_packet(struct emu_admission_statistics *st);
+
+/**
+ * Logs that a router sent a packet out a port.
+ */
+static inline __attribute__((always_inline))
+void adm_log_emu_router_sent_packet(struct emu_admission_statistics *st);
+
+/**
+ * Logs that an endpoint dropped a packet.
+ */
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_dropped_packet(struct emu_admission_statistics *st);
+
+/**
+ * Logs that a router dropped a packet.
+ */
+static inline __attribute__((always_inline))
+void adm_log_emu_router_dropped_packet(struct emu_admission_statistics *st);
 
 /* Router functions that an emulation algorithm must implement. */
 

@@ -23,18 +23,13 @@ void print_global_admission_log_emulation() {
 
 #define D(X) (st->X - sv->X)
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
-	       D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
+			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
 	printf("\n  demands: %lu admitted, %lu dropped",
-	       D(admitted_packet), D(dropped_demand));
-	printf("\n  drops: %lu packet alloc fail, %lu ep enqueue, ",
-	       D(packet_alloc_failed), D(endpoint_enqueue_backlog_failed));
-	dropped_in_algo = D(dropped_demand) - D(packet_alloc_failed) -
-		D(endpoint_enqueue_backlog_failed) - D(send_packet_failed) -
-		D(endpoint_enqueue_received_failed);
-	printf("%lu send, %lu ep receive, %lu in algo", D(send_packet_failed),
-	       D(endpoint_enqueue_received_failed), dropped_in_algo);
+			D(admitted_packet), D(dropped_demand));
 	printf("\n  algo sent %lu from endpoints, %lu from routers",
 			D(endpoint_sent_packet), D(router_sent_packet));
+	printf("\n  algo dropped %lu from endpoints, %lu from routers",
+			D(endpoint_dropped_packet), D(router_dropped_packet));
 	printf("\n");
 #undef D
 
@@ -42,15 +37,28 @@ void print_global_admission_log_emulation() {
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
 	printf("\n  demands: %lu admitted, %lu dropped",
 			st->admitted_packet, st->dropped_demand);
-	printf("\n  drops: %lu packet alloc fail, %lu ep enqueue, ",
-			st->packet_alloc_failed, st->endpoint_enqueue_backlog_failed);
-	dropped_in_algo = st->dropped_demand - st->packet_alloc_failed -
-			st->endpoint_enqueue_backlog_failed - st->send_packet_failed -
-			st->endpoint_enqueue_received_failed;
-	printf("%lu send, %lu ep receive, %lu in algo", st->send_packet_failed,
-			st->endpoint_enqueue_received_failed, dropped_in_algo);
 	printf("\n  algo sent %lu from endpoints, %lu from routers",
 			st->endpoint_sent_packet, st->router_sent_packet);
+	printf("\n  algo dropped %lu from endpoints, %lu from routers",
+			st->endpoint_dropped_packet, st->router_dropped_packet);
+
+	printf("\n errors:");
+	if (st->admitted_struct_overflow)
+		printf("\n  %lu admitted struct overflow (too many drops?)",
+				st->admitted_struct_overflow);
+
+	printf("\n warnings:");
+	if (st->packet_alloc_failed)
+		printf("\n  %lu packet allocs failed (increase packet mempool size?)",
+				st->packet_alloc_failed);
+	if (st->endpoint_enqueue_backlog_failed)
+		printf("\n  %lu endpoint enqueue backlog failed",
+				st->endpoint_enqueue_backlog_failed);
+	if (st->endpoint_enqueue_received_failed)
+		printf("\n  %lu endpoint enqueue receveived failed",
+				st->endpoint_enqueue_received_failed);
+	if (st->send_packet_failed)
+		printf("\n  %lu send packet failed", st->send_packet_failed);
 	printf("\n");
 }
 

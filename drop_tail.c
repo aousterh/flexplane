@@ -6,8 +6,8 @@
  */
 
 #include "drop_tail.h"
+#include "api.h"
 #include "api_impl.h"
-#include "port.h"
 
 #define DROP_TAIL_PORT_CAPACITY 5
 
@@ -79,6 +79,7 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 
 			if (queue_enqueue(output_q, packet) != 0) {
 				/* no space to enqueue, drop this packet */
+				adm_log_emu_router_dropped_packet(&g_state->stat);
 				drop_packet(packet);
 				continue;
 			}

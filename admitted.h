@@ -9,6 +9,8 @@
 #define EMU_ADMITTED_H_
 
 #include "config.h"
+#include "admissible_log.h"
+#include "emulation.h"
 #include "../protocol/encoding.h"
 
 #include <assert.h>
@@ -54,9 +56,11 @@ static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
 			  uint16_t dst, uint16_t flags) {
 	assert(admitted != NULL);
-	assert(admitted->size < EMU_NUM_ENDPOINTS + EMU_MAX_DROPS);
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
+
+	if (admitted->size >= EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
+		adm_log_emu_admitted_struct_overflow(&g_state->stat);
 
 	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
 	edge->src = src;

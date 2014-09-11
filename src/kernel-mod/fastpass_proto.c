@@ -491,7 +491,6 @@ static int init_hashinfo(void)
 
 	for (i = 0; i <= fastpass_hashinfo.ehash_mask; i++) {
 			INIT_HLIST_NULLS_HEAD(&fastpass_hashinfo.ehash[i].chain, i);
-			INIT_HLIST_NULLS_HEAD(&fastpass_hashinfo.ehash[i].twchain, i);
 	}
 	return 0;
 }

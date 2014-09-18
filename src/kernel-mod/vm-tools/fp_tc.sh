@@ -21,4 +21,4 @@ DATA=`cat /sys/module/fastpass/sections/.data`
 BSS=`cat /sys/module/fastpass/sections/.bss`
 echo add-symbol-file $FASTPASS_DIR/src/kernel-mod/fastpass.ko $TEXT -s .data $DATA -s .bss $BSS
 
-sudo $TC qdisc add dev $DEV root fastpass ctrl $CONTROLLER_IP rate 12500Kbps
+sudo $TC qdisc add dev $DEV root fastpass rate 12500Kbps

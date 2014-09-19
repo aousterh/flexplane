@@ -7,7 +7,7 @@ DEV="em1"
 
 TC="/home/aousterh/src/iproute2-fastpass/tc/tc"
 
-./del_tc.sh
+./del_tc_pd.sh
 
 sudo insmod fastpass.ko fastpass_debug=1 req_cost=1000000 req_bucketlen=1000000 ctrl_addr=$CONTROLLER_IP update_timer_ns=2048000 retrans_timeout_ns=3000000
 

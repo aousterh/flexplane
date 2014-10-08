@@ -12,6 +12,7 @@
 #define I_AM_MASTER				1
 #define IS_STRESS_TEST			0
 #define RUN_WITH_BACKUP			0
+#define USE_10_US_TIMESLOTS		1
 #define USE_1_US_TIMESLOTS		0
 
 #define STRESS_TEST_IS_AUTOMATED        1
@@ -62,6 +63,10 @@
 /* stress test requires this size of timeslot */
 #define		TIMESLOT_MUL		419
 #define		TIMESLOT_SHIFT		19
+#elif (USE_10_US_TIMESLOTS == 1)
+/* use 1-MTU (1500 byte) timeslot size on 1 Gbps links */
+#define		TIMESLOT_MUL		337
+#define		TIMESLOT_SHIFT		22
 #else
 /* use larger timeslot size for testing */
 #define		TIMESLOT_MUL		1

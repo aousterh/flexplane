@@ -853,7 +853,7 @@ init_mem(void)
 		if (rx_pktmbuf_pool[socketid] == NULL) {
 			printf("Trying to allocat RX mbuf pool on socket %d: %u buffers of size %lu\n",
 					socketid, NB_RX_MBUF, RX_MBUF_SIZE);
-			rte_snprintf(s, sizeof(s), "mbuf_pool_%d", socketid);
+			snprintf(s, sizeof(s), "mbuf_pool_%d", socketid);
 			rx_pktmbuf_pool[socketid] =
 				rte_mempool_create(s, NB_RX_MBUF, RX_MBUF_SIZE, MEMPOOL_CACHE_SIZE,
 					sizeof(struct rte_pktmbuf_pool_private),
@@ -869,7 +869,7 @@ init_mem(void)
 
 		/** TX mbuf pool */
 		if (tx_pktmbuf_pool[socketid] == NULL) {
-			rte_snprintf(s, sizeof(s), "tx_mbuf_pool_%d", socketid);
+			snprintf(s, sizeof(s), "tx_mbuf_pool_%d", socketid);
 			tx_pktmbuf_pool[socketid] =
 				rte_mempool_create(s, NB_TX_MBUF, TX_MBUF_SIZE, MEMPOOL_CACHE_SIZE,
 					sizeof(struct rte_pktmbuf_pool_private),
@@ -930,16 +930,6 @@ int main(int argc, char **argv)
 		if (ret < 0)
 			rte_exit(EXIT_FAILURE, "init_mem failed\n");
 	}
-
-	/* init driver */
-#ifdef RTE_LIBRTE_IGB_PMD
-	if (rte_igb_pmd_init() < 0)
-		rte_exit(EXIT_FAILURE, "Cannot init igb pmd\n");
-#endif
-#ifdef RTE_LIBRTE_IXGBE_PMD
-	if (rte_ixgbe_pmd_init() < 0)
-		rte_exit(EXIT_FAILURE, "Cannot init ixgbe pmd\n");
-#endif
 
 	if (rte_eal_pci_probe() < 0)
 		rte_exit(EXIT_FAILURE, "Cannot probe PCI\n");

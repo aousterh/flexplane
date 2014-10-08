@@ -146,7 +146,13 @@ load_igb_uio_module()
 bind_eth()
 {
 	if  /sbin/lsmod  | grep -q igb_uio ; then
+            if [ -f ${RTE_SDK}/tools/pci_unbind.py ]; then
 		sudo ${RTE_SDK}/tools/pci_unbind.py --force -b igb_uio $PCI_PATH && echo "OK"
+            elif [ -f ${RTE_SDK}/tools/dpdk_nic_bind.py ]; then
+		sudo ${RTE_SDK}/tools/dpdk_nic_bind.py -b igb_uio $PCI_PATH && echo "OK"
+            else
+                "error locating script to bind NICs in ${RTE_SDK}/tools"
+            fi
 	else 
 		echo "# Please load the 'igb_uio' kernel module before querying or "
 		echo "# adjusting NIC device bindings"

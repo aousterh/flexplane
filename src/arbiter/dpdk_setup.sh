@@ -3,7 +3,8 @@
 # script to prepare DPDK to run the Fastpass arbiter
 
 NUM_PAGES=512
-PCI_PATH="0000:84:00.1"
+DEV="eth4"
+PCI_PATH="0000:82:00.1"
 
 #
 # Creates hugepage filesystem.
@@ -167,6 +168,10 @@ set_numa_pages
 # insert the IGB UIO module
 echo "dpdk_setup.sh: inserting the IGB UIO module"
 load_igb_uio_module
+
+# take down eth so that it is inactive
+echo "dpdk_setup.sh: make eth inactive"
+sudo ifconfig $DEV down
 
 # bind eth to the IGB UIO module
 echo "dpdk_setup.sh: binding eth to the IGB UIO module"

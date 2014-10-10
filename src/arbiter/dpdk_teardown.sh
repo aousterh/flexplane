@@ -2,8 +2,9 @@
 
 # script to teardown all dpdk state set up for the Fastpass arbiter
 
-PCI_PATH="0000:84:00.1"
-DRV="ixgbe"
+PCI_PATH="0000:82:00.1"
+DEV="eth4"
+DRV="igb"
 
 #
 # Removes hugepage filesystem.
@@ -75,3 +76,7 @@ unbind_eth
 # insert the IGB UIO module
 echo "dpdk_teardown.sh: removing the IGB UIO module"
 remove_igb_uio_module
+
+# bring up eth again
+echo "dpsk_teardown.sh: bringing up eth again"
+sudo ifconfig $DEV up

@@ -11,6 +11,7 @@
 #include "fp_timer.h"
 #include "main.h"
 #include "watchdog.h"
+#include "control.h"
 
 #define CONTROLLER_SEND_TIMEOUT_SECS 	0.0002
 
@@ -21,11 +22,21 @@
 /* maximum number of paths possible */
 #define MAX_PATHS					4
 
-#define NODE_MAX_PKTS_PER_SEC		50000
 /* maximum burst of egress packets to a single node (must be >1, can be fraction) */
 #define NODE_MAX_BURST				1.5
+
+/* parameters that depend on the link speed/timeslot size */
+#if (USE_1_US_TIMESLOTS == 1)
+#define NODE_MAX_PKTS_PER_SEC		50000
 /* minimum time between packets */
 #define NODE_MIN_TRIGGER_GAP_SEC	2e-6
+#elif (USE_10_US_TIMESLOTS == 1)
+#define NODE_MAX_PKTS_PER_SEC		5000
+/* minimum time between packets */
+#define NODE_MIN_TRIGGER_GAP_SEC	2e-5
+#else
+#error "unrecognized timeslot size - cannot set comm core parameters"
+#endif
 
 /* Deadline to handle all packets, or start dropping */
 #define RX_BURST_DEADLINE_SEC			0.000003

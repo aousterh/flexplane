@@ -176,7 +176,7 @@ void comm_init_core(uint16_t lcore_id, uint64_t first_time_slot)
 
 	/* initialize mempool for pktdescs */
 	if (pktdesc_pool[socketid] == NULL) {
-		rte_snprintf(s, sizeof(s), "pktdesc_pool_%d", socketid);
+		snprintf(s, sizeof(s), "pktdesc_pool_%d", socketid);
 		pktdesc_pool[socketid] =
 			rte_mempool_create(s,
 				PKTDESC_MEMPOOL_SIZE, /* num elements */

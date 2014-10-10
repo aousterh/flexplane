@@ -2,7 +2,9 @@
 
 # script to teardown all dpdk state set up for the Fastpass arbiter
 
-PCI_PATH="0000:84:00.1"
+PCI_PATH="0000:82:00.1"
+DEV="eth4"
+DRV="igb"
 
 #
 # Removes hugepage filesystem.
@@ -53,8 +55,13 @@ remove_igb_uio_module()
 #
 unbind_eth()
 {
-	DRV="ixgbe"
-	sudo ${RTE_SDK}/tools/pci_unbind.py -b $DRV $PCI_PATH && echo "OK"
+        if [ -f ${RTE_SDK}/tools/pci_unbind.py ]; then
+            sudo ${RTE_SDK}/tools/pci_unbind.py -b $DRV $PCI_PATH && echo "OK"
+        elif [ -f ${RTE_SDK}/tools/dpdk_nic_bind.py ]; then
+            sudo ${RTE_SDK}/tools/dpdk_nic_bind.py -b $DRV $PCI_PATH && echo "OK"
+        else
+            "error locating script to bind NICs in ${RTE_SDK}/tools"
+        fi
 }
 
 
@@ -69,3 +76,7 @@ unbind_eth
 # insert the IGB UIO module
 echo "dpdk_teardown.sh: removing the IGB UIO module"
 remove_igb_uio_module
+
+# bring up eth again
+echo "dpsk_teardown.sh: bringing up eth again"
+sudo ifconfig $DEV up

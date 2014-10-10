@@ -43,7 +43,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 	/* allocate packet_mempool */
 	uint32_t pool_index = 0;
 	uint32_t socketid = 0;
-	rte_snprintf(s, sizeof(s), "packet_pool_%d", pool_index);
+	snprintf(s, sizeof(s), "packet_pool_%d", pool_index);
 	packet_mempool =
 			rte_mempool_create(s, PACKET_MEMPOOL_SIZE, /* num elements */
 					packet_size, /* element size */
@@ -61,7 +61,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 	/* allocate admitted_traffic_mempool */
 	pool_index = 0;
 	if (admitted_traffic_pool[pool_index] == NULL) {
-		rte_snprintf(s, sizeof(s), "admitted_traffic_pool_%d", pool_index);
+		snprintf(s, sizeof(s), "admitted_traffic_pool_%d", pool_index);
 		admitted_traffic_pool[pool_index] =
 				rte_mempool_create(s,
 						ADMITTED_TRAFFIC_MEMPOOL_SIZE, /* num elements */
@@ -85,7 +85,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 
 	/* init packet_queues */
 	for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
-		rte_snprintf(s, sizeof(s), "packet_q_%d", i);
+		snprintf(s, sizeof(s), "packet_q_%d", i);
 		packet_queues[i] = rte_ring_create(s, PACKET_Q_SIZE, 0,
 				RING_F_SP_ENQ | RING_F_SC_DEQ);
 		if (packet_queues[i] == NULL)

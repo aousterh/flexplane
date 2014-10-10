@@ -3,7 +3,8 @@
 # script to prepare DPDK to run the Fastpass arbiter
 
 NUM_PAGES=512
-PCI_PATH="0000:84:00.1"
+DEV="eth4"
+PCI_PATH="0000:82:00.1"
 
 #
 # Creates hugepage filesystem.
@@ -146,7 +147,13 @@ load_igb_uio_module()
 bind_eth()
 {
 	if  /sbin/lsmod  | grep -q igb_uio ; then
+            if [ -f ${RTE_SDK}/tools/pci_unbind.py ]; then
 		sudo ${RTE_SDK}/tools/pci_unbind.py --force -b igb_uio $PCI_PATH && echo "OK"
+            elif [ -f ${RTE_SDK}/tools/dpdk_nic_bind.py ]; then
+		sudo ${RTE_SDK}/tools/dpdk_nic_bind.py -b igb_uio $PCI_PATH && echo "OK"
+            else
+                "error locating script to bind NICs in ${RTE_SDK}/tools"
+            fi
 	else 
 		echo "# Please load the 'igb_uio' kernel module before querying or "
 		echo "# adjusting NIC device bindings"
@@ -161,6 +168,10 @@ set_numa_pages
 # insert the IGB UIO module
 echo "dpdk_setup.sh: inserting the IGB UIO module"
 load_igb_uio_module
+
+# take down eth so that it is inactive
+echo "dpdk_setup.sh: make eth inactive"
+sudo ifconfig $DEV down
 
 # bind eth to the IGB UIO module
 echo "dpdk_setup.sh: binding eth to the IGB UIO module"

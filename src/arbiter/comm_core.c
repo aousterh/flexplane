@@ -810,15 +810,15 @@ next_alloc:
 			/* get the next slot in the pd->dsts array */
 			pd->dsts[n_dsts] = dst;
 			pd->dst_counts[n_dsts] = 0;
-			core->alloc_enc_space[index] = n_dsts;
+			core->alloc_enc_space[index] = n_dsts + 1;
 			n_dsts++;
 		}
 	}
 
 	/* encode the allocation byte */
 	pd->tslot_desc[n_tslot++] =
-			((core->alloc_enc_space[index] + 1) << 4) | (gap - 1);
-	pd->dst_counts[core->alloc_enc_space[index]]++;
+                (core->alloc_enc_space[index] << 4) | (gap - 1);
+	pd->dst_counts[core->alloc_enc_space[index] - 1]++;
 
 	/* unmark the timeslot */
 	wnd_clear(wnd, cur_tslot);

@@ -64,13 +64,14 @@ static inline struct list_node *rheap_find_min(struct radix_heap *rh)
 	while (mask) {
 		/* get the index of the lsb that is set */
 		asm("bsfq %1,%0" : "=r"(q) : "r"(mask));
-		/* turn off the set bit in the mask */
-		mask &= (mask - 1);
 
 		if (!list_empty(&rh->q[prio])) {
 			rh->mask = mask;
 			return rh->q[prio].n.next;
 		}
+
+		/* turn off the set bit in the mask */
+		mask &= (mask - 1);
 	}
 
 	/* rheap is empty */

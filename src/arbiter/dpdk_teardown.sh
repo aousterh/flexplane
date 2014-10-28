@@ -78,5 +78,5 @@ echo "dpdk_teardown.sh: removing the IGB UIO module"
 remove_igb_uio_module
 
 # bring up eth again
-echo "dpsk_teardown.sh: bringing up eth again"
+echo "dpdk_teardown.sh: bringing up eth again"
 sudo ifconfig $DEV up

@@ -445,10 +445,15 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			tsq_admit_now(q, dst_id, flags);
+			if (unlikely(flags != 0)) {
+				tsq_drop_now(q, dst_id);
+				q->stat.dropped_timeslots++;
+			}	else {
+				tsq_admit_now(q, dst_id);
+				q->stat.admitted_timeslots++;
+			}
 
 			atomic_inc(&q->alloc_tslots);
-			q->stat.admitted_timeslots++;
 			if (full_tslot > current_timeslot) {
 				q->stat.early_enqueue++;
 			} else {
@@ -917,6 +922,7 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", allocs %u", atomic_read(&q->alloc_tslots));
 	seq_printf(seq, ", used %llu", q->used_tslots);
 	seq_printf(seq, ", admitted %llu", scs->admitted_timeslots);
+	seq_printf(seq, ", dropped %llu", scs->dropped_timeslots);
 
 	seq_printf(seq, "\n  %llu requests w/no a-req", scs->request_with_empty_flowqueue);
 

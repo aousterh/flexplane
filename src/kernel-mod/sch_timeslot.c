@@ -87,6 +87,7 @@ struct tsq_sched_stat {
 	/* dequeue-related */
 	u64		added_tslots;
 	u64		used_timeslots;
+	u64		dropped_timeslots;
 	u64		missed_timeslots;
 	u64		flow_not_found_update;
 	u64		early_enqueue;
@@ -673,24 +674,7 @@ done:
 }
 #endif
 
-/**
- * Corrupt the IP checksums of all packets in timeslot_q so that the sending
- * NIC will drop them.
- */
-void mark_packets_to_drop(struct timeslot_skb_q *timeslot_q)
-{
-	struct sk_buff *skb;
-	struct iphdr *ip_header;
-
-	/* set ip header to all zeroes */
-	for (skb = timeslot_q->head; skb != NULL; skb = skb->next) {
-		fp_debug("marking packet to be dropped\n");
-		ip_header = ip_hdr(skb);
-		ip_header->check = ip_header->check + 1;
-	}
-}
-
-void tsq_admit_now(void *priv, u64 src_dst_key, u16 flags)
+void tsq_admit_now(void *priv, u64 src_dst_key)
 {
 	struct tsq_sched_data *q = priv_to_sched_data(priv);
 	struct tsq_dst *dst;
@@ -725,10 +709,6 @@ void tsq_admit_now(void *priv, u64 src_dst_key, u16 flags)
 	q->stat.used_timeslots++;
 	spin_unlock(&q->hash_tbl_lock);
 
-	/* mark packets so they will be dropped by the NIC */
-	if (unlikely(flags != 0))
-		mark_packets_to_drop(timeslot_q);
-
 	/* put in prequeue */
 	spin_lock(&q->prequeue_lock);
 	skb_q_append(&q->prequeue, timeslot_q);
@@ -737,6 +717,56 @@ void tsq_admit_now(void *priv, u64 src_dst_key, u16 flags)
 	/* unthrottle qdisc */
 	qdisc_unthrottled(q->qdisc);
 	__netif_schedule(qdisc_root(q->qdisc));
+
+	/* free the timeslot_q */
+	kmem_cache_free(timeslot_skb_q_cachep, timeslot_q);
+}
+
+ /*
+  * Drop a timeslot's worth of skbs for this flow
+  */
+void tsq_drop_now(void *priv, u64 src_dst_key)
+{
+	struct tsq_sched_data *q = priv_to_sched_data(priv);
+	struct tsq_dst *dst;
+	struct timeslot_skb_q *timeslot_q;
+	struct sk_buff *skb;
+	struct sk_buff *skb_next;
+
+	/* find the mentioned destination */
+	spin_lock(&q->hash_tbl_lock);
+	dst = dst_lookup(q, src_dst_key, false);
+	if (unlikely(dst == NULL)) {
+		FASTPASS_WARN("couldn't find flow 0x%llX from alloc.\n", src_dst_key);
+		q->stat.dst_not_found_admit_now++;
+		return;
+	}
+
+	/* are there timeslots waiting? */
+	if (unlikely(list_empty(&dst->skb_qs))) {
+		/* got an alloc without a timeslot */
+		q->stat.unwanted_alloc++;
+		fp_debug("got an allocation over demand, flow 0x%04llX\n",
+				dst->src_dst_key);
+		return;
+	}
+
+	/* get a timeslot's worth skb_q */
+	timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
+	list_del(dst->skb_qs.next);
+	/* if we dequeued the last skb, make sure it has no remaining credit */
+	if (unlikely(list_empty(&dst->skb_qs))) {
+		dst->credit = 0;
+		q->inactive_flows++;
+	}
+	q->stat.dropped_timeslots++;
+	spin_unlock(&q->hash_tbl_lock);
+
+	/* drop packets */
+	for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
+		skb_next = skb->next;
+		qdisc_drop(skb, q->qdisc);
+	}
 
 	/* free the timeslot_q */
 	kmem_cache_free(timeslot_skb_q_cachep, timeslot_q);
@@ -1224,6 +1254,7 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 			wnd_get_mask(&q->alloc_wnd, q->current_timeslot+63));
 	seq_printf(seq, ", %llu added timeslots", scs->added_tslots);
 	seq_printf(seq, ", %llu used", scs->used_timeslots);
+	seq_printf(seq, ", %llu dropped", scs->dropped_timeslots);
 	seq_printf(seq, " (%llu %llu %llu %llu behind, %llu fast)", scs->late_enqueue4,
 			scs->late_enqueue3, scs->late_enqueue2, scs->late_enqueue1,
 			scs->early_enqueue);

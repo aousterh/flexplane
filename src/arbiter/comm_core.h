@@ -33,7 +33,7 @@
 #elif (USE_10_US_TIMESLOTS == 1)
 #define NODE_MAX_PKTS_PER_SEC		5000
 /* minimum time between packets */
-#define NODE_MIN_TRIGGER_GAP_SEC	2e-5
+#define NODE_MIN_TRIGGER_GAP_SEC	2e-6
 #else
 #error "unrecognized timeslot size - cannot set comm core parameters"
 #endif

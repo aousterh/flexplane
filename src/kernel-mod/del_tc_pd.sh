@@ -2,7 +2,7 @@
 
 # script for removing the Fastpass kernel module from a machine in the pd cluster
 
-DEV="em1"
+DEV="em2"
 TC="/home/aousterh/src/iproute2-fastpass/tc/tc"
 
 sudo $TC qdisc del dev $DEV root

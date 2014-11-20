@@ -608,7 +608,6 @@ static void send_request(struct fp_sched_data *q)
 	struct fp_kernel_pktdesc *kern_pd;
 	struct fpproto_pktdesc *pd;
 	u64 new_requested;
-	int q_alloc_tslots;
 
 	fp_debug("start: unreq_flows=%u, unreq_tslots=%llu, now_mono=%llu, scheduled=%llu, diff=%lld, next_seq=%08llX\n",
 			n_unreq_dsts(q), atomic_read(&q->demand_tslots) - q->requested_tslots, now_monotonic,
@@ -676,12 +675,10 @@ static void send_request(struct fp_sched_data *q)
 	fpproto_send_pktdesc(q->ctrl_sock->sk, kern_pd);
 
 	/* set timer for next request, if a request would be required */
-	/* demand_tslots only increases and is larger than alloc_tslots, so read it
-	 *   second to be on safe side */
-	q_alloc_tslots = atomic_read(&q->alloc_tslots);
-	if (q_alloc_tslots != atomic_read(&q->demand_tslots))
-		/* have more requests to send */
-		trigger_tx(q);
+	if (q->requested_tslots != atomic_read(&q->demand_tslots)) {
+	  /* have more requests to send */
+	  trigger_tx(q);
+	}
 
 	return;
 

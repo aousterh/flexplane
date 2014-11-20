@@ -22,4 +22,4 @@ echo "host_verify.sh: check for the IGB UIO module"
 
 # check that eth1 is bound to the IGB UIO module
 echo "host_verify.sh: check if eth1 is bound to the IGB UIO module"
-${RTE_SDK}/tools/pci_unbind.py --status
+${RTE_SDK}/tools/dpdk_nic_bind.py --status

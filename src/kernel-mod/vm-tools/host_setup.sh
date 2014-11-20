@@ -120,7 +120,7 @@ bind_eth1()
 {
 	if  /sbin/lsmod  | grep -q igb_uio ; then
 		PCI_PATH="0000:02:00.0"
-		sudo ${RTE_SDK}/tools/pci_unbind.py -b igb_uio $PCI_PATH && echo "OK"
+		sudo ${RTE_SDK}/tools/dpdk_nic_bind.py -b igb_uio $PCI_PATH && echo "OK"
 	else 
 		echo "# Please load the 'igb_uio' kernel module before querying or "
 		echo "# adjusting NIC device bindings"

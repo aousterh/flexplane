@@ -55,7 +55,7 @@ unbind_eth1()
 {
 	PCI_PATH="0000:02:00.0"
 	DRV="igb"
-	sudo ${RTE_SDK}/tools/pci_unbind.py -b $DRV $PCI_PATH && echo "OK"
+	sudo ${RTE_SDK}/tools/dpdk_nic_bind.py -b $DRV $PCI_PATH && echo "OK"
 }
 
 

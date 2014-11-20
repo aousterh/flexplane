@@ -90,10 +90,6 @@ struct end_node_state {
 	/* egress packet timer and pacer */
 	struct fp_timer tx_timer;
 	struct fp_pacer tx_pacer;
-
-	/* totals */
-	uint64_t total_alloc;
-	uint64_t total_acked_alloc;
 };
 
 /* whether we should output verbose debugging */
@@ -378,7 +374,6 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 		if (new_acked > 0) {
 			/* newly acked timeslots, update */
 			en->acked_allocs[dst] += new_acked;
-			en->total_acked_alloc += new_acked;
 			total_acked += new_acked;
 		}
 	}
@@ -725,7 +720,6 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			wnd_mark(wnd, current_timeslot);
 			en->allocs[wnd_pos(current_timeslot)] = dst_encoding;
 			en->alloc_to_dst[dst % MAX_NODES]++;
-			en->total_alloc++;
 			trigger_report(en, &en->report_queue, dst % MAX_NODES);
 
 			/* trigger_report will make sure a TX is triggerred */

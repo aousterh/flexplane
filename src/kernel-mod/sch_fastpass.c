@@ -149,10 +149,6 @@ struct fp_sched_data {
 
 	struct fp_dst dsts[MAX_NODES];
 
-	struct fp_window alloc_wnd;
-	u64		current_timeslot;
-	u64		schedule[(1 << FASTPASS_WND_LOG)];	/* flows scheduled in the next time slots */
-
 	struct tasklet_struct	maintenance_tasklet;
 	struct hrtimer			maintenance_timer;
 	struct tasklet_struct	retrans_tasklet;
@@ -310,9 +306,6 @@ static void handle_reset(void *param)
 
 	BUILD_BUG_ON_MSG(MAX_NODES & (MAX_NODES - 1), "MAX_NODES needs to be a power of 2");
 
-	/* reset future allocations */
-	wnd_reset(&q->alloc_wnd, q->current_timeslot);
-
 	atomic_set(&q->demand_tslots, 0);
 	q->requested_tslots = 0;	/* will remain 0 when we're done */
 	atomic_set(&q->alloc_tslots, 0);		/* will remain 0 when we're done */
@@ -376,9 +369,8 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	full_tslot = current_timeslot - (1ULL << 18); /* 1/4 back, 3/4 front */
 	full_tslot += ((u32)base_tslot - (u32)full_tslot) & 0xFFFFF; /* 20 bits */
 
-	fp_debug("got ALLOC for timeslot %d (full %llu, current %llu), %d destinations, %d timeslots, mask 0x%016llX\n",
-			base_tslot, full_tslot, q->current_timeslot, n_dst, n_tslots,
-			wnd_get_mask(&q->alloc_wnd, q->current_timeslot+63));
+	fp_debug("got ALLOC for timeslot %d (full %llu, current %llu), %d destinations, %d timeslots\n",
+			base_tslot, full_tslot, current_timeslot, n_dst, n_tslots);
 
 	for (i = 0; i < n_tslots; i++) {
 		struct fp_dst *dst;
@@ -409,26 +401,16 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 
 		/* is alloc too far in the past? */
 		if (unlikely(time_before64(full_tslot, current_timeslot - miss_threshold))) {
-		//if (unlikely(wnd_seq_before(&q->alloc_wnd, full_tslot))) {
 			q->stat.alloc_too_late++;
 			fp_debug("-X- already gone, dropping\n");
 			continue;
 		}
 
 		if (unlikely(time_after64(full_tslot, current_timeslot + max_preload))) {
-//		if (unlikely(wnd_seq_after(&q->alloc_wnd, full_tslot))) {
 			q->stat.alloc_premature++;
 			fp_debug("-X- too futuristic, dropping\n");
 			continue;
 		}
-
-		/* sanity check */
-//		if (wnd_is_marked(&q->alloc_wnd, full_tslot)) {
-//			FASTPASS_WARN("got ALLOC tslot %llu dst 0x%X but but it was already marked for 0x%llX current_tslot %llu base %u now_real %llu\n",
-//					full_tslot, dst[dst_ind - 1], q->schedule[wnd_pos(full_tslot)],
-//					q->current_timeslot, base_tslot, now_real);
-//			continue;
-//		}
 
 		dst_encoding = dst_ids[dst_id_idx - 1];
 		dst_id = get_dst_from_encoding(dst_encoding);
@@ -437,8 +419,6 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 
 		dst = get_dst(q, dst_id);
 		/* okay, allocate */
-//		wnd_mark(&q->alloc_wnd, full_tslot);
-//		q->schedule[wnd_pos(full_tslot)] = dst[dst_ind - 1];
 		if (dst->used_tslots != dst->demand_tslots) {
 
 			flow_inc_used(q, dst, 1);
@@ -478,9 +458,6 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 					dst_id, dst->demand_tslots);
 		}
 	}
-
-	fp_debug("mask after: 0x%016llX\n",
-			wnd_get_mask(&q->alloc_wnd, q->current_timeslot+63));
 }
 
 static void handle_areq(void *param, u16 *dst_and_count, int n)
@@ -881,7 +858,6 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	/* time */
 	seq_printf(seq, "  fp_sched_data *p = %p ", q);
 	seq_printf(seq, ", timestamp 0x%llX ", now_real);
-	seq_printf(seq, ", timeslot 0x%llX", q->current_timeslot);
 
 	/* configuration */
 	seq_printf(seq, "\n  req_cost %u ", req_cost);
@@ -901,8 +877,6 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 #endif
 
 	/* timeslot statistics */
-	seq_printf(seq, "\n  horizon mask 0x%016llx",
-			wnd_get_mask(&q->alloc_wnd, q->current_timeslot+63));
 	seq_printf(seq, " (%llu %llu %llu %llu behind, %llu fast)", scs->late_enqueue4,
 			scs->late_enqueue3, scs->late_enqueue2, scs->late_enqueue1,
 			scs->early_enqueue);
@@ -997,7 +971,6 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 {
 	struct fp_sched_data *q = (struct fp_sched_data *)priv;
 
-	u64 now_real = fp_get_time_ns();
 	u64 now_monotonic = fp_monotonic_time_ns();
 	int err;
 	int i;
@@ -1005,10 +978,6 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 	q->unreq_dsts_head = q->unreq_dsts_tail = 0;
 	q->tslot_mul		= tslot_mul;
 	q->tslot_shift		= tslot_shift;
-
-	/* calculate timeslot from beginning of Epoch */
-	q->current_timeslot = (now_real * q->tslot_mul) >> q->tslot_shift;
-	wnd_reset(&q->alloc_wnd, q->current_timeslot);
 
 	spin_lock_init(&q->unreq_flows_lock);
 

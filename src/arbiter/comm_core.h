@@ -27,16 +27,18 @@
 /* parameters that depend on the link speed/timeslot size */
 #if (USE_1_US_TIMESLOTS == 1)
 #define CONTROLLER_SEND_TIMEOUT_SECS 	0.0002
+/* maximum rate of control packets */
 #define NODE_MAX_PKTS_PER_SEC		50000
 /* minimum time between packets */
 #define NODE_MIN_TRIGGER_GAP_SEC	2e-6
 #elif (USE_10_US_TIMESLOTS == 1)
 #define CONTROLLER_SEND_TIMEOUT_SECS 	0.002
 #define NODE_MAX_PKTS_PER_SEC		5000
-/* minimum time between packets */
 #define NODE_MIN_TRIGGER_GAP_SEC	1e-5
 #else
-#error "unrecognized timeslot size - cannot set comm core parameters"
+#define CONTROLLER_SEND_TIMEOUT_SECS 	0.2
+#define NODE_MAX_PKTS_PER_SEC		50
+#define NODE_MIN_TRIGGER_GAP_SEC	0.001
 #endif
 
 /* Deadline to handle all packets, or start dropping */

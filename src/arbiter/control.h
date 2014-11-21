@@ -68,7 +68,7 @@
 #define		TIMESLOT_MUL		337
 #define		TIMESLOT_SHIFT		22
 #else
-/* use larger timeslot size for testing */
+/* use larger timeslot size for testing - about 1 ms */
 #define		TIMESLOT_MUL		1
 #define		TIMESLOT_SHIFT		20
 #endif

@@ -372,6 +372,20 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	fp_debug("got ALLOC for timeslot %d (full %llu, current %llu), %d destinations, %d timeslots\n",
 			base_tslot, full_tslot, current_timeslot, n_dst, n_tslots);
 
+	/* is packet of allocs too far in the past? */
+/*		if (unlikely(time_before64(full_tslot, current_timeslot - miss_threshold))) {
+		q->stat.alloc_too_late++;
+		fp_debug("-X- already gone, dropping\n");
+		continue;
+	}*/
+
+	/* is packet of allocs too far in the future? */
+	/*if (unlikely(time_after64(full_tslot, current_timeslot + max_preload))) {
+		q->stat.alloc_premature++;
+		fp_debug("-X- too futuristic, dropping\n");
+		continue;
+	}*/
+
 	for (i = 0; i < n_tslots; i++) {
 		struct fp_dst *dst;
 
@@ -380,8 +394,6 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 
 		if (dst_id_idx == 0) {
 			/* Skip instruction */
-			base_tslot += 16 * (1 + (spec & 0xF));
-			full_tslot += 16 * (1 + (spec & 0xF));
 			fp_debug("ALLOC skip to timeslot %d full %llu (no allocation)\n",
 					base_tslot, full_tslot);
 			continue;
@@ -394,23 +406,8 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			return;
 		}
 
-		base_tslot += 1 + (spec & 0xF);
-		full_tslot += 1 + (spec & 0xF);
 		fp_debug("Timeslot %d (full %llu) to destination 0x%04x (%d)\n",
 				base_tslot, full_tslot, dst_ids[dst_id_idx - 1], dst_ids[dst_id_idx - 1]);
-
-		/* is alloc too far in the past? */
-		if (unlikely(time_before64(full_tslot, current_timeslot - miss_threshold))) {
-			q->stat.alloc_too_late++;
-			fp_debug("-X- already gone, dropping\n");
-			continue;
-		}
-
-		if (unlikely(time_after64(full_tslot, current_timeslot + max_preload))) {
-			q->stat.alloc_premature++;
-			fp_debug("-X- too futuristic, dropping\n");
-			continue;
-		}
 
 		dst_encoding = dst_ids[dst_id_idx - 1];
 		dst_id = get_dst_from_encoding(dst_encoding);

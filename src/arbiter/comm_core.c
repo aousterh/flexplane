@@ -765,10 +765,7 @@ static inline void fill_packet_alloc(struct comm_core_state *core,
 	uint16_t n_dsts = 0;
 	uint16_t n_tslot = 0;
 	struct fp_window *wnd = &en->pending;
-	uint64_t prev_tslot;
 	uint64_t cur_tslot;
-	uint16_t gap;
-	uint16_t skip16;
 	uint16_t index;
 	uint16_t dst;
 	uint16_t i;
@@ -777,19 +774,9 @@ static inline void fill_packet_alloc(struct comm_core_state *core,
 		goto out;
 
 	cur_tslot = wnd_earliest_marked(wnd);
-	prev_tslot = (cur_tslot - 1) & (~0ULL << 4);
-	pd->base_tslot = (prev_tslot >> 4) & 0xFFFF;
+	pd->base_tslot = (cur_tslot >> 4) & 0xFFFF;
 
 next_alloc:
-	gap = cur_tslot - prev_tslot;
-
-	/* do we need to insert a skip byte? */
-	if (gap > 16) {
-		skip16 = (gap - 1) / 16;
-		pd->tslot_desc[n_tslot++] = skip16  - 1;
-		gap -= 16 * skip16;
-	}
-
 	/* find the destination for this flow */
 	dst = en->allocs[wnd_pos(cur_tslot)];
 	/* TODO: don't assume paths are encoded in top 2 bits */
@@ -811,7 +798,7 @@ next_alloc:
 
 	/* encode the allocation byte */
 	pd->tslot_desc[n_tslot++] =
-                (core->alloc_enc_space[index] << 4) | (gap - 1);
+                (core->alloc_enc_space[index] << 4);
 	pd->dst_counts[core->alloc_enc_space[index] - 1]++;
 
 	/* unmark the timeslot */
@@ -819,7 +806,6 @@ next_alloc:
 
 	if (likely(!wnd_empty(wnd)
 				&& (n_tslot <= FASTPASS_PKT_MAX_ALLOC_TSLOTS - 2))) {
-		prev_tslot = cur_tslot;
 		cur_tslot = wnd_earliest_marked(wnd);
 		goto next_alloc;
 	}

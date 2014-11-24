@@ -37,7 +37,7 @@
 #include "sch_fastpass.h"
 #include "sch_timeslot.h"
 #include "fastpass_proto.h"
-#include "../protocol/encoding.h"
+#include "../protocol/flags.h"
 #include "../protocol/platform.h"
 #include "../protocol/pacer.h"
 #include "../protocol/window.h"
@@ -344,6 +344,27 @@ release:
 }
 
 /**
+ * Transmit or drop a single alloc to @dst_id, according to @flags.
+ * Behavior depends on the algorithm used (emulation, etc.).
+ */
+static void transmit_single_alloc(struct fp_sched_data *q, u16 dst_id,
+		u8 flags)
+{
+#if (defined(EMULATION_ALGO))
+	if (unlikely(flags == EMU_FLAGS_DROP)) {
+		tsq_drop_now(q, dst_id);
+		q->stat.dropped_timeslots++;
+	}	else {
+		tsq_admit_now(q, dst_id);
+		q->stat.admitted_timeslots++;
+	}
+#else
+	tsq_admit_now(q, dst_id);
+	q->stat.admitted_timeslots++;
+#endif
+}
+
+/**
  * Handles an ALLOC payload
  */
 static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
@@ -353,9 +374,8 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	int i;
 	u8 spec;
 	int dst_id_idx;
-	u32 dst_encoding;
-	u32 dst_id;
-	u32 flags;
+	u16 dst_id;
+	u8 flags;
 	u64 full_tslot;
 	u64 now_real = fp_get_time_ns();
 	u64 current_timeslot;
@@ -391,6 +411,8 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	for (i = 0; i < n_tslots; i++) {
 		struct fp_dst *dst;
 
+		/* upper 4 bits of specification encode the index of the dst,
+		 * lower 4 bits encode flags */
 		spec = tslots[i];
 		dst_id_idx = spec >> 4;
 
@@ -411,9 +433,8 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 		fp_debug("Timeslot %d (full %llu) to destination 0x%04x (%d)\n",
 				base_tslot, full_tslot, dst_ids[dst_id_idx - 1], dst_ids[dst_id_idx - 1]);
 
-		dst_encoding = dst_ids[dst_id_idx - 1];
-		dst_id = get_dst_from_encoding(dst_encoding);
-		flags = get_flags_from_encoding(dst_encoding);
+		dst_id = dst_ids[dst_id_idx - 1];
+		flags = spec & FLAGS_MASK;
 		fp_debug("admitting timeslot to dst %d with flags %x\n", dst_id, flags);
 
 		dst = get_dst(q, dst_id);
@@ -424,13 +445,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			if (unlikely(flags != 0)) {
-				tsq_drop_now(q, dst_id);
-				q->stat.dropped_timeslots++;
-			}	else {
-				tsq_admit_now(q, dst_id);
-				q->stat.admitted_timeslots++;
-			}
+			transmit_single_alloc(q, dst_id, flags);
 
 			atomic_inc(&q->alloc_tslots);
 			if (full_tslot > current_timeslot) {

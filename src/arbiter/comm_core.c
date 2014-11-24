@@ -21,7 +21,8 @@
 #include "fp_timer.h"
 #include "igmp.h"
 #include "../graph-algo/admissible.h"
-#include "../protocol/encoding.h"
+#include "../graph-algo/path_selection.h"
+#include "../protocol/flags.h"
 #include "../protocol/fpproto.h"
 #include "../protocol/pacer.h"
 #include "../protocol/stat_print.h"
@@ -665,6 +666,29 @@ static inline bool do_rx_burst(struct lcore_conf* qconf)
 	return saw_watchdog;
 }
 
+/* Extract the fields from an admitted edge in an admitted struct into src,
+ * dst, and flags. Behavior depends on the algirhtm used (emulation, etc.). */
+static inline
+void get_admitted_fields(struct admitted_traffic *admitted, uint16_t index,
+		uint16_t *src, uint16_t *dst, uint8_t *flags) {
+
+#if defined(EMULATION_ALGO)
+	struct emu_admitted_edge *edge;
+	edge = get_admitted_edge(admitted, index);
+	*src = edge->src;
+	*dst = edge->dst;
+	*flags = edge->flags;
+#else
+	uint16_t dst_encoding;
+
+	*src = admitted->edges[index].src;
+	dst_encoding = admitted->edges[index].dst;
+	/* the dst id is the encoding with path bits removed */
+	*dst = dst_encoding & DST_MASK;
+	*flags = (dst_encoding & PATH_MASK) >> PATH_SHIFT;
+#endif
+}
+
 /**
  * Record the allocations received in @q_admitted and trigger a report to each
  * source endpoint that got a new allocation.
@@ -682,7 +706,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	struct pending_alloc *alloc;
 	uint16_t src;
 	uint16_t dst;
-	uint16_t dst_encoding;
+	uint8_t flags;
 	uint16_t tslot;
 	uint16_t thrown_alloc;
 
@@ -701,22 +725,8 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 					    current_timeslot, partition);
 		for (j = 0; j < get_size(admitted[i]); j++) {
-			/* process this node's allocation - extract src, dst,
-			   dst_encoding (upper bits may be hijacked to indicate
-			   path, drop, etc.) */
-
-#if defined(EMULATION_ALGO)
-			struct emu_admitted_edge *edge;
-			edge = get_admitted_edge(admitted[i], j);
-			src = edge->src;
-			dst = edge->dst;
-			dst_encoding = get_dst_encoding(edge->dst, edge->flags);
-#else
-			src = admitted[i]->edges[j].src;
-			dst_encoding = admitted[i]->edges[j].dst;
-			/* the dst id is the encoding with path bits removed */
-			dst = dst_encoding & DST_MASK;
-#endif
+			/* extract src, dst, and flags from this admitted edge */
+			get_admitted_fields(admitted[i], j, &src, &dst, &flags);
 
 			/* get the source endpoint's structure */
 			en = &end_nodes[src];
@@ -736,9 +746,9 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			}
 
 			/* add the allocation to the queue of pending allocs */
-			/* TODO: separate flags from dst_encoding */
 			alloc = &pending_q->allocs[wnd_pos(pending_q->tail++)];
 			alloc->dst = dst;
+			alloc->flags = flags & FLAGS_MASK;
 			/* TODO: convey tslot rather than tslot >> 4 */
 			alloc->timeslot = (current_timeslot >> 4) & 0xFFFF;
 			en->alloc_to_dst[dst % MAX_NODES]++;

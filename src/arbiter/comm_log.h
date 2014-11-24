@@ -45,7 +45,7 @@ struct comm_log {
 	uint64_t non_empty_tslots;
 	uint64_t occupied_node_tslots;
 	uint64_t dropped_node_tslots;
-	uint64_t alloc_fell_off_window;
+	uint64_t alloc_overflowed_queue;
 	uint64_t handle_reset;
 	uint64_t timer_cancel;
 	uint64_t timer_set;
@@ -231,11 +231,11 @@ static inline void comm_log_dropped_tslots(uint16_t dropped) {
 	CL->dropped_node_tslots += dropped;
 }
 
-static inline void comm_log_alloc_fell_off_window(uint64_t thrown_tslot,
+static inline void comm_log_alloc_overflowed_queue(uint16_t thrown_tslot,
 		uint64_t current_timeslot, uint16_t src, uint16_t thrown_alloc) {
 	(void)thrown_tslot;(void)current_timeslot;(void) src;(void)thrown_alloc;
-	CL->alloc_fell_off_window++;
-	COMM_DEBUG("alloc at tslot %lu from 0x%X to 0x%X still not sent at timeslot %lu\n",
+	CL->alloc_overflowed_queue++;
+	COMM_DEBUG("alloc at tslot %u from 0x%X to 0x%X still not sent at timeslot %lu\n",
 			thrown_tslot, src, thrown_alloc, current_timeslot);
 }
 

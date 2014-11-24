@@ -38,6 +38,32 @@
 #define IGMP_SEND_INTERVAL_SEC		10
 
 /**
+ * Information about a pending allocation.
+ * @dst: the destination of this alloc
+ * @timeslot: 16 least significant bits of the timeslot allocated
+ * @flags: additional information about this alloc (path, drop, mark, etc.),
+ * 			only the 4 least significant bits are used
+ */
+struct pending_alloc {
+	uint16_t	dst;
+	uint16_t	timeslot;
+	uint8_t		flags;
+};
+
+/**
+ * A queue to record individual allocations that need to be sent to this
+ * endpoint.
+ * @allocs: a queue of allocs that have not yet been sent
+ * @head: head index for allocs
+ * @tail: tail index for allocs
+ */
+struct pending_alloc_queue {
+	struct pending_alloc	allocs[(1 << FASTPASS_WND_LOG)];
+	uint32_t				head;
+	uint32_t				tail;
+};
+
+/**
  * A queue to record which destinations have reports that need to be sent to
  * this endpoint.
  * @is_pending: 1 or 0 indicating whether each dst is pending or not
@@ -73,8 +99,7 @@ struct end_node_state {
 	uint32_t controller_ip;
 
 	/* pending allocations */
-	struct fp_window pending;
-	uint16_t allocs[(1 << FASTPASS_WND_LOG)];
+	struct pending_alloc_queue pending_allocs;
 
 	/* demands */
 	uint32_t demands[MAX_NODES];
@@ -146,7 +171,7 @@ void comm_init_global_structs(uint64_t first_time_slot)
 
 		fpproto_init_conn(&en->conn, &proto_ops, en,
 						FASTPASS_RESET_WINDOW_NS, send_timeout);
-		wnd_reset(&en->pending, first_time_slot - 1);
+		en->pending_allocs.tail = en->pending_allocs.head = 0;
 		fp_init_timer(&en->timeout_timer);
 		fp_init_timer(&en->tx_timer);
 		pacer_init_full(&en->tx_pacer, now, send_cost, max_burst,
@@ -653,12 +678,13 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
         uint16_t partition;
 	uint64_t current_timeslot;
 	struct end_node_state *en;
-	struct fp_window *wnd;
+	struct pending_alloc_queue *pending_q;
+	struct pending_alloc *alloc;
 	uint16_t src;
 	uint16_t dst;
 	uint16_t dst_encoding;
-	u64 tslot;
-	int32_t gap;
+	uint16_t tslot;
+	uint16_t thrown_alloc;
 
 	/* Process newly allocated timeslots */
 	rc = rte_ring_dequeue_burst(q_admitted, (void **) &admitted[0],
@@ -694,35 +720,31 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 
 			/* get the source endpoint's structure */
 			en = &end_nodes[src];
-			wnd = &en->pending;
+			pending_q = &en->pending_allocs;
 
-			/* are there timeslots sliding out of the window? */
-			tslot = current_timeslot - FASTPASS_WND_LEN;
-			tslot = time_before64(wnd_head(wnd), tslot) ? wnd_head(wnd) : tslot;
-			while ((gap = wnd_at_or_before(wnd, tslot)) >= 0) {
-				tslot -= gap;
-				uint16_t thrown_alloc = en->allocs[wnd_pos(tslot)];
+			/* is the timeslot queue full? aka is head one more than tail? */
+			if (pending_q->head == pending_q->tail + 1) {
+				tslot = pending_q->allocs[wnd_pos(pending_q->head)].timeslot;
+				thrown_alloc = pending_q->allocs[wnd_pos(pending_q->head)].dst;
+
 				/* throw away that timeslot */
-				wnd_clear(wnd, tslot);
+				pending_q->head++;
 
-				/* also log them */
-				comm_log_alloc_fell_off_window(tslot, current_timeslot, src,
+				/* also log it */
+				comm_log_alloc_overflowed_queue(tslot, current_timeslot, src,
 						thrown_alloc);
 			}
 
-			/* advance the window */
-			wnd_advance(wnd, current_timeslot - wnd_head(wnd));
-
-//			COMM_DEBUG("advanced window flow %lu. current %lu head %llu\n",
-//					en - end_nodes, current_timeslot, wnd_head(wnd));
-
-			/* add the allocation */
-			wnd_mark(wnd, current_timeslot);
-			en->allocs[wnd_pos(current_timeslot)] = dst_encoding;
+			/* add the allocation to the queue of pending allocs */
+			/* TODO: separate flags from dst_encoding */
+			alloc = &pending_q->allocs[wnd_pos(pending_q->tail++)];
+			alloc->dst = dst;
+			/* TODO: convey tslot rather than tslot >> 4 */
+			alloc->timeslot = (current_timeslot >> 4) & 0xFFFF;
 			en->alloc_to_dst[dst % MAX_NODES]++;
-			trigger_report(en, &en->report_queue, dst % MAX_NODES);
 
-			/* trigger_report will make sure a TX is triggerred */
+			/* trigger_report will make sure a TX is triggered */
+			trigger_report(en, &en->report_queue, dst % MAX_NODES);
 		}
 	}
 	/* free memory */
@@ -764,22 +786,23 @@ static inline void fill_packet_alloc(struct comm_core_state *core,
 {
 	uint16_t n_dsts = 0;
 	uint16_t n_tslot = 0;
-	struct fp_window *wnd = &en->pending;
-	uint64_t cur_tslot;
+	struct pending_alloc_queue *pending_q = &en->pending_allocs;
+	struct pending_alloc *cur_alloc;
 	uint16_t index;
 	uint16_t dst;
 	uint16_t i;
 
-	if (wnd_empty(wnd))
+	/* check if there are allocs that need to be conveyed */
+	if (pending_q->head == pending_q->tail)
 		goto out;
 
-	cur_tslot = wnd_earliest_marked(wnd);
-	pd->base_tslot = (cur_tslot >> 4) & 0xFFFF;
+	cur_alloc = &pending_q->allocs[wnd_pos(pending_q->head)];
+	pd->base_tslot = cur_alloc->timeslot;
 
 next_alloc:
 	/* find the destination for this flow */
-	dst = en->allocs[wnd_pos(cur_tslot)];
-	/* TODO: don't assume paths are encoded in top 2 bits */
+	dst = cur_alloc->dst;
+	/* TODO: shrink alloc_enc_space once the path is moved to the flags */
 	index = (dst % NUM_NODES) + NUM_NODES * (dst >> 14);
 
 	if (core->alloc_enc_space[index] == 0) {
@@ -796,17 +819,18 @@ next_alloc:
 		}
 	}
 
-	/* encode the allocation byte */
+	/* encode the allocation byte
+	 * upper 4 bits for destination index, lower 4 bits for flags */
 	pd->tslot_desc[n_tslot++] =
-                (core->alloc_enc_space[index] << 4);
+                (core->alloc_enc_space[index] << 4) | (cur_alloc->flags & 0xF);
 	pd->dst_counts[core->alloc_enc_space[index] - 1]++;
 
-	/* unmark the timeslot */
-	wnd_clear(wnd, cur_tslot);
+	/* remove the timeslot from the queue */
+	pending_q->head++;
 
-	if (likely(!wnd_empty(wnd)
+	if (likely((pending_q->tail != pending_q->head)
 				&& (n_tslot <= FASTPASS_PKT_MAX_ALLOC_TSLOTS - 2))) {
-		cur_tslot = wnd_earliest_marked(wnd);
+		cur_alloc = &pending_q->allocs[wnd_pos(pending_q->head)];
 		goto next_alloc;
 	}
 cleanup:

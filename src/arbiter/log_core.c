@@ -122,8 +122,8 @@ void print_comm_log(uint16_t lcore_id)
 				cl->admitted_too_many);
 
 	printf("\n warnings:");
-	if (cl->alloc_fell_off_window)
-		printf("\n  %lu alloc fell off window", cl->alloc_fell_off_window);
+	if (cl->alloc_overflowed_queue)
+		printf("\n  %lu alloc overflowed queue", cl->alloc_overflowed_queue);
 	if (cl->flush_buffer_in_add_backlog)
 		printf("\n  %lu buffer flushes in add backlog (buffer might be too small)",
 				cl->flush_buffer_in_add_backlog);

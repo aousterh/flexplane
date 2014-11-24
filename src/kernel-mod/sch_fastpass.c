@@ -372,19 +372,21 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	fp_debug("got ALLOC for timeslot %d (full %llu, current %llu), %d destinations, %d timeslots\n",
 			base_tslot, full_tslot, current_timeslot, n_dst, n_tslots);
 
+	/* these checks discard too many packets. perhaps they require that the switch
+	 prioritize time sync traffic. */
 	/* is packet of allocs too far in the past? */
-/*		if (unlikely(time_before64(full_tslot, current_timeslot - miss_threshold))) {
+	/*if (unlikely(time_before64(full_tslot, current_timeslot - miss_threshold))) {
 		q->stat.alloc_too_late++;
 		fp_debug("-X- already gone, dropping\n");
-		continue;
-	}*/
+		return;
+		}*/
 
 	/* is packet of allocs too far in the future? */
 	/*if (unlikely(time_after64(full_tslot, current_timeslot + max_preload))) {
 		q->stat.alloc_premature++;
 		fp_debug("-X- too futuristic, dropping\n");
-		continue;
-	}*/
+		return;
+		}*/
 
 	for (i = 0; i < n_tslots; i++) {
 		struct fp_dst *dst;

@@ -3,15 +3,23 @@
 #define CONTROLLER_DPDK_PLATFORM_H_
 
 #include <time.h>
+#include <rte_log.h>
 #include <rte_mempool.h>
 #include "main.h"
 #include "dpdk-time.h"
 
 extern struct rte_mempool* pktdesc_pool[NB_SOCKETS];
 
+#define RTE_LOGTYPE_ARBITER RTE_LOGTYPE_USER1
 
-#define FASTPASS_PR_DEBUG(enable, fmt, a...)	do { if (enable)	     \
-							COMM_DEBUG("%s: " fmt, __func__, ##a); \
+#ifdef CONFIG_IP_FASTPASS_DEBUG
+#define ARBITER_DEBUG(a...) RTE_LOG(DEBUG, ARBITER, ##a)
+#else
+#define ARBITER_DEBUG(a...)
+#endif
+
+#define FASTPASS_PR_DEBUG(enable, fmt, a...)	do { if (enable)	\
+							ARBITER_DEBUG("%s: " fmt, __func__, ##a); \
 						} while(0)
 
 static inline

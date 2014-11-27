@@ -14,6 +14,11 @@
 #define MAX_NODES_PER_RACK 256  // = 2^TOR_SHIFT
 #define OUT_OF_BOUNDARY_NODE_ID (MAX_NODES-1)  // highest node id
 
+//#define	FLOW_SHIFT 6
+#define FLOW_SHIFT 0
+#define FLOWS_PER_NODE (1 << FLOW_SHIFT)
+#define FLOW_MASK ((1 << FLOW_SHIFT) - 1)
+
 #define FB_DEPLOYMENT			0
 
 #if (FB_DEPLOYMENT == 1)

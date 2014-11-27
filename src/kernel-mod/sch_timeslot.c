@@ -290,6 +290,27 @@ static inline u64 get_mac(struct sk_buff *skb)
 	return res;
 }
 
+/* Returns the priority of an sk_buff (the 6 DSCP bits in the IPv4 header).
+ * If not IPv4, returns 0. */
+static inline u8 get_priority(struct sk_buff *skb)
+{
+	__be16 proto = skb->protocol;
+	struct iphdr * iph;
+	u8 tos;
+
+	if (proto != __constant_htons(ETH_P_IP)) {
+		/* not IPv4. probably IPv6? */
+		fp_debug("cannot get priority from packet with protocol %u:\n",
+				skb->protocol);
+		return 0;
+	}
+
+	/* get priority from IPv4 packet */
+	iph = (struct iphdr *) skb_network_header(skb);
+	tos = iph->tos;
+	return tos >> 2;
+}
+
 /* returns the flow for the given packet if it is a hi_prio packet, o/w returns NULL */
 static struct timeslot_skb_q *classify_hi_prio(struct sk_buff *skb, struct tsq_sched_data *q)
 {
@@ -371,6 +392,8 @@ cannot_classify:
 /* returns the flow for the given packet, allocates a new flow if needed */
 static struct tsq_dst *classify_data(struct sk_buff *skb, struct tsq_sched_data *q)
 {
+	u16 dst_id;
+	u16 flow_id;
 	u64 src_dst_key;
 	u64 mac;
 
@@ -379,9 +402,14 @@ static struct tsq_dst *classify_data(struct sk_buff *skb, struct tsq_sched_data 
 
 	/* get the skb's key (src_dst_key) */
 	if (unlikely(mac_is_out_of_rack(mac)))
-		src_dst_key = OUT_OF_BOUNDARY_NODE_ID;
+		dst_id = OUT_OF_BOUNDARY_NODE_ID;
 	else
-		src_dst_key = fp_map_mac_to_id(mac);
+		dst_id = fp_map_mac_to_id(mac);
+
+	flow_id = get_priority(skb);
+	fp_debug("flow_id: %u\n", flow_id);
+
+	src_dst_key = (dst_id << FLOW_SHIFT) | (flow_id & FLOW_MASK);
 
 	q->stat.data_pkts++;
 	return dst_lookup(q, src_dst_key, true);

@@ -142,12 +142,12 @@ struct fp_sched_data {
 	u32		tslot_shift;				/* shift to calculate timeslot from nsec */
 
 	/* state */
-	u16 unreq_flows[MAX_NODES]; 		/* flows with unscheduled packets */
+	u16 unreq_flows[MAX_FLOWS]; 		/* flows with unscheduled packets */
 	u32 unreq_dsts_head;
 	u32 unreq_dsts_tail;
 	spinlock_t 				unreq_flows_lock;
 
-	struct fp_dst dsts[MAX_NODES];
+	struct fp_dst dsts[MAX_FLOWS];
 
 	struct tasklet_struct	maintenance_tasklet;
 	struct hrtimer			maintenance_timer;
@@ -237,7 +237,7 @@ static void unreq_dsts_enqueue_if_not_queued(struct fp_sched_data *q, u32 dst_id
 
 	/* enqueue */
 	spin_lock(&q->unreq_flows_lock);
-	q->unreq_flows[q->unreq_dsts_tail++ % MAX_NODES] = dst_id;
+	q->unreq_flows[q->unreq_dsts_tail++ % MAX_FLOWS] = dst_id;
 	spin_unlock(&q->unreq_flows_lock);
 	dst->state = FLOW_REQUEST_QUEUE;
 
@@ -257,7 +257,7 @@ static struct fp_dst *unreq_dsts_dequeue_and_get(struct fp_sched_data* q, u32 *d
 		spin_unlock(&q->unreq_flows_lock);
 		return NULL;
 	}
-	*dst_id = q->unreq_flows[q->unreq_dsts_head++ % MAX_NODES];
+	*dst_id = q->unreq_flows[q->unreq_dsts_head++ % MAX_FLOWS];
 	spin_unlock(&q->unreq_flows_lock);
 	res = get_dst(q, *dst_id);
 	res->state = FLOW_UNQUEUED;
@@ -301,10 +301,10 @@ static void handle_reset(void *param)
 	struct fp_dst *dst;
 	u32 idx;
 	u32 dst_id;
-	u32 mask = MAX_NODES - 1;
+	u32 mask = MAX_FLOWS - 1;
 	u32 base_idx = jhash_1word((__be32)fp_monotonic_time_ns(), 0) & mask;
 
-	BUILD_BUG_ON_MSG(MAX_NODES & (MAX_NODES - 1), "MAX_NODES needs to be a power of 2");
+	BUILD_BUG_ON_MSG(MAX_FLOWS & (MAX_FLOWS - 1), "MAX_FLOWS needs to be a power of 2");
 
 	atomic_set(&q->demand_tslots, 0);
 	q->requested_tslots = 0;	/* will remain 0 when we're done */
@@ -313,7 +313,7 @@ static void handle_reset(void *param)
 	q->used_tslots = 0; 		/* will remain 0 when we're done */
 
 	/* for each cell in hash table: */
-	for (idx = 0; idx < MAX_NODES; idx++) {
+	for (idx = 0; idx < MAX_FLOWS; idx++) {
 		/* we start from a pseudo-random index 'base_idx' to have less
 		 * discrimination towards the lower idx in unreq_dsts_enqueue, however
 		 * this is not a perfectly fair scheme */
@@ -418,8 +418,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 
 		if (dst_id_idx == 0) {
 			/* Skip instruction */
-			fp_debug("ALLOC skip to timeslot %d full %llu (no allocation)\n",
-					base_tslot, full_tslot);
+			fp_debug("ALLOC skip (no allocation)\n");
 			continue;
 		}
 
@@ -433,7 +432,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 		fp_debug("Timeslot %d (full %llu) to destination 0x%04x (%d)\n",
 				base_tslot, full_tslot, dst_ids[dst_id_idx - 1], dst_ids[dst_id_idx - 1]);
 
-		dst_id = dst_ids[dst_id_idx - 1];
+		dst_id = dst_ids[dst_id_idx - 1] << FLOW_SHIFT;
 		flags = spec & FLAGS_MASK;
 		fp_debug("admitting timeslot to dst %d with flags %x\n", dst_id, flags);
 
@@ -486,7 +485,7 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	trigger_tx(q);
 
 	for (i = 0; i < n; i++) {
-		dst_id = ntohs(dst_and_count[2*i]);
+		dst_id = ntohs(dst_and_count[2*i]) << FLOW_SHIFT;
 		count_low = ntohs(dst_and_count[2*i + 1]);
 
 		dst = get_dst(q, dst_id);
@@ -538,7 +537,7 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 	u64 delta;
 
 	for (i = 0; i < pd->n_areq; i++) {
-		u32 dst_id = pd->areq[i].src_dst_key;
+		u32 dst_id = pd->areq[i].src_dst_key << FLOW_SHIFT;
 		/* this node made pd, so no need to check bounds */
 		struct fp_dst *dst = get_dst(q, dst_id);
 
@@ -567,7 +566,7 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 	u64 req_tslots;
 
 	for (i = 0; i < pd->n_areq; i++) {
-		u32 dst_id = pd->areq[i].src_dst_key;
+		u32 dst_id = pd->areq[i].src_dst_key << FLOW_SHIFT;
 		/* this node made pd, so no need to check bounds */
 		struct fp_dst *dst = get_dst(q, dst_id);
 
@@ -643,7 +642,7 @@ static void send_request(struct fp_sched_data *q)
 		dst->requested_tslots = new_requested;
 		release_dst(q, dst);
 
-		pd->areq[pd->n_areq].src_dst_key = dst_id;
+		pd->areq[pd->n_areq].src_dst_key = dst_id >> FLOW_SHIFT;
 		pd->areq[pd->n_areq].tslots = new_requested;
 
 		pd->n_areq++;
@@ -842,20 +841,20 @@ static void dump_flow_info(struct seq_file *seq, struct fp_sched_data *q,
 		bool only_active)
 {
 	struct fp_dst *dst;
-	u32 dst_id;
+	u32 flow_id;
 	u32 num_printed = 0;
 
 	printk(KERN_DEBUG "fastpass flows (only_active=%d):\n", only_active);
 
-	for (dst_id = 0; dst_id < MAX_NODES; dst_id++) {
-		dst = &q->dsts[dst_id];
+	for (flow_id = 0; flow_id < MAX_FLOWS; flow_id++) {
+		dst = &q->dsts[flow_id];
 
 		if (dst->demand_tslots == dst->used_tslots && only_active)
 			continue;
 
 		num_printed++;
 		printk(KERN_DEBUG "flow 0x%04X demand %llu requested %llu acked %llu alloc %llu used %llu state %d\n",
-				dst_id, dst->demand_tslots, dst->requested_tslots,
+				flow_id, dst->demand_tslots, dst->requested_tslots,
 				dst->acked_tslots, dst->alloc_tslots, dst->used_tslots,
 				dst->state);
 	}
@@ -995,7 +994,7 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 
 	spin_lock_init(&q->unreq_flows_lock);
 
-	for (i = 0; i < MAX_NODES; i++)
+	for (i = 0; i < MAX_FLOWS; i++)
 		spin_lock_init(&q->dsts[i].lock);
 
 	spin_lock_init(&q->pacer_lock);

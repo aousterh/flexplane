@@ -18,6 +18,7 @@
 #define FLOW_SHIFT 0
 #define FLOWS_PER_NODE (1 << FLOW_SHIFT)
 #define FLOW_MASK ((1 << FLOW_SHIFT) - 1)
+#define MAX_FLOWS (MAX_NODES * FLOWS_PER_NODE)
 
 #define FB_DEPLOYMENT			0
 

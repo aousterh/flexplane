@@ -407,7 +407,6 @@ static struct tsq_dst *classify_data(struct sk_buff *skb, struct tsq_sched_data 
 		dst_id = fp_map_mac_to_id(mac);
 
 	flow_id = get_priority(skb);
-	fp_debug("flow_id: %u\n", flow_id);
 
 	src_dst_key = (dst_id << FLOW_SHIFT) | (flow_id & FLOW_MASK);
 

@@ -308,7 +308,7 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	COMM_DEBUG("handling A-REQ with %d destinations\n", n);
 
 	for (i = 0; i < n; i++) {
-		dst = rte_be_to_cpu_16(dst_and_count[2*i]);
+		dst = rte_be_to_cpu_16(dst_and_count[2*i]) >> FLOW_SHIFT;
 		count = rte_be_to_cpu_16(dst_and_count[2*i + 1]);
 		if (unlikely(!(node_id < NUM_NODES))) {
 			comm_log_areq_invalid_src(node_id);
@@ -371,7 +371,7 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 
 	/* if the alloc report was not fully acked, trigger another report */
 	for (i = 0; i < pd->n_areq; i++) {
-		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key;
+		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key >> FLOW_SHIFT;
 		if ((int32_t)pd->areq[i].tslots - (int32_t)en->acked_allocs[dst] > 0) {
 			/* still not acked, trigger a report to end node*/
 			trigger_report(en, &en->report_queue, dst);
@@ -393,7 +393,7 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 	int i;
 
 	for (i = 0; i < pd->n_areq; i++) {
-		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key;
+		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key >> FLOW_SHIFT;
 		int32_t new_acked =
 				(int32_t)pd->areq[i].tslots - (int32_t)en->acked_allocs[dst];
 
@@ -586,6 +586,7 @@ comm_rx(struct rte_mbuf *m, uint8_t portid)
 //			eth_hdr->s_addr.addr_bytes[4],eth_hdr->s_addr.addr_bytes[5],
 //			mac_addr);
 
+	/* each end_node_state is per endpoint (rather than per flow) */
 	req_src = fp_map_mac_to_id(mac_addr);
 	en = &end_nodes[req_src];
 
@@ -777,7 +778,7 @@ static inline void fill_packet_report(struct comm_core_state *core,
 
 	while (!report_empty(&en->report_queue)
 			&& pd->n_areq < FASTPASS_PKT_MAX_AREQ) {
-		uint16_t node = report_pop(&en->report_queue);
+		uint16_t node = report_pop(&en->report_queue) << FLOW_SHIFT;
 		pd->areq[pd->n_areq].src_dst_key = node;
 		pd->areq[pd->n_areq].tslots = en->alloc_to_dst[node];
 		pd->n_areq++;
@@ -822,7 +823,7 @@ next_alloc:
 			goto cleanup;
 		} else {
 			/* get the next slot in the pd->dsts array */
-			pd->dsts[n_dsts] = dst;
+			pd->dsts[n_dsts] = dst << FLOW_SHIFT;
 			pd->dst_counts[n_dsts] = 0;
 			core->alloc_enc_space[index] = n_dsts + 1;
 			n_dsts++;
@@ -846,7 +847,7 @@ next_alloc:
 cleanup:
 	/* we set core->alloc_enc_space back to zeros */
 	for (i = 0; i < n_dsts; i++) {
-		dst = pd->dsts[i];
+		dst = pd->dsts[i] >> FLOW_SHIFT;
 		index = (dst % NUM_NODES) + NUM_NODES * (dst >> 14);
 		core->alloc_enc_space[index] = 0;
 	}

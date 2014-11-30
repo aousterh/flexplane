@@ -432,7 +432,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 		fp_debug("Timeslot %d (full %llu) to destination 0x%04x (%d)\n",
 				base_tslot, full_tslot, dst_ids[dst_id_idx - 1], dst_ids[dst_id_idx - 1]);
 
-		dst_id = dst_ids[dst_id_idx - 1] << FLOW_SHIFT;
+		dst_id = dst_ids[dst_id_idx - 1];
 		flags = spec & FLAGS_MASK;
 		fp_debug("admitting timeslot to dst %d with flags %x\n", dst_id, flags);
 
@@ -485,7 +485,7 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	trigger_tx(q);
 
 	for (i = 0; i < n; i++) {
-		dst_id = ntohs(dst_and_count[2*i]) << FLOW_SHIFT;
+		dst_id = ntohs(dst_and_count[2*i]);
 		count_low = ntohs(dst_and_count[2*i + 1]);
 
 		dst = get_dst(q, dst_id);
@@ -537,7 +537,7 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 	u64 delta;
 
 	for (i = 0; i < pd->n_areq; i++) {
-		u32 dst_id = pd->areq[i].src_dst_key << FLOW_SHIFT;
+		u32 dst_id = pd->areq[i].src_dst_key;
 		/* this node made pd, so no need to check bounds */
 		struct fp_dst *dst = get_dst(q, dst_id);
 
@@ -566,7 +566,7 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 	u64 req_tslots;
 
 	for (i = 0; i < pd->n_areq; i++) {
-		u32 dst_id = pd->areq[i].src_dst_key << FLOW_SHIFT;
+		u32 dst_id = pd->areq[i].src_dst_key;
 		/* this node made pd, so no need to check bounds */
 		struct fp_dst *dst = get_dst(q, dst_id);
 
@@ -642,7 +642,7 @@ static void send_request(struct fp_sched_data *q)
 		dst->requested_tslots = new_requested;
 		release_dst(q, dst);
 
-		pd->areq[pd->n_areq].src_dst_key = dst_id >> FLOW_SHIFT;
+		pd->areq[pd->n_areq].src_dst_key = dst_id;
 		pd->areq[pd->n_areq].tslots = new_requested;
 
 		pd->n_areq++;

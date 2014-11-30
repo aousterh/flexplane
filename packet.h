@@ -20,7 +20,7 @@
 struct emu_packet {
 	uint16_t	src;
 	uint16_t	dst;
-	uint8_t		flow;
+	uint16_t       	flow;
 };
 
 /**

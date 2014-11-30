@@ -14,8 +14,13 @@
 #define MAX_NODES_PER_RACK 256  // = 2^TOR_SHIFT
 #define OUT_OF_BOUNDARY_NODE_ID (MAX_NODES-1)  // highest node id
 
-//#define	FLOW_SHIFT 6
+/* multiple flows per IP-pair is only supported in emulation right now */
+#if (defined(PIPELINED_ALGO) | defined(PARALLEL_ALGO))
 #define FLOW_SHIFT 0
+#else
+#define	FLOW_SHIFT 6
+//#define FLOW_SHIFT 0
+#endif
 #define FLOWS_PER_NODE (1 << FLOW_SHIFT)
 #define FLOW_MASK ((1 << FLOW_SHIFT) - 1)
 #define MAX_FLOWS (MAX_NODES * FLOWS_PER_NODE)

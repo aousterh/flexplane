@@ -211,8 +211,12 @@ void handle_spent_demands(struct admissible_state *state)
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,
                  uint16_t dst, uint32_t amount) {
-        /* use arbitrary id for now */
-        emu_add_backlog((struct emu_state *) state, src, dst, amount);
+        uint16_t dst_node;
+        uint8_t flow;
+
+        flow = dst & FLOW_MASK;
+        dst_node = dst >> FLOW_SHIFT;
+        emu_add_backlog((struct emu_state *) state, src, dst_node, flow, amount);
 }
 
 static inline

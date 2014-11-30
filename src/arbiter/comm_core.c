@@ -65,15 +65,15 @@ struct pending_alloc_queue {
 };
 
 /**
- * A queue to record which destinations have reports that need to be sent to
- * this endpoint.
- * @is_pending: 1 or 0 indicating whether each dst is pending or not
+ * A queue to record which destination flows have reports that need to be sent
+ * to this endpoint.
+ * @is_pending: 1 or 0 indicating whether each dst flow is pending or not
  * @q_pending: a queue of dsts that are pending
  * @head: head index for q_pending
  * @tail: tail index for q_pending
  */
 struct alloc_report_queue {
-	uint8_t is_pending[MAX_NODES];
+	uint8_t is_pending[MAX_FLOWS];
 	uint16_t q_pending[ALLOC_REPORT_QUEUE_SIZE];
 	uint32_t head;
 	uint32_t tail;
@@ -86,11 +86,11 @@ struct alloc_report_queue {
  * @dst_ether: the destination ethernet address for outgoing packets
  * @dst_ip: the destination IP for outgoing packets
  * @controller_ip: the controller IP outgoing packets should use
- * @pending: a windowed bitmask of which timeslots have allocations not yet sent out
- * @allocs: the destinations of the allocations in pending
- * @demands: the total demand to each destination
- * @alloc_to_dst: the total allocation to each destination
- * @acked_allocs: the total acked allocation to each destination
+ * @pending_allocs: a queue of pending allocations not yet sent out
+ * @demands: the total demand to each destination flow
+ * @alloc_to_dst: the total allocation to each destination flow
+ * @acked_allocs: the total acked allocation to each destination flow
+ * @report_queue: a queue of destination flows that have pending reports
  */
 struct end_node_state {
 	struct fpproto_conn conn;
@@ -103,11 +103,11 @@ struct end_node_state {
 	struct pending_alloc_queue pending_allocs;
 
 	/* demands */
-	uint32_t demands[MAX_NODES];
+	uint32_t demands[MAX_FLOWS];
 
 	/* allocated timeslots */
-	uint32_t alloc_to_dst[MAX_NODES];
-	uint32_t acked_allocs[MAX_NODES];
+	uint32_t alloc_to_dst[MAX_FLOWS];
+	uint32_t acked_allocs[MAX_FLOWS];
 	struct alloc_report_queue report_queue;
 
 	/* timeout timer */
@@ -298,7 +298,7 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	int i;
 	struct end_node_state *en = (struct end_node_state *)param;
 	struct comm_core_state *core = &ccore_state[rte_lcore_id()];
-	u16 dst, count;
+	u16 dst, dst_node, flow_within_dst, count;
 	u32 demand;
 	u32 orig_demand;
 	u32 node_id = en - end_nodes;
@@ -308,13 +308,14 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	COMM_DEBUG("handling A-REQ with %d destinations\n", n);
 
 	for (i = 0; i < n; i++) {
-		dst = rte_be_to_cpu_16(dst_and_count[2*i]) >> FLOW_SHIFT;
+		dst = rte_be_to_cpu_16(dst_and_count[2*i]);
+		dst_node = dst >> FLOW_SHIFT;
 		count = rte_be_to_cpu_16(dst_and_count[2*i + 1]);
 		if (unlikely(!(node_id < NUM_NODES))) {
 			comm_log_areq_invalid_src(node_id);
 			return;
 		}
-		if (unlikely(!(dst < NUM_NODES))) {
+		if (unlikely(!(dst_node < NUM_NODES))) {
 			comm_log_areq_invalid_dst(node_id, dst);
 			return;
 		}
@@ -371,7 +372,7 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 
 	/* if the alloc report was not fully acked, trigger another report */
 	for (i = 0; i < pd->n_areq; i++) {
-		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key >> FLOW_SHIFT;
+		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key;
 		if ((int32_t)pd->areq[i].tslots - (int32_t)en->acked_allocs[dst] > 0) {
 			/* still not acked, trigger a report to end node*/
 			trigger_report(en, &en->report_queue, dst);
@@ -393,7 +394,7 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 	int i;
 
 	for (i = 0; i < pd->n_areq; i++) {
-		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key >> FLOW_SHIFT;
+		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key;
 		int32_t new_acked =
 				(int32_t)pd->areq[i].tslots - (int32_t)en->acked_allocs[dst];
 
@@ -752,10 +753,10 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			alloc->flags = flags & FLAGS_MASK;
 			/* TODO: convey tslot rather than tslot >> 4 */
 			alloc->timeslot = (current_timeslot >> 4) & 0xFFFF;
-			en->alloc_to_dst[dst % MAX_NODES]++;
+			en->alloc_to_dst[dst]++;
 
 			/* trigger_report will make sure a TX is triggered */
-			trigger_report(en, &en->report_queue, dst % MAX_NODES);
+			trigger_report(en, &en->report_queue, dst);
 		}
 	}
 	/* free memory */
@@ -778,7 +779,7 @@ static inline void fill_packet_report(struct comm_core_state *core,
 
 	while (!report_empty(&en->report_queue)
 			&& pd->n_areq < FASTPASS_PKT_MAX_AREQ) {
-		uint16_t node = report_pop(&en->report_queue) << FLOW_SHIFT;
+		uint16_t node = report_pop(&en->report_queue);
 		pd->areq[pd->n_areq].src_dst_key = node;
 		pd->areq[pd->n_areq].tslots = en->alloc_to_dst[node];
 		pd->n_areq++;
@@ -799,7 +800,6 @@ static inline void fill_packet_alloc(struct comm_core_state *core,
 	uint16_t n_tslot = 0;
 	struct pending_alloc_queue *pending_q = &en->pending_allocs;
 	struct pending_alloc *cur_alloc;
-	uint16_t index;
 	uint16_t dst;
 	uint16_t i;
 
@@ -813,19 +813,17 @@ static inline void fill_packet_alloc(struct comm_core_state *core,
 next_alloc:
 	/* find the destination for this flow */
 	dst = cur_alloc->dst;
-	/* TODO: shrink alloc_enc_space once the path is moved to the flags */
-	index = (dst % NUM_NODES) + NUM_NODES * (dst >> 14);
 
-	if (core->alloc_enc_space[index] == 0) {
+	if (core->alloc_enc_space[dst] == 0) {
 		/* this is the first time seeing dst, need to add it to pd->dsts */
 		if (n_dsts == 15) {
 			/* too many destinations already, we're done */
 			goto cleanup;
 		} else {
 			/* get the next slot in the pd->dsts array */
-			pd->dsts[n_dsts] = dst << FLOW_SHIFT;
+			pd->dsts[n_dsts] = dst;
 			pd->dst_counts[n_dsts] = 0;
-			core->alloc_enc_space[index] = n_dsts + 1;
+			core->alloc_enc_space[dst] = n_dsts + 1;
 			n_dsts++;
 		}
 	}
@@ -833,8 +831,8 @@ next_alloc:
 	/* encode the allocation byte
 	 * upper 4 bits for destination index, lower 4 bits for flags */
 	pd->tslot_desc[n_tslot++] =
-                (core->alloc_enc_space[index] << 4) | (cur_alloc->flags & 0xF);
-	pd->dst_counts[core->alloc_enc_space[index] - 1]++;
+                (core->alloc_enc_space[dst] << 4) | (cur_alloc->flags & 0xF);
+	pd->dst_counts[core->alloc_enc_space[dst] - 1]++;
 
 	/* remove the timeslot from the queue */
 	pending_q->head++;
@@ -847,9 +845,8 @@ next_alloc:
 cleanup:
 	/* we set core->alloc_enc_space back to zeros */
 	for (i = 0; i < n_dsts; i++) {
-		dst = pd->dsts[i] >> FLOW_SHIFT;
-		index = (dst % NUM_NODES) + NUM_NODES * (dst >> 14);
-		core->alloc_enc_space[index] = 0;
+		dst = pd->dsts[i];
+		core->alloc_enc_space[dst] = 0;
 	}
 
 	/* pad to even n_tslot */

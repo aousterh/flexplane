@@ -41,10 +41,10 @@ struct emu_state {
 };
 
 /**
- * Add backlog from src to dst.
+ * Add backlog from src to dst for flow.
  */
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-					 uint32_t amount);
+		uint16_t flow, uint32_t amount);
 
 /**
  * Emulate a single timeslot.

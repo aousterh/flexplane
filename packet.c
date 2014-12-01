@@ -12,13 +12,13 @@
 #include "admissible_log.h"
 #include "../graph-algo/platform.h"
 
-void drop_demand(uint16_t src, uint16_t dst) {
+void drop_demand(uint16_t src, uint16_t dst, uint16_t flow) {
 	/* this packet should be dropped */
-	admitted_insert_dropped_edge(g_state->admitted, src, dst);
+	admitted_insert_dropped_edge(g_state->admitted, src, dst, flow);
 	adm_log_emu_dropped_demand(&g_state->stat);
 }
 
-struct emu_packet *create_packet(uint16_t src, uint16_t dst) {
+struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow) {
 	struct emu_packet *packet;
 
 	/* allocate a packet */
@@ -27,7 +27,7 @@ struct emu_packet *create_packet(uint16_t src, uint16_t dst) {
 		adm_log_emu_packet_alloc_failed(&g_state->stat);
 		return NULL;
 	}
-	packet_init(packet, src, dst);
+	packet_init(packet, src, dst, flow);
 
 	return packet;
 }

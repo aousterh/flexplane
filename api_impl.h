@@ -36,7 +36,7 @@ void send_packet(struct emu_port *port, struct emu_packet *packet) {
 
 static inline
 void drop_packet(struct emu_packet *packet) {
-	drop_demand(packet->src, packet->dst);
+	drop_demand(packet->src, packet->dst, packet->flow);
 
 	free_packet(packet);
 

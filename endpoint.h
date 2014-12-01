@@ -56,9 +56,9 @@ void endpoint_cleanup(struct emu_endpoint *ep);
 void endpoint_emulate(struct emu_endpoint *ep);
 
 /**
- * Add backlog to dst at this endpoint.
+ * Add backlog to dst for flow at this endpoint.
  */
 void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
-						  uint32_t amount);
+		uint16_t flow, uint32_t amount);
 
 #endif /* ENDPOINT_H_ */

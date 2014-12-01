@@ -73,15 +73,15 @@ void endpoint_emulate(struct emu_endpoint *ep) {
 }
 
 void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
-						  uint32_t amount) {
+		uint16_t flow, uint32_t amount) {
 	uint32_t i;
 
 	/* create and enqueue a packet for each MTU */
 	struct emu_packet *packet;
 	for (i = 0; i < amount; i++) {
-		packet = create_packet(ep->id, dst);
+		packet = create_packet(ep->id, dst, flow);
 		if (packet == NULL)
-			drop_demand(ep->id, dst);
+			drop_demand(ep->id, dst, flow);
 
 		/* enqueue the packet to the endpoint queue */
 		if (fp_ring_enqueue(ep->q_egress, packet) == -ENOBUFS) {

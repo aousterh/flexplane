@@ -14,7 +14,7 @@
 int drop_tail_router_init(struct emu_router *rtr, void *args) {
 	struct drop_tail_router *rtr_priv;
 	struct drop_tail_args *drop_tail_args;
-	uint32_t i, port_capacity;
+	uint16_t i, j, port_capacity;
 
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
@@ -26,15 +26,22 @@ int drop_tail_router_init(struct emu_router *rtr, void *args) {
 	} else
 		port_capacity = DROP_TAIL_PORT_CAPACITY;
 
+	/* initialize packet queues */
+	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+		for (j = 0; j < EMU_ROUTER_NUM_PORTS; j++)
+			queue_create(&rtr_priv->input[i].output[j], port_capacity);
+	}
+
+	/* initialize last input sent to all zeroes for all outputs */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++)
-		queue_create(&rtr_priv->output_queue[i], port_capacity);
+		rtr_priv->next_input[i] = 0;
 
 	return 0;
 }
 
 void drop_tail_router_cleanup(struct emu_router *rtr) {
 	struct drop_tail_router *rtr_priv;
-	uint16_t i;
+	uint16_t i, j;
 	struct emu_packet *packet;
 
 	/* get private state for this router */
@@ -42,42 +49,53 @@ void drop_tail_router_cleanup(struct emu_router *rtr) {
 
 	/* free all queued packets */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		while (queue_dequeue(&rtr_priv->output_queue[i], &packet) == 0)
-			free_packet(packet);
+		for (j = 0; j < EMU_ROUTER_NUM_PORTS; j++) {
+			while (queue_dequeue(&rtr_priv->input[i].output[j], &packet) == 0)
+				free_packet(packet);
+		}
 	}
 }
 
 void drop_tail_router_emulate(struct emu_router *rtr) {
 	struct drop_tail_router *rtr_priv;
-	uint16_t i;
+	uint16_t output, next_input, i, input;
 	struct emu_port *port;
 	struct emu_packet *packet;
-	struct packet_queue *output_q;
+	struct packet_queue *packet_q;
 
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
-	/* try to transmit one packet per output port */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		output_q = &rtr_priv->output_queue[i];
+	/* try to transmit one packet per output port, in a round-robin manner */
+	for (output = 0; output < EMU_ROUTER_NUM_PORTS; output++) {
+		next_input = rtr_priv->next_input[output];
 
-		/* dequeue one packet for this port, send it */
-		if (queue_dequeue(output_q, &packet) == 0) {
-			port = router_port(rtr, i);
-			adm_log_emu_router_sent_packet(&g_state->stat);
-			send_packet(port, packet);
+		for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+			/* TODO: speed this up using bitmasks of non-empty queues */
+			input = (next_input + i) % EMU_ROUTER_NUM_PORTS;
+			packet_q = &rtr_priv->input[input].output[output];
+
+			/* dequeue one packet for this port, send it */
+			if (queue_dequeue(packet_q, &packet) == 0) {
+				port = router_port(rtr, output);
+				adm_log_emu_router_sent_packet(&g_state->stat);
+				send_packet(port, packet);
+
+				/* sent a packet, can't send any more */
+				rtr_priv->next_input[output] = input + 1;
+				break;
+			}
 		}
 	}
 
-	/* move packets from the input ports to the output queues */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		port = router_port(rtr, i);
+	/* move packets from the input ports to the correct queues */
+	for (input = 0; input < EMU_ROUTER_NUM_PORTS; input++) {
+		port = router_port(rtr, input);
 
 		/* try to receive all packets from this port */
 		while ((packet = receive_packet(port)) != NULL) {
-			output_q = &rtr_priv->output_queue[packet->dst];
-
-			if (queue_enqueue(output_q, packet) != 0) {
+			packet_q = &rtr_priv->input[input].output[packet->dst];
+			if (queue_enqueue(packet_q, packet) != 0) {
 				/* no space to enqueue, drop this packet */
 				adm_log_emu_router_dropped_packet(&g_state->stat);
 				drop_packet(packet);

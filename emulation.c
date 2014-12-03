@@ -10,17 +10,19 @@
 #include "api_impl.h"
 #include "admitted.h"
 #include "port.h"
+#include "../protocol/topology.h"
 
 #include <assert.h>
 
 struct emu_state *g_state; /* global emulation state */
 
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-					 uint32_t amount) {
+		uint16_t flow, uint32_t amount) {
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
+	assert(flow < FLOWS_PER_NODE);
 
-	endpoint_add_backlog(state->endpoints[src], dst, amount);
+	endpoint_add_backlog(state->endpoints[src], dst, flow, amount);
 }
 
 void emu_emulate(struct emu_state *state) {
@@ -44,7 +46,7 @@ void emu_emulate(struct emu_state *state) {
 		while (fp_ring_dequeue(state->endpoints[i]->q_ingress,
 				       (void **) &packet) == 0) {
 			admitted_insert_admitted_edge(state->admitted, packet->src,
-					packet->dst);
+					packet->dst, packet->flow);
 			adm_log_emu_admitted_packet(&state->stat);
 
 			free_packet(packet);

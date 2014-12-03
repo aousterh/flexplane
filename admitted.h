@@ -11,19 +11,17 @@
 #include "config.h"
 #include "admissible_log.h"
 #include "emulation.h"
-#include "../protocol/encoding.h"
+#include "../protocol/flags.h"
+#include "../protocol/topology.h"
 
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
 
-#define FLAGS_NONE	0
-#define FLAGS_DROP	0x8000
-
 struct emu_admitted_edge {
 	uint16_t src;
 	uint16_t dst;
-	uint16_t flags;
+	uint8_t flags; /* only 4 lowest bits are used */
 };
 
 /**
@@ -54,7 +52,7 @@ void admitted_init(struct emu_admitted_traffic *admitted) {
  */
 static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
-			  uint16_t dst, uint16_t flags) {
+			  uint16_t dst, uint16_t flow, uint16_t flags) {
 	assert(admitted != NULL);
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
@@ -64,8 +62,9 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
 
 	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
 	edge->src = src;
-	edge->dst = dst;
-	edge->flags = flags;
+	/* indicate dst as combination of dst_node and flow */
+	edge->dst = (dst << FLOW_SHIFT) | (flow & FLOW_MASK);
+	edge->flags = flags & FLAGS_MASK;
 }
 
 /**
@@ -73,10 +72,10 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
-				   uint16_t src, uint16_t dst) {
+				   uint16_t src, uint16_t dst, uint16_t flow) {
 	assert(admitted->admitted < EMU_NUM_ENDPOINTS);
 
-	admitted_insert_edge(admitted, src, dst, FLAGS_NONE);
+	admitted_insert_edge(admitted, src, dst, flow, EMU_FLAGS_NONE);
 	admitted->admitted++;
 }
 
@@ -85,10 +84,10 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
-				  uint16_t src, uint16_t dst) {
+				  uint16_t src, uint16_t dst, uint16_t flow) {
 	assert(admitted->dropped < EMU_MAX_DROPS);
 
-	admitted_insert_edge(admitted, src, dst, FLAGS_DROP);
+	admitted_insert_edge(admitted, src, dst, flow, EMU_FLAGS_DROP);
 	admitted->dropped++;
 }
 
@@ -97,10 +96,14 @@ void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
  */
 static inline
 void admitted_edge_print(struct emu_admitted_edge *edge) {
-	if (edge->flags & FLAGS_DROP) {
-		printf("\tDROP src %d to dst %d\n", edge->src, edge->dst);
+	uint16_t dst, flow;
+
+	dst = edge->dst >> FLOW_SHIFT;
+	flow = edge->dst & FLOW_MASK;
+	if (edge->flags == EMU_FLAGS_DROP) {
+		printf("\tDROP src %d to dst %d (flow %d)\n", edge->src, dst, flow);
 	} else {
-		printf("\tsrc %d to dst %d\n", edge->src, edge->dst);
+		printf("\tsrc %d to dst %d (flow %d)\n", edge->src, dst, flow);
 	}
 }
 

@@ -32,9 +32,11 @@ int drop_tail_router_init(struct emu_router *rtr, void *args) {
 			queue_create(&rtr_priv->input[i].output[j], port_capacity);
 	}
 
-	/* initialize last input sent to all zeroes for all outputs */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++)
+	/* initialize per-output state */
+	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
 		rtr_priv->next_input[i] = 0;
+		rtr_priv->non_empty_inputs[i] = 0;
+	}
 
 	return 0;
 }
@@ -68,6 +70,9 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 
 	/* try to transmit one packet per output port, in a round-robin manner */
 	for (output = 0; output < EMU_ROUTER_NUM_PORTS; output++) {
+		if (rtr_priv->non_empty_inputs[output] == 0)
+			continue; /* no queued packets for this output */
+
 		next_input = rtr_priv->next_input[output];
 
 		for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
@@ -80,6 +85,10 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 				port = router_port(rtr, output);
 				adm_log_emu_router_sent_packet(&g_state->stat);
 				send_packet(port, packet);
+
+				/* mark this queue as empty, if necessary */
+				if (queue_empty(packet_q))
+					rtr_priv->non_empty_inputs[output] &= ~(0x1UL << i);
 
 				/* sent a packet, can't send any more */
 				rtr_priv->next_input[output] = input + 1;
@@ -95,6 +104,10 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 		/* try to receive all packets from this port */
 		while ((packet = receive_packet(port)) != NULL) {
 			packet_q = &rtr_priv->input[input].output[packet->dst];
+
+			/* mark that this output has a pending packet */
+			rtr_priv->non_empty_inputs[packet->dst] |= (1 << input);
+
 			if (queue_enqueue(packet_q, packet) != 0) {
 				/* no space to enqueue, drop this packet */
 				adm_log_emu_router_dropped_packet(&g_state->stat);

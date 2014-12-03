@@ -34,7 +34,10 @@ struct input_queues {
  */
 struct drop_tail_router {
 	struct input_queues input[EMU_ROUTER_NUM_PORTS];
+
+	/* per-output state */
 	uint16_t next_input[EMU_ROUTER_NUM_PORTS];
+	uint32_t non_empty_inputs[EMU_ROUTER_NUM_PORTS];
 };
 
 /**

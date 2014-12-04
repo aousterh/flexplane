@@ -58,9 +58,20 @@ void drop_tail_router_cleanup(struct emu_router *rtr) {
 	}
 }
 
+/**
+ * Shift value to the right by amount, place bits shifted-off on the left side
+ * again. Return the shifted result.
+ */
+static inline
+uint32_t circular_shift_right(uint32_t value, uint32_t amount) {
+	return (value >> amount) | (value << (32 - amount));
+}
+
 void drop_tail_router_emulate(struct emu_router *rtr) {
 	struct drop_tail_router *rtr_priv;
-	uint16_t output, next_input, i, input;
+	uint16_t output, next_input, input;
+	int ret;
+	uint32_t input_bitmask, offset;
 	struct emu_port *port;
 	struct emu_packet *packet;
 	struct packet_queue *packet_q;
@@ -70,31 +81,36 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 
 	/* try to transmit one packet per output port, in a round-robin manner */
 	for (output = 0; output < EMU_ROUTER_NUM_PORTS; output++) {
-		if (rtr_priv->non_empty_inputs[output] == 0)
+		input_bitmask = rtr_priv->non_empty_inputs[output];
+
+		if (input_bitmask == 0)
 			continue; /* no queued packets for this output */
 
-		next_input = rtr_priv->next_input[output];
+		/* find the first set bit, indicating the next input to serve */
+		asm("bsfl %1,%0" : "=r"(offset) : "r"(input_bitmask));
 
-		for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-			/* TODO: speed this up using bitmasks of non-empty queues */
-			input = (next_input + i) % EMU_ROUTER_NUM_PORTS;
-			packet_q = &rtr_priv->input[input].output[output];
+		/* the first bit in the bitmask corresponds to the input after the last
+		 * input served by this output. */
+		next_input = (rtr_priv->next_input[output] + offset) % EMU_ROUTER_NUM_PORTS;
+		packet_q = &rtr_priv->input[next_input].output[output];
 
-			/* dequeue one packet for this port, send it */
-			if (queue_dequeue(packet_q, &packet) == 0) {
-				port = router_port(rtr, output);
-				adm_log_emu_router_sent_packet(&g_state->stat);
-				send_packet(port, packet);
+		/* dequeue one packet for this port, send it */
+		ret = queue_dequeue(packet_q, &packet);
+		assert(ret == 0); /* queue must have a packet */
+		port = router_port(rtr, output);
+		adm_log_emu_router_sent_packet(&g_state->stat);
+		send_packet(port, packet);
 
-				/* mark this queue as empty, if necessary */
-				if (queue_empty(packet_q))
-					rtr_priv->non_empty_inputs[output] &= ~(0x1UL << i);
+		/* mark this queue as empty, if necessary */
+		if (queue_empty(packet_q))
+			rtr_priv->non_empty_inputs[output] &= ~(0x1UL << offset);
 
-				/* sent a packet, can't send any more */
-				rtr_priv->next_input[output] = input + 1;
-				break;
-			}
-		}
+		/* update state for this output */
+		rtr_priv->next_input[output] = next_input + 1;
+		/* circular shift by offset + 1 */
+		rtr_priv->non_empty_inputs[output] =
+				circular_shift_right(rtr_priv->non_empty_inputs[output],
+						offset + 1);
 	}
 
 	/* move packets from the input ports to the correct queues */
@@ -106,7 +122,8 @@ void drop_tail_router_emulate(struct emu_router *rtr) {
 			packet_q = &rtr_priv->input[input].output[packet->dst];
 
 			/* mark that this output has a pending packet */
-			rtr_priv->non_empty_inputs[packet->dst] |= (1 << input);
+			next_input = rtr_priv->next_input[packet->dst];
+			rtr_priv->non_empty_inputs[packet->dst] |= (1 << (input-next_input));
 
 			if (queue_enqueue(packet_q, packet) != 0) {
 				/* no space to enqueue, drop this packet */

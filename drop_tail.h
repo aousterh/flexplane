@@ -29,8 +29,9 @@ struct input_queues {
 /**
  * State maintained by each drop tail router.
  * @input: a set of input queues for each incoming port
- * @next_input: for each output port, the next input to send from
+ * @next_input: for each output port, the next input that can be sent from
  * 		(should be taken mod EMU_ROUTER_NUM_PORTS)
+ * @non_empty_inputs: a bitmask indicating inputs with packets for this output
  */
 struct drop_tail_router {
 	struct input_queues input[EMU_ROUTER_NUM_PORTS];

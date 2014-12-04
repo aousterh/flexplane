@@ -345,7 +345,7 @@ static void handle_reset(void *param)
 	comm_log_handle_reset(node_id, en->conn.in_sync);
 
 	reset_sender(g_admissible_status(), node_id);
-	memset(&en->demands[0], 0, MAX_NODES * sizeof(uint32_t));
+	memset(en->demands, 0, sizeof(en->alloc_to_dst));
 	memset(en->alloc_to_dst, 0, sizeof(en->alloc_to_dst));
 	memset(en->acked_allocs, 0, sizeof(en->acked_allocs));
 
@@ -1120,7 +1120,7 @@ void comm_dump_stat(uint16_t node_id, struct conn_log_struct *conn_log)
 
 	/* dump demands */
 	ctr = 0;
-	for (i = 0; i < MAX_NODES; i++)
+	for (i = 0; i < MAX_FLOWS; i++)
 		ctr += en->demands[i];
 	conn_log->demands = ctr;
 }

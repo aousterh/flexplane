@@ -57,6 +57,7 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
 
+	assert(admitted->size < EMU_NUM_ENDPOINTS + EMU_MAX_DROPS);
 	if (admitted->size >= EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
 		adm_log_emu_admitted_struct_overflow(&g_state->stat);
 

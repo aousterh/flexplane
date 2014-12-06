@@ -19,11 +19,26 @@ struct drop_tail_args {
 };
 
 /**
+ * Output queues for a give input port.
+ * @output: one queue per output port
+ */
+struct input_queues {
+	struct packet_queue output[EMU_ROUTER_NUM_PORTS];
+};
+
+/**
  * State maintained by each drop tail router.
- * @output_queue: a queue of packets for each output port
+ * @input: a set of input queues for each incoming port
+ * @next_input: for each output port, the next input that can be sent from
+ * 		(should be taken mod EMU_ROUTER_NUM_PORTS)
+ * @non_empty_inputs: a bitmask indicating inputs with packets for this output
  */
 struct drop_tail_router {
-	struct packet_queue output_queue[EMU_ROUTER_NUM_PORTS];
+	struct input_queues input[EMU_ROUTER_NUM_PORTS];
+
+	/* per-output state */
+	uint16_t next_input[EMU_ROUTER_NUM_PORTS];
+	uint32_t non_empty_inputs[EMU_ROUTER_NUM_PORTS];
 };
 
 /**

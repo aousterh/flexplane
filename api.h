@@ -94,6 +94,13 @@ uint32_t endpoint_id(struct emu_endpoint *ep);
  */
 struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow);
 
+/**
+ * Return the queue that packet p should be sent out of at router rtr
+ * (static routing).
+ */
+static inline
+uint16_t get_output_queue(struct emu_router *rtr, struct emu_packet *p);
+
 
 /*
  * Logging functions that emulation algorithms may call.
@@ -144,10 +151,15 @@ struct router_ops {
 	void (*cleanup)(struct emu_router *rtr);
 
 	/**
-	 * Emulate one timeslot at a given router. For now, assume that routers
-	 * can process MTUs with no additional delay beyond the queueing delay.
+	 * Process a packet arriving at the router.
 	 */
-	void (*emulate)(struct emu_router *rtr);
+	void (*receive)(struct emu_router *rtr, struct emu_packet *packet);
+
+	/**
+	 * Return a packet to send from the router on output port.
+	 */
+	void (*send)(struct emu_router *rtr, uint16_t output,
+			struct emu_packet **packet);
 };
 
 

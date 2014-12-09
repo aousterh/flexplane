@@ -41,5 +41,26 @@ void router_cleanup(struct emu_router *rtr) {
 }
 
 void router_emulate(struct emu_router *rtr) {
-	rtr->ops->emulate(rtr);
+	uint16_t i;
+	struct emu_port *port;
+	struct emu_packet *packet;
+
+	/* for each output, try to fetch a packet and send it */
+	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+		port = router_port(rtr, i);
+		rtr->ops->send(rtr, i, &packet);
+
+		if (packet != NULL) {
+			adm_log_emu_router_sent_packet(&g_state->stat);
+			send_packet(port, packet);
+		}
+	}
+
+	/* pass all incoming packets to the router */
+	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+		port = router_port(rtr, i); /* TODO: remove ports */
+
+		if ((packet = receive_packet(port)) != NULL)
+			rtr->ops->receive(rtr, packet);
+	}
 }

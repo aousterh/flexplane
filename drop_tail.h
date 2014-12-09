@@ -38,10 +38,15 @@ int drop_tail_router_init(struct emu_router *rtr, void *args);
 void drop_tail_router_cleanup(struct emu_router *rtr);
 
 /**
- * Emulate one timeslot at a given router. For now, assume that routers
- * can process MTUs with no additional delay beyond the queueing delay.
+ * Process a packet arriving at the router.
  */
-void drop_tail_router_emulate(struct emu_router *rtr);
+void drop_tail_router_receive(struct emu_router *rtr, struct emu_packet *p);
+
+/**
+ * Return a packet to send from the router on output port.
+ */
+void drop_tail_router_send(struct emu_router *rtr, uint16_t output,
+		struct emu_packet **packet);
 
 /**
  * Initialize an endpoint.
@@ -74,7 +79,8 @@ static struct emu_ops drop_tail_ops = {
 				.priv_size	= sizeof(struct drop_tail_router),
 				.init		= &drop_tail_router_init,
 				.cleanup	= &drop_tail_router_cleanup,
-				.emulate	= &drop_tail_router_emulate,
+				.send		= &drop_tail_router_send,
+				.receive	= &drop_tail_router_receive,
 		},
 		.ep_ops = {
 				.priv_size	= 0, /* no private state necessary */

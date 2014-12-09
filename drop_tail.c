@@ -47,44 +47,38 @@ void drop_tail_router_cleanup(struct emu_router *rtr) {
 	}
 }
 
-void drop_tail_router_emulate(struct emu_router *rtr) {
+void drop_tail_router_receive(struct emu_router *rtr, struct emu_packet *p) {
 	struct drop_tail_router *rtr_priv;
-	uint16_t i;
-	struct emu_port *port;
-	struct emu_packet *packet;
+	uint16_t output;
 	struct packet_queue *output_q;
 
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
-	/* try to transmit one packet per output port */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		output_q = &rtr_priv->output_queue[i];
+	output = get_output_queue(rtr, p); /* TODO: implement */
+	output_q = &rtr_priv->output_queue[output];
 
-		/* dequeue one packet for this port, send it */
-		if (queue_dequeue(output_q, &packet) == 0) {
-			port = router_port(rtr, i);
-			adm_log_emu_router_sent_packet(&g_state->stat);
-			send_packet(port, packet);
-		}
+	/* try to enqueue the packet */
+	if (queue_enqueue(output_q, p) != 0) {
+		/* no space to enqueue, drop this packet */
+		adm_log_emu_router_dropped_packet(&g_state->stat);
+		drop_packet(p);
 	}
+}
 
-	/* move packets from the input ports to the output queues */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		port = router_port(rtr, i);
+void drop_tail_router_send(struct emu_router *rtr, uint16_t output,
+		struct emu_packet **packet) {
+	struct drop_tail_router *rtr_priv;
+	struct packet_queue *output_q;
 
-		/* try to receive all packets from this port */
-		while ((packet = receive_packet(port)) != NULL) {
-			output_q = &rtr_priv->output_queue[packet->dst];
+	/* get private state for this router */
+	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
-			if (queue_enqueue(output_q, packet) != 0) {
-				/* no space to enqueue, drop this packet */
-				adm_log_emu_router_dropped_packet(&g_state->stat);
-				drop_packet(packet);
-				continue;
-			}
-		}
-	}
+	output_q = &rtr_priv->output_queue[output];
+
+	/* dequeue one packet for this output if the queue is non-empty */
+	*packet = NULL;
+	queue_dequeue(output_q, packet);
 }
 
 int drop_tail_endpoint_init(struct emu_endpoint *ep, void *args) {

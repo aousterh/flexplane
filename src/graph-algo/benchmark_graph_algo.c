@@ -309,11 +309,11 @@ int main(int argc, char **argv)
     		&bin_mempool);
 
     /* allocate space to record times */
-    uint16_t num_batches = (duration - warm_up_duration) / BATCH_SIZE;
+    uint32_t num_batches = (duration - warm_up_duration) / BATCH_SIZE;
     uint32_t *per_batch_times = malloc(sizeof(uint64_t) * num_batches);
     assert(per_batch_times != NULL);
     
-    uint16_t num_timeslots = duration - warm_up_duration;
+    uint32_t num_timeslots = duration - warm_up_duration;
     uint32_t *per_timeslot_times = malloc(sizeof(uint64_t) * num_timeslots);
     assert(per_timeslot_times != NULL);
 

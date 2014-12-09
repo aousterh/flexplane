@@ -58,13 +58,6 @@ static inline
 struct emu_packet *receive_packet(struct emu_port *port);
 
 /**
- * Dequeues a packet at an endpoint from the network stack. Returns a pointer
- * to the packet, or NULL if none are available.
- */
-static inline
-struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep);
-
-/**
  * Enqueues a packet at an endpoint to pass up the network stack.
  */
 static inline
@@ -191,9 +184,19 @@ struct endpoint_ops {
 	void (*cleanup)(struct emu_endpoint *ep);
 
 	/**
-	 * Emulate one timeslot at a given endpoint.
+	 * Receive a packet @p from the application at endpoint @ep.
 	 */
-	void (*emulate)(struct emu_endpoint *ep);
+	void (*rcv_from_app)(struct emu_endpoint *ep, struct emu_packet *p);
+
+	/**
+	 * Receive a packet @p from the network at endpoint @ep.
+	 */
+	void (*rcv_from_net)(struct emu_endpoint *ep, struct emu_packet *p);
+
+	/**
+	 * Choose a packet @p to send on the network at endpoint @ep.
+	 */
+	void (*send_to_net)(struct emu_endpoint *ep, struct emu_packet **p);
 };
 
 /*

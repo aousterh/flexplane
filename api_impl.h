@@ -55,16 +55,6 @@ struct emu_packet *receive_packet(struct emu_port *port) {
 }
 
 static inline
-struct emu_packet *dequeue_packet_at_endpoint(struct emu_endpoint *ep) {
-	struct emu_packet *packet;
-
-	if (fp_ring_dequeue(ep->q_egress, (void **) &packet) != 0)
-		return NULL;
-
-	return packet;
-}
-
-static inline
 void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
 		struct emu_packet *packet) {
 	assert(packet->dst == ep->id);

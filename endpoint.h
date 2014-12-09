@@ -13,6 +13,7 @@
 
 struct endpoint_ops;
 struct emu_ops;
+struct emu_state;
 
 /**
  * A representation of an endpoint (server) in the emulated network.
@@ -23,7 +24,6 @@ struct emu_ops;
  */
 struct emu_endpoint {
 	uint16_t			id;
-	struct fp_ring		*q_egress;
 	struct emu_port		port;
 	struct endpoint_ops	*ops;
 };
@@ -32,8 +32,7 @@ struct emu_endpoint {
  * Initialize an endpoint.
  * @return 0 on success, negative value on error.
  */
-int endpoint_init(struct emu_endpoint *ep, uint16_t id,
-			struct fp_ring *q_egress, struct emu_ops *ops);
+int endpoint_init(struct emu_endpoint *ep, uint16_t id, struct emu_ops *ops);
 
 /**
  * Reset an endpoint. This happens when endpoints lose sync with the
@@ -48,14 +47,8 @@ void endpoint_reset(struct emu_endpoint *ep);
 void endpoint_cleanup(struct emu_endpoint *ep);
 
 /**
- * Emulate one timeslot at a given endpoint.
+ * Emulate one timeslot at each endpoint.
  */
-void endpoint_emulate(struct emu_endpoint *ep);
-
-/**
- * Add backlog to dst for flow at this endpoint.
- */
-void endpoint_add_backlog(struct emu_endpoint *ep, uint16_t dst,
-		uint16_t flow, uint32_t amount);
+void endpoints_emulate(struct emu_state *state);
 
 #endif /* ENDPOINT_H_ */

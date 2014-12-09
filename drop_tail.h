@@ -27,6 +27,14 @@ struct drop_tail_router {
 };
 
 /**
+ * State maintained by each drop tail endpoint.
+ * @output_queue: a queue of packets to be sent out
+ */
+struct drop_tail_endpoint {
+	struct packet_queue output_queue;
+};
+
+/**
  * Initialize a router.
  * @return 0 on success, negative value on error
  */
@@ -67,9 +75,22 @@ void drop_tail_endpoint_reset(struct emu_endpoint *ep);
 void drop_tail_endpoint_cleanup(struct emu_endpoint *ep);
 
 /**
- * Emulate one timeslot at a given endpoint.
+ * Receive a packet @p from the application at endpoint @ep.
  */
-void drop_tail_endpoint_emulate(struct emu_endpoint *endpoint);
+void drop_tail_endpoint_rcv_from_app(struct emu_endpoint *ep,
+		struct emu_packet *p);
+
+/**
+ * Receive a packet @p from the network at endpoint @ep.
+ */
+void drop_tail_endpoint_rcv_from_net(struct emu_endpoint *ep,
+		struct emu_packet *p);
+
+/**
+ * Choose a packet @p to send on the network at endpoint @ep.
+ */
+void drop_tail_endpoint_send_to_net(struct emu_endpoint *ep,
+		struct emu_packet **p);
 
 /**
  * Drop tail functions and parameters.
@@ -83,11 +104,13 @@ static struct emu_ops drop_tail_ops = {
 				.receive	= &drop_tail_router_receive,
 		},
 		.ep_ops = {
-				.priv_size	= 0, /* no private state necessary */
-				.init		= &drop_tail_endpoint_init,
-				.reset		= &drop_tail_endpoint_reset,
-				.cleanup	= &drop_tail_endpoint_cleanup,
-				.emulate	= &drop_tail_endpoint_emulate,
+				.priv_size		= sizeof(struct drop_tail_endpoint),
+				.init			= &drop_tail_endpoint_init,
+				.reset			= &drop_tail_endpoint_reset,
+				.cleanup		= &drop_tail_endpoint_cleanup,
+				.rcv_from_app	= &drop_tail_endpoint_rcv_from_app,
+				.rcv_from_net	= &drop_tail_endpoint_rcv_from_net,
+				.send_to_net	= &drop_tail_endpoint_send_to_net,
 		},
 		.packet_priv_size	=	0,
 		.args				= NULL,

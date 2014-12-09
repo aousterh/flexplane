@@ -17,7 +17,7 @@
 struct emu_ops ops;
 
 struct drop_tail_args args = {
-		.port_capacity	= 2,
+		.port_capacity	= 5,
 };
 
 /**
@@ -89,7 +89,7 @@ int main() {
 	printf("\nTEST 2: drop-tail\n");
 	state = setup_state();
 	for (i = 0; i < 10; i++) {
-		emu_add_backlog(state, i, 13, 0, 4);
+		emu_add_backlog(state, i, 13, 0, 3);
 		emulate_and_print_admitted(state);
 	}
 	for (i = 0; i < 10; i++)

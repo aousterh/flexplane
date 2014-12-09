@@ -16,16 +16,13 @@
 #include "assert.h"
 
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
-				  struct fp_ring *q_egress, struct fp_ring *q_ingress,
-				  struct emu_ops *ops) {
+				  struct fp_ring *q_egress, struct emu_ops *ops) {
 	assert(ep != NULL);
 	assert(q_egress != NULL);
-	assert(q_ingress != NULL);
 	assert(ops != NULL);
 
 	ep->id = id;
 	ep->q_egress = q_egress;
-	ep->q_ingress = q_ingress;
 	ep->ops = &ops->ep_ops;
 
 	return ep->ops->init(ep, ops->args);
@@ -54,12 +51,6 @@ void endpoint_cleanup(struct emu_endpoint *ep) {
 		free_packet(packet);
 	}
 	fp_free(ep->q_egress);
-
-	/* free queue of packets to the endpoint application */
-	while (fp_ring_dequeue(ep->q_ingress, (void **) &packet) == 0) {
-		free_packet(packet);
-	}
-	fp_free(ep->q_ingress);
 
 	/* free egress queue in port (ingress will be freed by other port) */
 	while (fp_ring_dequeue(ep->port.q_egress, (void **) &packet) == 0) {

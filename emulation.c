@@ -39,20 +39,6 @@ void emu_emulate(struct emu_state *state) {
 		router_emulate(state->routers[i]);
 	}
 
-	/* process all traffic that has arrived at endpoint ports */
-	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		/* dequeue all packets at this port, add them to admitted traffic,
-		 * and free them */
-		while (fp_ring_dequeue(state->endpoints[i]->q_ingress,
-				       (void **) &packet) == 0) {
-			admitted_insert_admitted_edge(state->admitted, packet->src,
-					packet->dst, packet->flow);
-			adm_log_emu_admitted_packet(&state->stat);
-
-			free_packet(packet);
-		}
-	}
-
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)
 		adm_log_emu_wait_for_admitted_enqueue(&state->stat);
@@ -123,9 +109,7 @@ void emu_init_state(struct emu_state *state,
 		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ops->ep_ops.priv_size;
 		state->endpoints[i] = fp_malloc("emu_endpoint", size);
 		assert(state->endpoints[i] != NULL);
-		endpoint_init(state->endpoints[i], i, packet_queues[pq],
-				packet_queues[pq + 1], ops);
-		pq += 2;
+		endpoint_init(state->endpoints[i], i, packet_queues[pq++], ops);
 	}
 
 	/* initialize all the routers */

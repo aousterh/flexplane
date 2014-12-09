@@ -21,7 +21,7 @@
 #define ADMITTED_Q_LOG_SIZE		4
 #define PACKET_MEMPOOL_SIZE		(1024 * 128)
 #define PACKET_Q_LOG_SIZE		12
-#define EMU_NUM_PACKET_QS		(EMU_NUM_ENDPOINTS * 2 + \
+#define EMU_NUM_PACKET_QS		(EMU_NUM_ENDPOINTS + \
 								EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2)
 
 extern struct emu_state *g_state;

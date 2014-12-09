@@ -7,6 +7,7 @@
  *      Author: aousterh
  */
 
+#include "admitted.h"
 #include "api.h"
 #include "emulation.h"
 #include "endpoint.h"
@@ -68,10 +69,11 @@ void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
 		struct emu_packet *packet) {
 	assert(packet->dst == ep->id);
 
-	if (fp_ring_enqueue(ep->q_ingress, packet) == -ENOBUFS) {
-		adm_log_emu_endpoint_enqueue_received_failed(&g_state->stat);
-		drop_packet(packet);
-	}
+	admitted_insert_admitted_edge(g_state->admitted, packet->src,
+			packet->dst, packet->flow);
+	adm_log_emu_admitted_packet(&g_state->stat);
+
+	free_packet(packet);
 }
 
 static inline

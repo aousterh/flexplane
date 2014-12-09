@@ -18,14 +18,12 @@ struct emu_ops;
  * A representation of an endpoint (server) in the emulated network.
  * @id: the unique id of this endpoint
  * @q_egress: the queue of outgoing packets
- * @q_ingress: the queue of incoming packets
  * @port: the egress port of this endpoint
  * @ops: endpoint functions implemented by the emulation algorithm
  */
 struct emu_endpoint {
 	uint16_t			id;
 	struct fp_ring		*q_egress;
-	struct fp_ring		*q_ingress;
 	struct emu_port		port;
 	struct endpoint_ops	*ops;
 };
@@ -35,8 +33,7 @@ struct emu_endpoint {
  * @return 0 on success, negative value on error.
  */
 int endpoint_init(struct emu_endpoint *ep, uint16_t id,
-			struct fp_ring *q_egress, struct fp_ring *q_ingress,
-			struct emu_ops *ops);
+			struct fp_ring *q_egress, struct emu_ops *ops);
 
 /**
  * Reset an endpoint. This happens when endpoints lose sync with the

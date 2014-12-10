@@ -9,6 +9,7 @@
 #define ROUTER_H_
 
 #include "config.h"
+#include "../graph-algo/fp_ring.h"
 #include <inttypes.h>
 
 struct router_ops;

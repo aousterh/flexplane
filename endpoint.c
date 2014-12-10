@@ -36,43 +36,40 @@ void endpoint_cleanup(struct emu_endpoint *ep) {
 	struct emu_packet *packet;
 
 	ep->ops->cleanup(ep);
-
-	/* free egress queue in port (ingress will be freed by other port) */
-	while (fp_ring_dequeue(ep->port.q_egress, (void **) &packet) == 0) {
-		free_packet(packet);
-	}
-	fp_free(ep->port.q_egress);
 };
 
 void endpoints_emulate(struct emu_state *state) {
 	uint32_t i;
 	struct emu_endpoint *ep;
 	struct emu_packet *packet;
-	struct emu_port *port;
 
 	// TODO: do in random order
 	/* dequeue one packet from each endpoint, send to next hop in network */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		ep = state->endpoints[i];
 		ep->ops->send_to_net(ep, &packet);
-		if (packet != NULL) {
-			port = endpoint_port(ep); // TODO: get rid of ports
-			/* try to transmit the packet to the next router */
+
+		if (packet == NULL)
+			continue;
+
+		/* TODO: add routing to support enqueuing to different router */
+		if (fp_ring_enqueue(state->routers[0]->q_ingress, packet) == -ENOBUFS) {
+			adm_log_emu_send_packet_failed(&g_state->stat);
+			drop_packet(packet);
+		} else {
 			adm_log_emu_endpoint_sent_packet(&g_state->stat);
-			send_packet(port, packet);
 		}
 	}
 
-	/* TODO: replace ports with single queue */
+	/* TODO: use burst dequeue */
 	/* dequeue packets from network, pass to endpoints */
-	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		ep = state->endpoints[i];
-		port = endpoint_port(ep);
-		if ((packet = receive_packet(port)) != NULL)
-			ep->ops->rcv_from_net(ep, packet);
+	while (fp_ring_dequeue(state->q_to_endpoints, (void **) &packet) == 0) {
+		ep = state->endpoints[packet->dst];
+		ep->ops->rcv_from_net(ep, packet);
 	}
 
 	/* dequeue all packets from endpoint apps, give to endpoints */
+	/* TODO: use burst dequeue */
 	while (fp_ring_dequeue(state->q_from_app, (void **) &packet) == 0) {
 		ep = state->endpoints[packet->src];
 		ep->ops->rcv_from_app(ep, packet);

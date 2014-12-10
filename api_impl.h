@@ -18,40 +18,12 @@
 #include <assert.h>
 
 static inline
-struct emu_port *router_port(struct emu_router *rtr, uint32_t port_ind) {
-	return &rtr->ports[port_ind];
-}
-
-static inline
-struct emu_port *endpoint_port(struct emu_endpoint *ep) {
-	return &ep->port;
-}
-
-static inline
-void send_packet(struct emu_port *port, struct emu_packet *packet) {
-	if (fp_ring_enqueue(port->q_egress, packet) == -ENOBUFS) {
-		adm_log_emu_send_packet_failed(&g_state->stat);
-		drop_packet(packet);
-	}
-}
-
-static inline
 void drop_packet(struct emu_packet *packet) {
 	drop_demand(packet->src, packet->dst, packet->flow);
 
 	free_packet(packet);
 
 	adm_log_emu_dropped_packet(&g_state->stat);
-}
-
-static inline
-struct emu_packet *receive_packet(struct emu_port *port) {
-	struct emu_packet *packet;
-
-	if (fp_ring_dequeue(port->q_ingress, (void **) &packet) != 0)
-		return NULL;
-
-	return packet;
 }
 
 static inline

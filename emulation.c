@@ -9,7 +9,6 @@
 #include "api.h"
 #include "api_impl.h"
 #include "admitted.h"
-#include "port.h"
 #include "../protocol/topology.h"
 
 #include <assert.h>
@@ -87,6 +86,12 @@ void emu_cleanup(struct emu_state *state) {
 	}
 	fp_free(state->q_from_app);
 
+	/* free q_to_endpoints and return its packets to the mempool */
+	while (fp_ring_dequeue(state->q_to_endpoints, (void **) &p) == 0) {
+		free_packet(p);
+	}
+	fp_free(state->q_to_endpoints);
+
 	/* return admitted struct to mempool */
 	if (state->admitted != NULL)
 		fp_mempool_put(state->admitted_traffic_mempool, state->admitted);
@@ -115,7 +120,6 @@ void emu_init_state(struct emu_state *state,
 	uint32_t i, pq;
 	uint32_t size;
 	struct emu_router *router;
-	struct emu_port *port_at_router;
 
 	g_state = state;
 
@@ -139,19 +143,11 @@ void emu_init_state(struct emu_state *state,
 		size = EMU_ALIGN(sizeof(struct emu_router)) + ops->rtr_ops.priv_size;
 		state->routers[i] = fp_malloc("emu_router", size);
 		assert(state->routers[i] != NULL);
-		router_init(state->routers[i], i, ops);
+		router_init(state->routers[i], i, ops, packet_queues[pq++]);
 	}
 
 	state->q_from_app = packet_queues[pq++];
-
-	/* initialize all the ports */
-	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		router = state->routers[i / EMU_ROUTER_NUM_PORTS];
-		port_at_router = &router->ports[i % EMU_ROUTER_NUM_PORTS];
-		port_pair_init(port_at_router, &state->endpoints[i]->port,
-			       packet_queues[pq], packet_queues[pq + 1]);
-		pq += 2;
-	}
+	state->q_to_endpoints = packet_queues[pq++];
 
 	/* get 1 admitted traffic for the core, init it */
 	while (fp_mempool_get(state->admitted_traffic_mempool,

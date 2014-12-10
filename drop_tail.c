@@ -55,7 +55,7 @@ void drop_tail_router_receive(struct emu_router *rtr, struct emu_packet *p) {
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
-	output = get_output_queue(rtr, p); /* TODO: implement */
+	output = get_output_queue(rtr, p);
 	output_q = &rtr_priv->output_queue[output];
 
 	/* try to enqueue the packet */
@@ -69,16 +69,13 @@ void drop_tail_router_receive(struct emu_router *rtr, struct emu_packet *p) {
 void drop_tail_router_send(struct emu_router *rtr, uint16_t output,
 		struct emu_packet **packet) {
 	struct drop_tail_router *rtr_priv;
-	struct packet_queue *output_q;
 
 	/* get private state for this router */
 	rtr_priv = (struct drop_tail_router *) router_priv(rtr);
 
-	output_q = &rtr_priv->output_queue[output];
-
 	/* dequeue one packet for this output if the queue is non-empty */
 	*packet = NULL;
-	queue_dequeue(output_q, packet);
+	queue_dequeue(&rtr_priv->output_queue[output], packet);
 }
 
 int drop_tail_endpoint_init(struct emu_endpoint *ep, void *args) {

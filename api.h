@@ -27,35 +27,10 @@ struct emu_admission_statistics;
  */
 
 /**
- * Returns a pointer to the port with index port_ind at router rtr.
- */
-static inline
-struct emu_port *router_port(struct emu_router *rtr, uint32_t port_ind);
-
-/**
- * Returns a pointer to the port at endpoint ep.
- */
-static inline
-struct emu_port *endpoint_port(struct emu_endpoint *ep);
-
-/**
- * Sends packet out port.
- */
-static inline
-void send_packet(struct emu_port *port, struct emu_packet *packet);
-
-/**
  * Notifies physical endpoint to drop packet and frees packet memory.
  */
 static inline
 void drop_packet(struct emu_packet *packet);
-
-/**
- * Receives a packet from a port. Returns a pointer to the packet, or NULL if
- * none are available at this port.
- */
-static inline
-struct emu_packet *receive_packet(struct emu_port *port);
 
 /**
  * Enqueues a packet at an endpoint to pass up the network stack.
@@ -100,13 +75,13 @@ uint16_t get_output_queue(struct emu_router *rtr, struct emu_packet *p);
  */
 
 /**
- * Logs that an endpoint sent a packet out a port.
+ * Logs that an endpoint sent a packet into the network.
  */
 static inline __attribute__((always_inline))
 void adm_log_emu_endpoint_sent_packet(struct emu_admission_statistics *st);
 
 /**
- * Logs that a router sent a packet out a port.
+ * Logs that a router sent a packet into the network.
  */
 static inline __attribute__((always_inline))
 void adm_log_emu_router_sent_packet(struct emu_admission_statistics *st);

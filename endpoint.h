@@ -8,7 +8,6 @@
 #ifndef ENDPOINT_H_
 #define ENDPOINT_H_
 
-#include "port.h"
 #include "../graph-algo/fp_ring.h"
 
 struct endpoint_ops;
@@ -18,13 +17,10 @@ struct emu_state;
 /**
  * A representation of an endpoint (server) in the emulated network.
  * @id: the unique id of this endpoint
- * @q_egress: the queue of outgoing packets
- * @port: the egress port of this endpoint
  * @ops: endpoint functions implemented by the emulation algorithm
  */
 struct emu_endpoint {
 	uint16_t			id;
-	struct emu_port		port;
 	struct endpoint_ops	*ops;
 };
 

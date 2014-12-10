@@ -12,7 +12,6 @@
 #include "api.h"
 #include "endpoint.h"
 #include "router.h"
-#include "port.h"
 #include "admissible_log.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
@@ -21,17 +20,28 @@
 #define ADMITTED_Q_LOG_SIZE		4
 #define PACKET_MEMPOOL_SIZE		(1024 * 128)
 #define PACKET_Q_LOG_SIZE		12
-#define EMU_NUM_PACKET_QS		(1 + EMU_NUM_ROUTERS * EMU_ROUTER_NUM_PORTS * 2)
+#define EMU_NUM_PACKET_QS		(2 + EMU_NUM_ROUTERS)
 
 extern struct emu_state *g_state;
 
 /**
  * Data structure to store the state of the emulation.
+ * @endpoints: representations of endpoints
+ * @routers: representations of routers
+ * @q_from_app: queue of packets from comm core to endpoints
+ * @q_to_endpoints: queue of packets from routers to endpoints
+ * @admitted_traffic_mempool: pool of admitted traffic structs
+ * @admitted: the current admitted struct
+ * @q_admitted_out: queue of admitted structs to comm core
+ * @packet_mempool: pool of packet structs
+ * @stat: stats
+ * @core_stats: per-core stats
  */
 struct emu_state {
 	struct emu_endpoint						*endpoints[EMU_NUM_ENDPOINTS];
 	struct emu_router						*routers[EMU_NUM_ROUTERS];
-	struct fp_ring							*q_from_app;
+	struct fp_ring							*q_from_app; /* can have one per core */
+	struct fp_ring							*q_to_endpoints; /* can have one per core */
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct emu_admitted_traffic				*admitted;
 	struct fp_ring							*q_admitted_out;

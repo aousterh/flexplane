@@ -12,6 +12,8 @@
 #include "../graph-algo/platform.h"
 #include "assert.h"
 
+#define ROUTER_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
+
 int router_init(struct emu_router *rtr, uint16_t id, struct emu_ops *ops,
 		struct fp_ring *q_ingress) {
 	uint16_t i;
@@ -43,6 +45,8 @@ void router_cleanup(struct emu_router *rtr) {
 void router_emulate(struct emu_router *rtr) {
 	uint16_t i;
 	struct emu_packet *packet;
+	uint16_t num_packets;
+	struct emu_packet *packets[ROUTER_MAX_BURST];
 
 	/* for each output, try to fetch a packet and send it */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
@@ -51,7 +55,7 @@ void router_emulate(struct emu_router *rtr) {
 		if (packet == NULL)
 			continue;
 
-		// TODO: use burst enqueue
+		// TODO: use bulk enqueue?
 		// TODO: handle multiple endpoint queues (one per core)
 		if (fp_ring_enqueue(g_state->q_to_endpoints, packet) == -ENOBUFS) {
 			adm_log_emu_send_packet_failed(&g_state->stat);
@@ -62,8 +66,9 @@ void router_emulate(struct emu_router *rtr) {
 	}
 
 	/* pass all incoming packets to the router */
-	// TODO: use burst dequeue
-	while (fp_ring_dequeue(rtr->q_ingress, (void **) &packet) == 0) {
-		rtr->ops->receive(rtr, packet);
+	num_packets = fp_ring_dequeue_burst(rtr->q_ingress,
+			(void **) &packets, ROUTER_MAX_BURST);
+	for (i = 0; i < num_packets; i++) {
+		rtr->ops->receive(rtr, packets[i]);
 	}
 }

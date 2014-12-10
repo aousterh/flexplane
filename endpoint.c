@@ -15,6 +15,8 @@
 #include "../graph-algo/platform.h"
 #include "assert.h"
 
+#define ENDPOINT_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
+
 int endpoint_init(struct emu_endpoint *ep, uint16_t id, struct emu_ops *ops) {
 	assert(ep != NULL);
 	assert(ops != NULL);
@@ -42,6 +44,8 @@ void endpoints_emulate(struct emu_state *state) {
 	uint32_t i;
 	struct emu_endpoint *ep;
 	struct emu_packet *packet;
+	uint16_t num_packets;
+	struct emu_packet *packets[ENDPOINT_MAX_BURST];
 
 	// TODO: do in random order
 	/* dequeue one packet from each endpoint, send to next hop in network */
@@ -53,6 +57,7 @@ void endpoints_emulate(struct emu_state *state) {
 			continue;
 
 		/* TODO: add routing to support enqueuing to different router */
+		// TODO: use bulk enqueue?
 		if (fp_ring_enqueue(state->routers[0]->q_ingress, packet) == -ENOBUFS) {
 			adm_log_emu_send_packet_failed(&g_state->stat);
 			drop_packet(packet);
@@ -61,17 +66,19 @@ void endpoints_emulate(struct emu_state *state) {
 		}
 	}
 
-	/* TODO: use burst dequeue */
 	/* dequeue packets from network, pass to endpoints */
-	while (fp_ring_dequeue(state->q_to_endpoints, (void **) &packet) == 0) {
-		ep = state->endpoints[packet->dst];
-		ep->ops->rcv_from_net(ep, packet);
+	num_packets = fp_ring_dequeue_burst(state->q_to_endpoints,
+			(void **) &packets, ENDPOINT_MAX_BURST);
+	for (i = 0; i < num_packets; i++) {
+		ep = state->endpoints[packets[i]->dst];
+		ep->ops->rcv_from_net(ep, packets[i]);
 	}
 
 	/* dequeue all packets from endpoint apps, give to endpoints */
-	/* TODO: use burst dequeue */
-	while (fp_ring_dequeue(state->q_from_app, (void **) &packet) == 0) {
-		ep = state->endpoints[packet->src];
-		ep->ops->rcv_from_app(ep, packet);
+	num_packets = fp_ring_dequeue_burst(state->q_from_app,
+			(void **) &packets, ENDPOINT_MAX_BURST);
+	for (i = 0; i < num_packets; i++) {
+		ep = state->endpoints[packets[i]->src];
+		ep->ops->rcv_from_app(ep, packets[i]);
 	}
 }

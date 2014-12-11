@@ -37,7 +37,7 @@ struct fp_ring *fp_ring_create(uint32_t log_size) {
 	uint32_t num_elems = (1 << log_size);
 	uint32_t mem_size = sizeof(struct fp_ring)
 							+ num_elems * sizeof(void *);
-    struct fp_ring *ring = malloc(mem_size);
+    struct fp_ring *ring = (struct fp_ring *) malloc(mem_size);
     assert(ring != NULL);
 
     ring->mask = num_elems - 1;

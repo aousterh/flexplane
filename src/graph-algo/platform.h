@@ -53,14 +53,14 @@ static struct fp_mempool * fp_mempool_create(unsigned n, unsigned elt_size) {
 	struct fp_mempool *mp;
 	unsigned i;
 	/* allocate the struct */
-	mp = malloc(sizeof(struct fp_mempool));
+	mp = (struct fp_mempool *) malloc(sizeof(struct fp_mempool));
 	if (mp == NULL)
 		return NULL;
 	/* populate the mempool struct */
 	mp->total_elements = n;
 	mp->cur_elements = 0;
 	/* allocate the pointer table */
-	mp->elements = malloc(n * sizeof(void *));
+	mp->elements = (void **) malloc(n * sizeof(void *));
 	if (mp->elements == NULL)
 		goto cannot_alloc_ptrs;
 

@@ -1,5 +1,5 @@
 /*
- * emulation.c
+ * emulation.cc
  *
  *  Created on: June 24, 2014
  *      Author: aousterh
@@ -16,28 +16,23 @@
 
 struct emu_state *g_state; /* global emulation state */
 
-struct drop_tail_args args = {
-		.port_capacity	= 5,
-};
-
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		uint16_t flow, uint32_t amount) {
 	uint32_t i;
-	struct emu_endpoint *ep;
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
 	assert(flow < FLOWS_PER_NODE);
 
 	/* create and enqueue a packet for each MTU */
-	ep = state->endpoints[src];
 	struct emu_packet *packet;
 	for (i = 0; i < amount; i++) {
-		packet = create_packet(ep->id, dst, flow);
+		packet = create_packet(src, dst, flow);
 		if (packet == NULL)
-			drop_demand(ep->id, dst, flow);
+			drop_demand(src, dst, flow);
 
 		/* enqueue the packet to the queue of packets for endpoints */
-		if (fp_ring_enqueue(state->q_from_app, packet) == -ENOBUFS) {
+		// TODO: support multiple endpoint groups
+		if (fp_ring_enqueue(state->q_new_packets[0], packet) == -ENOBUFS) {
 			/* no space to enqueue this packet, drop it */
 			adm_log_emu_endpoint_enqueue_backlog_failed(&g_state->stat);
 			drop_packet(packet);
@@ -47,10 +42,15 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
-	struct emu_packet *packet;
+	EndpointGroup *epg;
 
 	/* emulate one timeslot at each endpoint */
-	endpoints_emulate(state);
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		epg = state->endpoint_groups[i];
+		epg->pull();
+		epg->push();
+		epg->new_packets();
+	}
 
 	/* emulate one timeslot at each router */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
@@ -71,12 +71,10 @@ void emu_emulate(struct emu_state *state) {
 void emu_cleanup(struct emu_state *state) {
 	uint32_t i;
 	struct emu_admitted_traffic *admitted;
-	struct emu_packet *p;
 
 	/* free all endpoints */
-	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		endpoint_cleanup(state->endpoints[i]);
-		fp_free(state->endpoints[i]);
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		delete state->endpoint_groups[i];
 	}
 
 	/* free all routers */
@@ -84,18 +82,6 @@ void emu_cleanup(struct emu_state *state) {
 		// TODO: call fp_free?
 		delete state->routers[i];
 	}
-
-	/* free q_from_app and return its packets to the mempool */
-	while (fp_ring_dequeue(state->q_from_app, (void **) &p) == 0) {
-		free_packet(p);
-	}
-	fp_free(state->q_from_app);
-
-	/* free q_to_endpoints and return its packets to the mempool */
-	while (fp_ring_dequeue(state->q_to_endpoints, (void **) &p) == 0) {
-		free_packet(p);
-	}
-	fp_free(state->q_to_endpoints);
 
 	/* return admitted struct to mempool */
 	if (state->admitted != NULL)
@@ -113,17 +99,18 @@ void emu_cleanup(struct emu_state *state) {
 void emu_reset_sender(struct emu_state *state, uint16_t src) {
 
 	/* TODO: clear the packets in the routers too? */
-	endpoint_reset(state->endpoints[src]);
+	state->endpoint_groups[0]->reset(src);
 }
 
 void emu_init_state(struct emu_state *state,
 		    struct fp_mempool *admitted_traffic_mempool,
 		    struct fp_ring *q_admitted_out,
 		    struct fp_mempool *packet_mempool,
-		    struct fp_ring **packet_queues,
-		    struct emu_ops *ops) {
+		    struct fp_ring **packet_queues, void *args) {
 	uint32_t i, pq;
 	uint32_t size;
+	struct fp_ring *q_to_router;
+	struct fp_ring *q_to_endpoints;
 
 	g_state = state;
 
@@ -134,24 +121,22 @@ void emu_init_state(struct emu_state *state,
 
 	/* construct topology: 1 router with 1 rack of endpoints */
 
-	/* initialize all the endpoints */
-	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
-		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ops->ep_ops.priv_size;
-		state->endpoints[i] = (struct emu_endpoint *) fp_malloc("emu_endpoint", size);
-		assert(state->endpoints[i] != NULL);
-		endpoint_init(state->endpoints[i], i, ops);
-	}
-
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		// TODO: use fp_malloc?
-		state->q_to_routers[i] = packet_queues[pq];
-		state->routers[i] = new DropTailRouter(i, packet_queues[pq++], &args);
+		q_to_router = packet_queues[pq++];
+		q_to_endpoints = packet_queues[pq++];
+		state->routers[i] = new DropTailRouter(i, q_to_router, q_to_endpoints,
+				(struct drop_tail_args *) args);
 		assert(state->routers[i] != NULL);
 	}
 
-	state->q_from_app = packet_queues[pq++];
-	state->q_to_endpoints = packet_queues[pq++];
+	/* initialize all the endpoints in one endpoint group */
+	state->q_new_packets[0] = packet_queues[pq++];
+	state->endpoint_groups[0] = new DropTailEndpointGroup(EMU_NUM_ENDPOINTS,
+			state->q_new_packets[0], q_to_endpoints, q_to_router);
+	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) args);
+	assert(state->endpoint_groups[0] != NULL);
 
 	/* get 1 admitted traffic for the core, init it */
 	while (fp_mempool_get(state->admitted_traffic_mempool,
@@ -163,15 +148,14 @@ void emu_init_state(struct emu_state *state,
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 				   struct fp_ring *q_admitted_out,
 				   struct fp_mempool *packet_mempool,
-				   struct fp_ring **packet_queues,
-				   struct emu_ops *ops) {
+				   struct fp_ring **packet_queues, void *args) {
 	struct emu_state *state = (struct emu_state *) fp_malloc("emu_state",
 					    sizeof(struct emu_state));
 	if (state == NULL)
 		return NULL;
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, ops);
+			packet_mempool, packet_queues, args);
 
 	return state;
 }

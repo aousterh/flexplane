@@ -11,6 +11,7 @@
 #include "config.h"
 #include "api.h"
 #include "endpoint.h"
+#include "endpoint_group.h"
 #include "router.h"
 #include "admissible_log.h"
 #include "../graph-algo/fp_ring.h"
@@ -26,10 +27,9 @@ extern struct emu_state *g_state;
 
 /**
  * Data structure to store the state of the emulation.
- * @endpoints: representations of endpoints
+ * @endpoint_groups: representations of groups of endpoints
  * @routers: representations of routers
- * @q_from_app: queue of packets from comm core to endpoints
- * @q_to_endpoints: queue of packets from routers to endpoints
+ * @q_new_packets: queue of packets from comm core to endpoint groups
  * @admitted_traffic_mempool: pool of admitted traffic structs
  * @admitted: the current admitted struct
  * @q_admitted_out: queue of admitted structs to comm core
@@ -38,11 +38,9 @@ extern struct emu_state *g_state;
  * @core_stats: per-core stats
  */
 struct emu_state {
-	struct emu_endpoint						*endpoints[EMU_NUM_ENDPOINTS];
+	EndpointGroup							*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
 	Router									*routers[EMU_NUM_ROUTERS];
-	struct fp_ring							*q_from_app; /* can have one per core */
-	struct fp_ring							*q_to_endpoints; /* can have one per core */
-	struct fp_ring							*q_to_routers[EMU_NUM_ROUTERS];
+	struct fp_ring							*q_new_packets[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct emu_admitted_traffic				*admitted;
 	struct fp_ring							*q_admitted_out;
@@ -79,8 +77,7 @@ void emu_init_state(struct emu_state *state,
 	    struct fp_mempool *admitted_traffic_mempool,
 	    struct fp_ring *q_admitted_out,
 	    struct fp_mempool *packet_mempool,
-	    struct fp_ring **packet_queues,
-	    struct emu_ops *ops);
+	    struct fp_ring **packet_queues, void *args);
 
 /**
  * Returns an initialized emulation state, or NULL on error.
@@ -88,7 +85,6 @@ void emu_init_state(struct emu_state *state,
 struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 		   struct fp_ring *q_admitted_out,
 		   struct fp_mempool *packet_mempool,
-		   struct fp_ring **packet_queues,
-		    struct emu_ops *ops);
+		   struct fp_ring **packet_queues, void *args);
 
 #endif /* EMULATION_H_ */

@@ -1,5 +1,5 @@
 /*
- * router.c
+ * router.cc
  *
  *  Created on: July 7, 2014
  *      Author: aousterh
@@ -14,11 +14,13 @@
 
 #define ROUTER_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
 
-Router::Router(uint16_t id, struct fp_ring *q_ingress) {
+Router::Router(uint16_t id, struct fp_ring *q_ingress,
+		struct fp_ring *q_to_endpoints) {
 	assert(q_ingress != NULL);
 
 	this->id = id;
 	this->q_ingress = q_ingress;
+	this->q_to_endpoints = q_to_endpoints;
 }
 
 Router::~Router() {
@@ -47,7 +49,7 @@ void Router::emulate() {
 
 		// TODO: use bulk enqueue?
 		// TODO: handle multiple endpoint queues (one per core)
-		if (fp_ring_enqueue(g_state->q_to_endpoints, packet) == -ENOBUFS) {
+		if (fp_ring_enqueue(q_to_endpoints, packet) == -ENOBUFS) {
 			adm_log_emu_send_packet_failed(&g_state->stat);
 			drop_packet(packet);
 		} else {

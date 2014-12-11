@@ -1,5 +1,5 @@
 /*
- * emulation_test.c
+ * emulation_test.cc
  *
  *  Created on: June 24, 2014
  *      Author: aousterh
@@ -13,8 +13,6 @@
 #include "../graph-algo/platform.h"
 
 #include <stdio.h>
-
-struct emu_ops ops;
 
 /**
  * Emulate one timeslot and print out the admitted and dropped traffic
@@ -39,10 +37,11 @@ void emulate_and_print_admitted(struct emu_state *state) {
 struct emu_state *setup_state() {
 	uint16_t i;
 	uint32_t packet_size;
+	struct drop_tail_args args;
 
 	/* initialize algo-specific state */
-	ops = drop_tail_ops;
-	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) + ops.packet_priv_size;
+	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) + 0;
+	args.port_capacity = 5;
 
 	/* setup emulation state */
 	struct fp_mempool *admitted_traffic_mempool;
@@ -60,7 +59,7 @@ struct emu_state *setup_state() {
 	}
 
 	state = emu_create_state(admitted_traffic_mempool, q_admitted_out,
-				 packet_mempool, packet_queues, &ops);
+				 packet_mempool, packet_queues, &args);
 
 	return state;
 }

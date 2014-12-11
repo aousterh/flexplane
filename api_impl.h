@@ -27,10 +27,7 @@ void drop_packet(struct emu_packet *packet) {
 }
 
 static inline
-void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
-		struct emu_packet *packet) {
-	assert(packet->dst == ep->id);
-
+void enqueue_packet_at_endpoint(struct emu_packet *packet) {
 	admitted_insert_admitted_edge(g_state->admitted, packet->src,
 			packet->dst, packet->flow);
 	adm_log_emu_admitted_packet(&g_state->stat);
@@ -45,18 +42,8 @@ void free_packet(struct emu_packet *packet) {
 }
 
 static inline
-uint32_t endpoint_id(struct emu_endpoint *ep) {
-	return ep->id;
-}
-
-static inline
 uint16_t get_output_queue(Router *rtr, struct emu_packet *p) {
 	return p->dst;
-}
-
-static inline
-void *endpoint_priv(struct emu_endpoint *ep) {
-	return (char *) ep + EMU_ALIGN(sizeof(struct emu_endpoint));
 }
 
 static inline

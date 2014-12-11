@@ -47,14 +47,18 @@ void emu_emulate(struct emu_state *state) {
 	/* emulate one timeslot at each endpoint */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		epg = state->endpoint_groups[i];
-		epg->pull();
 		epg->push();
-		epg->new_packets();
 	}
 
 	/* emulate one timeslot at each router */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		state->routers[i]->emulate();
+	}
+
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		epg = state->endpoint_groups[i];
+		epg->pull();
+		epg->new_packets();
 	}
 
 	/* send out the admitted traffic */

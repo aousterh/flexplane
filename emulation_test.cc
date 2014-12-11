@@ -75,7 +75,7 @@ int main() {
 	emu_add_backlog(state, 0, 3, 0, 3);
 	emu_add_backlog(state, 7, 3, 0, 2);
 
-	for (i = 0; i < 7; i++)
+	for (i = 0; i < 8; i++)
 		emulate_and_print_admitted(state);
 	emu_cleanup(state);
 

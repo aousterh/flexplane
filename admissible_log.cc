@@ -1,5 +1,5 @@
 /*
- * admissible_log.c
+ * admissible_log.cc
  *
  *  Created on: September 5, 2014
  *      Author: aousterh

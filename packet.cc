@@ -1,5 +1,5 @@
 /*
- * packet.c
+ * packet.cc
  *
  *  Created on: September 1, 2014
  *      Author: aousterh

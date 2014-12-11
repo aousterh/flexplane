@@ -22,10 +22,9 @@
  */
 class Router {
 public:
-	virtual void emulate();
-	~Router();
-protected:
 	Router(uint16_t id, struct fp_ring *q_ingress);
+	~Router();
+	virtual void emulate();
 	// TODO: make these bulk functions
 	virtual void push(struct emu_packet *packet) = 0;
 	virtual void pull(uint16_t output, struct emu_packet **packet) = 0;

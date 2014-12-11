@@ -28,7 +28,7 @@ struct drop_tail_args {
 class DropTailRouter : public Router {
 public:
 	DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
-			struct fp_ring *q_to_endpoints, struct drop_tail_args *args);
+			struct drop_tail_args *args);
 	~DropTailRouter();
 	virtual void push(struct emu_packet *packet);
 	virtual void pull(uint16_t output, struct emu_packet **packet);

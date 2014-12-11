@@ -15,26 +15,23 @@ struct fp_ring;
 
 /**
  * A representation of a router in the emulated network.
- * @emulate: emulate one timeslot at this router
+ * @push_batch: push a batch of packets from q_ingress to output queues
  * @push: enqueue a single packet to this router
  * @pull: dequeue a single packet from port output at this router
  * @id: the unique id of this router
  * @q_ingress: queue of incoming packets
- * @q_to_endpoints: queue of packets to endpoints
  */
 class Router {
 public:
-	Router(uint16_t id, struct fp_ring *q_ingress,
-			struct fp_ring *q_to_endpoints);
+	Router(uint16_t id, struct fp_ring *q_ingress);
 	~Router();
-	virtual void emulate();
+	virtual void push_batch();
 	// TODO: make these bulk functions
 	virtual void push(struct emu_packet *packet) = 0;
 	virtual void pull(uint16_t output, struct emu_packet **packet) = 0;
 private:
 	uint16_t id;
 	struct fp_ring	*q_ingress;
-	struct fp_ring	*q_to_endpoints;
 };
 
 #endif /* ROUTER_H_ */

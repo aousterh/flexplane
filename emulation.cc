@@ -9,7 +9,9 @@
 #include "api.h"
 #include "api_impl.h"
 #include "admitted.h"
+#include "endpoint_group.h"
 #include "drop_tail.h"
+#include "router.h"
 #include "../protocol/topology.h"
 
 #include <assert.h>
@@ -43,8 +45,10 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
 	EndpointGroup *epg;
+	Router *router;
+	struct emu_packet *packet;
 
-	/* emulate one timeslot at each endpoint */
+	/* handle push at each endpoint group */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		epg = state->endpoint_groups[i];
 		epg->push();
@@ -52,9 +56,26 @@ void emu_emulate(struct emu_state *state) {
 
 	/* emulate one timeslot at each router */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		state->routers[i]->emulate();
+		router = state->routers[i];
+
+		/* for each output, try to fetch a packet and send it */
+		for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+			router->pull(i, &packet);
+
+			if (packet == NULL)
+				continue;
+
+			// TODO: use bulk enqueue?
+			// TODO: handle multiple endpoint queues
+			epg = state->endpoint_groups[0];
+			epg->enqueue_packet_from_network(packet);
+		}
+
+		/* push a batch of packets from the network into the router */
+		router->push_batch();
 	}
 
+	/* handle pull/new packets at each endpoint group */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		epg = state->endpoint_groups[i];
 		epg->pull();
@@ -130,7 +151,7 @@ void emu_init_state(struct emu_state *state,
 		// TODO: use fp_malloc?
 		q_to_router = packet_queues[pq++];
 		q_to_endpoints = packet_queues[pq++];
-		state->routers[i] = new DropTailRouter(i, q_to_router, q_to_endpoints,
+		state->routers[i] = new DropTailRouter(i, q_to_router,
 				(struct drop_tail_args *) args);
 		assert(state->routers[i] != NULL);
 	}

@@ -114,3 +114,12 @@ void EndpointGroup::pull() {
 		}
 	}
 }
+
+void EndpointGroup::enqueue_packet_from_network(struct emu_packet *packet) {
+	if (fp_ring_enqueue(q_from_network, packet) == -ENOBUFS) {
+		adm_log_emu_send_packet_failed(&g_state->stat);
+		drop_packet(packet);
+	} else {
+		adm_log_emu_router_sent_packet(&g_state->stat);
+	}
+}

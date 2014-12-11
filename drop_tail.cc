@@ -12,8 +12,7 @@
 #define DROP_TAIL_PORT_CAPACITY 128
 
 DropTailRouter::DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
-		struct fp_ring *q_to_endpoints, struct drop_tail_args *args) :
-		Router(id, q_ingress, q_to_endpoints) {
+		struct drop_tail_args *args) : Router(id, q_ingress) {
 	uint32_t i, port_capacity;
 
 	/* use args if supplied, otherwise use defaults */

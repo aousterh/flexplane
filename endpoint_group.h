@@ -39,6 +39,7 @@ public:
 	virtual void pull();
 	virtual Endpoint *make_endpoint(uint16_t id,
 			struct drop_tail_args *args) = 0;
+	void enqueue_packet_from_network(struct emu_packet *p);
 private:
 	uint16_t		num_endpoints;
 	Endpoint		*endpoints[MAX_ENDPOINTS_PER_GROUP];

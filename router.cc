@@ -14,35 +14,25 @@
 
 #define ROUTER_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
 
-int router_init(struct emu_router *rtr, uint16_t id, struct emu_ops *ops,
-		struct fp_ring *q_ingress) {
-	uint16_t i;
-
-	assert(rtr != NULL);
+Router::Router(uint16_t id, struct fp_ring *q_ingress) {
 	assert(q_ingress != NULL);
-	assert(ops != NULL);
 
-	rtr->id = id;
-	rtr->q_ingress = q_ingress;
-	rtr->ops = &ops->rtr_ops;
-
-	return rtr->ops->init(rtr, ops->args);
+	this->id = id;
+	this->q_ingress = q_ingress;
 }
 
-void router_cleanup(struct emu_router *rtr) {
+Router::~Router() {
 	uint16_t i;
 	struct emu_packet *packet;
 
-	rtr->ops->cleanup(rtr);
-
 	/* free ingress queue */
-	while (fp_ring_dequeue(rtr->q_ingress, (void **) &packet) == 0) {
+	while (fp_ring_dequeue(this->q_ingress, (void **) &packet) == 0) {
 		free_packet(packet);
 	}
-	fp_free(rtr->q_ingress);
+	fp_free(this->q_ingress);
 }
 
-void router_emulate(struct emu_router *rtr) {
+void Router::emulate() {
 	uint16_t i;
 	struct emu_packet *packet;
 	uint16_t num_packets;
@@ -50,7 +40,7 @@ void router_emulate(struct emu_router *rtr) {
 
 	/* for each output, try to fetch a packet and send it */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		rtr->ops->send(rtr, i, &packet);
+		this->pull(i, &packet);
 
 		if (packet == NULL)
 			continue;
@@ -66,9 +56,9 @@ void router_emulate(struct emu_router *rtr) {
 	}
 
 	/* pass all incoming packets to the router */
-	num_packets = fp_ring_dequeue_burst(rtr->q_ingress,
+	num_packets = fp_ring_dequeue_burst(this->q_ingress,
 			(void **) &packets, ROUTER_MAX_BURST);
 	for (i = 0; i < num_packets; i++) {
-		rtr->ops->receive(rtr, packets[i]);
+		this->push(packets[i]);
 	}
 }

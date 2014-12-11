@@ -39,9 +39,10 @@ extern struct emu_state *g_state;
  */
 struct emu_state {
 	struct emu_endpoint						*endpoints[EMU_NUM_ENDPOINTS];
-	struct emu_router						*routers[EMU_NUM_ROUTERS];
+	Router									*routers[EMU_NUM_ROUTERS];
 	struct fp_ring							*q_from_app; /* can have one per core */
 	struct fp_ring							*q_to_endpoints; /* can have one per core */
+	struct fp_ring							*q_to_routers[EMU_NUM_ROUTERS];
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct emu_admitted_traffic				*admitted;
 	struct fp_ring							*q_admitted_out;

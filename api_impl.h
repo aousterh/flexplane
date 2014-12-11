@@ -45,23 +45,13 @@ void free_packet(struct emu_packet *packet) {
 }
 
 static inline
-uint32_t router_id(struct emu_router *rtr) {
-	return rtr->id;
-}
-
-static inline
 uint32_t endpoint_id(struct emu_endpoint *ep) {
 	return ep->id;
 }
 
 static inline
-uint16_t get_output_queue(struct emu_router *rtr, struct emu_packet *p) {
+uint16_t get_output_queue(Router *rtr, struct emu_packet *p) {
 	return p->dst;
-}
-
-static inline
-void *router_priv(struct emu_router *rtr) {
-	return (char *) rtr + EMU_ALIGN(sizeof(struct emu_router));
 }
 
 static inline

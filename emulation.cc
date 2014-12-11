@@ -9,11 +9,16 @@
 #include "api.h"
 #include "api_impl.h"
 #include "admitted.h"
+#include "drop_tail.h"
 #include "../protocol/topology.h"
 
 #include <assert.h>
 
 struct emu_state *g_state; /* global emulation state */
+
+struct drop_tail_args args = {
+		.port_capacity	= 5,
+};
 
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		uint16_t flow, uint32_t amount) {
@@ -49,7 +54,7 @@ void emu_emulate(struct emu_state *state) {
 
 	/* emulate one timeslot at each router */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		router_emulate(state->routers[i]);
+		state->routers[i]->emulate();
 	}
 
 	/* send out the admitted traffic */
@@ -76,8 +81,8 @@ void emu_cleanup(struct emu_state *state) {
 
 	/* free all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		router_cleanup(state->routers[i]);
-		fp_free(state->routers[i]);
+		// TODO: call fp_free?
+		delete state->routers[i];
 	}
 
 	/* free q_from_app and return its packets to the mempool */
@@ -119,7 +124,6 @@ void emu_init_state(struct emu_state *state,
 		    struct emu_ops *ops) {
 	uint32_t i, pq;
 	uint32_t size;
-	struct emu_router *router;
 
 	g_state = state;
 
@@ -133,17 +137,17 @@ void emu_init_state(struct emu_state *state,
 	/* initialize all the endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINTS; i++) {
 		size = EMU_ALIGN(sizeof(struct emu_endpoint)) + ops->ep_ops.priv_size;
-		state->endpoints[i] = fp_malloc("emu_endpoint", size);
+		state->endpoints[i] = (struct emu_endpoint *) fp_malloc("emu_endpoint", size);
 		assert(state->endpoints[i] != NULL);
 		endpoint_init(state->endpoints[i], i, ops);
 	}
 
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		size = EMU_ALIGN(sizeof(struct emu_router)) + ops->rtr_ops.priv_size;
-		state->routers[i] = fp_malloc("emu_router", size);
+		// TODO: use fp_malloc?
+		state->q_to_routers[i] = packet_queues[pq];
+		state->routers[i] = new DropTailRouter(i, packet_queues[pq++], &args);
 		assert(state->routers[i] != NULL);
-		router_init(state->routers[i], i, ops, packet_queues[pq++]);
 	}
 
 	state->q_from_app = packet_queues[pq++];
@@ -161,7 +165,7 @@ struct emu_state *emu_create_state(struct fp_mempool *admitted_traffic_mempool,
 				   struct fp_mempool *packet_mempool,
 				   struct fp_ring **packet_queues,
 				   struct emu_ops *ops) {
-	struct emu_state *state = fp_malloc("emu_state",
+	struct emu_state *state = (struct emu_state *) fp_malloc("emu_state",
 					    sizeof(struct emu_state));
 	if (state == NULL)
 		return NULL;

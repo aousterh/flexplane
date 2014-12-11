@@ -16,10 +16,6 @@
 
 struct emu_ops ops;
 
-struct drop_tail_args args = {
-		.port_capacity	= 5,
-};
-
 /**
  * Emulate one timeslot and print out the admitted and dropped traffic
  */
@@ -46,7 +42,6 @@ struct emu_state *setup_state() {
 
 	/* initialize algo-specific state */
 	ops = drop_tail_ops;
-	ops.args = &args;
 	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) + ops.packet_priv_size;
 
 	/* setup emulation state */

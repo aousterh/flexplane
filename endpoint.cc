@@ -58,7 +58,7 @@ void endpoints_emulate(struct emu_state *state) {
 
 		/* TODO: add routing to support enqueuing to different router */
 		// TODO: use bulk enqueue?
-		if (fp_ring_enqueue(state->routers[0]->q_ingress, packet) == -ENOBUFS) {
+		if (fp_ring_enqueue(state->q_to_routers[0], packet) == -ENOBUFS) {
 			adm_log_emu_send_packet_failed(&g_state->stat);
 			drop_packet(packet);
 		} else {

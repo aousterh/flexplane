@@ -11,6 +11,7 @@
 #include "api.h"
 #include "config.h"
 #include "packet_queue.h"
+#include "router.h"
 
 struct packet_queue;
 
@@ -19,10 +20,17 @@ struct drop_tail_args {
 };
 
 /**
- * State maintained by each drop tail router.
+ * A drop tail router.
  * @output_queue: a queue of packets for each output port
  */
-struct drop_tail_router {
+class DropTailRouter : public Router {
+public:
+	DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
+			struct drop_tail_args *args);
+	~DropTailRouter();
+protected:
+	virtual void push(struct emu_packet *packet);
+	virtual void pull(uint16_t output, struct emu_packet **packet);
 	struct packet_queue output_queue[EMU_ROUTER_NUM_PORTS];
 };
 
@@ -33,28 +41,6 @@ struct drop_tail_router {
 struct drop_tail_endpoint {
 	struct packet_queue output_queue;
 };
-
-/**
- * Initialize a router.
- * @return 0 on success, negative value on error
- */
-int drop_tail_router_init(struct emu_router *rtr, void *args);
-
-/**
- * Cleanup state and memory. Called when emulation terminates.
- */
-void drop_tail_router_cleanup(struct emu_router *rtr);
-
-/**
- * Process a packet arriving at the router.
- */
-void drop_tail_router_receive(struct emu_router *rtr, struct emu_packet *p);
-
-/**
- * Return a packet to send from the router on output port.
- */
-void drop_tail_router_send(struct emu_router *rtr, uint16_t output,
-		struct emu_packet **packet);
 
 /**
  * Initialize an endpoint.
@@ -96,13 +82,6 @@ void drop_tail_endpoint_send_to_net(struct emu_endpoint *ep,
  * Drop tail functions and parameters.
  */
 static struct emu_ops drop_tail_ops = {
-		.rtr_ops = {
-				.priv_size	= sizeof(struct drop_tail_router),
-				.init		= &drop_tail_router_init,
-				.cleanup	= &drop_tail_router_cleanup,
-				.send		= &drop_tail_router_send,
-				.receive	= &drop_tail_router_receive,
-		},
 		.ep_ops = {
 				.priv_size		= sizeof(struct drop_tail_endpoint),
 				.init			= &drop_tail_endpoint_init,

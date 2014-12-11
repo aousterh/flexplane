@@ -1,4 +1,5 @@
 # Macros
+CC = g++
 #CC = gcc
 CCFLAGS = -g
 CCFLAGS += -DNDEBUG
@@ -13,7 +14,7 @@ LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 
 # Pattern rule
-%.o: %.c
+%.o: %.cc
 	$(CC) $(CCFLAGS) -c $<
 
 # Dependency rules for non-file targets

@@ -130,7 +130,7 @@ static inline
 struct request *create_next_request(struct request_generator *gen) {
     assert(gen != NULL);
     
-    struct request *req = malloc(sizeof(struct request));
+    struct request *req = (struct request *) malloc(sizeof(struct request));
     if (req == NULL)
         return NULL;
 
@@ -153,7 +153,8 @@ struct request_generator *create_request_generator(double mean_t_btwn_requests,
                                                    double start_time,
                                                    uint16_t num_nodes,
                                                    double mean_request_size) {
-    struct request_generator *gen = malloc(sizeof(struct request_generator));
+    struct request_generator *gen =
+    		(struct request_generator *) malloc(sizeof(struct request_generator));
     if (gen == NULL)
         return NULL;
 

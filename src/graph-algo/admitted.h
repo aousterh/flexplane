@@ -77,7 +77,7 @@ uint16_t get_admitted_partition(struct admitted_traffic *admitted) {
 static inline
 struct admitted_traffic *create_admitted_traffic(void)
 {
-    struct admitted_traffic *admitted =
+    struct admitted_traffic *admitted = (struct admitted_traffic *)
     		fp_malloc("admitted_traffic", sizeof(struct admitted_traffic));
 
     if (admitted == NULL)

@@ -54,7 +54,6 @@ enum benchmark_type {
     PATH_SELECTION_RACKS
 };
 
-struct emu_ops ops;
 struct drop_tail_args emu_args = {
 		.port_capacity = 128,
 };
@@ -181,15 +180,12 @@ struct admissible_state *setup_state(bool oversubscribed,
             exit(-1);
 
     /* init global status */
-    ops = drop_tail_ops;
-    ops.args = &emu_args;
-
     status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
                                      q_spent, *bin_mempool,
                                      admitted_traffic_mempool,
                                      q_bin, &q_new_demands[0],
                                      &q_ready_partitions[0],
-                                     &ops);
+                                     (void *) &emu_args);
     if (status == NULL) {
         printf("Error initializing admissible_status!\n");
         exit(-1);
@@ -310,15 +306,18 @@ int main(int argc, char **argv)
 
     /* allocate space to record times */
     uint32_t num_batches = (duration - warm_up_duration) / BATCH_SIZE;
-    uint32_t *per_batch_times = malloc(sizeof(uint64_t) * num_batches);
+    uint32_t *per_batch_times =
+    		(uint32_t *) malloc(sizeof(uint64_t) * num_batches);
     assert(per_batch_times != NULL);
-    
+
     uint32_t num_timeslots = duration - warm_up_duration;
-    uint32_t *per_timeslot_times = malloc(sizeof(uint64_t) * num_timeslots);
+    uint32_t *per_timeslot_times =
+    		(uint32_t *) malloc(sizeof(uint64_t) * num_timeslots);
     assert(per_timeslot_times != NULL);
 
     /* allocate space to record num admitted */
-    uint16_t *per_timeslot_num_admitted = malloc(sizeof(uint16_t) * num_timeslots);
+    uint16_t *per_timeslot_num_admitted =
+    		(uint16_t *) malloc(sizeof(uint16_t) * num_timeslots);
     assert(per_timeslot_num_admitted != NULL);
 
     if (benchmark_type == ADMISSIBLE)
@@ -365,7 +364,8 @@ int main(int argc, char **argv)
             // Allocate enough space for new requests
             // (this is sufficient for <= 1 request per node per timeslot)
             uint32_t max_requests = duration * num_nodes;
-            struct request_info *requests = malloc(max_requests * sizeof(struct request_info));
+            struct request_info *requests = (struct request_info *)
+            		malloc(max_requests * sizeof(struct request_info));
 
             // Generate new requests
             uint32_t num_requests = generate_requests_poisson(requests, max_requests, num_nodes,

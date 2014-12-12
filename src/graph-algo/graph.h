@@ -289,7 +289,8 @@ bool is_perfect_matching(struct graph_edges *edges, uint8_t n) {
 static inline
 struct graph_structure *create_graph_structure_test(uint8_t n) {
 
-    struct graph_structure *structure_out = malloc(sizeof(struct graph_structure));
+    struct graph_structure *structure_out =
+    		(struct graph_structure *) malloc(sizeof(struct graph_structure));
     graph_structure_init(structure_out, n);
 
     return structure_out;
@@ -305,7 +306,8 @@ void destroy_graph_structure_test(struct graph_structure *structure) {
 static inline
 struct graph_edges *create_graph_edges_test(uint8_t n) {
 
-    struct graph_edges *edges_out = malloc(sizeof(struct graph_edges));
+    struct graph_edges *edges_out =
+    		(struct graph_edges *) malloc(sizeof(struct graph_edges));
     graph_edges_init(edges_out, n);
 
     return edges_out;

@@ -81,7 +81,7 @@ struct bin *create_bin(size_t size)
 {
 	uint32_t n_bytes = bin_num_bytes(size);
 
-	struct bin *bin = fp_malloc("admissible_bin", n_bytes);
+	struct bin *bin = (struct bin *) fp_malloc("admissible_bin", n_bytes);
     if (bin == NULL)
     	return NULL;
 

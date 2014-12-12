@@ -238,13 +238,13 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
                         struct fp_mempool *packet_mempool,
                         struct fp_mempool *admitted_traffic_mempool,
                         struct fp_ring **g, struct fp_ring **packet_queues,
-                        struct fp_ring **h, struct emu_ops *ops)
+                        struct fp_ring **h, void *emu_args)
 {
         struct emu_state *state = emu_create_state(admitted_traffic_mempool,
                                                    q_admitted_out,
                                                    packet_mempool,
                                                    packet_queues,
-                                                   ops);
+                                                   emu_args);
         return (struct admissible_state *) state;
 }
 

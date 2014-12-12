@@ -1,5 +1,6 @@
 # Macros
-CC = gcc
+CC = g++
+#CC = gcc
 #CC = icc
 EMU_DIR = ../../../fastpass-private/src/emulation
 CCFLAGS = -g
@@ -23,9 +24,9 @@ LDFLAGS = -lm
 	$(CC) $(CCFLAGS) -c $<
 
 # Dependency rules for non-file targets
-all: test_euler_split benchmark_graph_algo benchmark_sjf test_bin_computation rdtsc microbench
+all: test_euler_split benchmark_graph_algo test_bin_computation rdtsc microbench
 clean:
-	rm -f test_euler_split benchmark_graph_algo benchmark_sjf test_bin_computation rdtsc microbench *.o *~
+	rm -f test_euler_split benchmark_graph_algo test_bin_computation rdtsc microbench *.o *~
 
 # Dependency rules for file target
 test_euler_split: test_euler_split.o euler_split.o
@@ -34,11 +35,11 @@ test_euler_split: test_euler_split.o euler_split.o
 #benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o ../grant-accept/pim_admissible_traffic.o ../grant-accept/pim.o
 #	$(CC) $< admissible_traffic.o path_selection.o euler_split.o ../grant-accept/pim_admissible_traffic.o ../grant-accept/pim.o -o $@ $(LDFLAGS)
 
-benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o
-	$(CC) $< admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o -o $@ $(LDFLAGS)
+benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint_group.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o
+	$(CC) $< admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint_group.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o -o $@ $(LDFLAGS)
 
-benchmark_sjf: benchmark_sjf.o admissible_traffic_sjf.o path_selection.o euler_split.o
-	$(CC) $< admissible_traffic_sjf.o path_selection.o euler_split.o -o $@ $(LDFLAGS)
+#benchmark_sjf: benchmark_sjf.o admissible_traffic_sjf.o path_selection.o euler_split.o
+#	$(CC) $< admissible_traffic_sjf.o path_selection.o euler_split.o -o $@ $(LDFLAGS)
 
 test_bin_computation: test_bin_computation.o
 	$(CC) $< -o $@ $(LDFLAGS)

@@ -211,7 +211,7 @@ seq_create_admissible_status(bool oversubscribed, uint16_t inter_rack_capacity,
                              struct fp_mempool *admitted_traffic_mempool,
                              struct fp_ring **q_bin)
 {
-    struct seq_admissible_status *status =
+    struct seq_admissible_status *status = (struct seq_admissible_status *)
             fp_malloc("seq_admissible_status", sizeof(struct seq_admissible_status));
 
     if (status == NULL)

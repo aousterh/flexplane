@@ -439,6 +439,7 @@ void seq_get_admissible_traffic(struct seq_admissible_status *status,
     bool should_process_new_req = false;
     uint64_t n_processed = 0;
 	int64_t slot_gap;
+	int64_t admit_gap, new_processed_bins;
 #ifdef NO_DPDK
     uint64_t prev_timeslot = first_timeslot - NUM_BINS - 2;
     uint64_t now_timeslot = first_timeslot - NUM_BINS - 1;
@@ -476,7 +477,7 @@ void seq_get_admissible_traffic(struct seq_admissible_status *status,
 			 && (first_timeslot - now_timeslot <= URGENT_NUM_TIMESLOTS_START);
 
     	/* send out admitted_traffic, if need to */
-		int64_t admit_gap = now_timeslot - first_timeslot + 1;
+		admit_gap = now_timeslot - first_timeslot + 1;
 		if (admit_gap <= 0)
 			goto update_allowed;
 		if (admit_gap > BATCH_SIZE)
@@ -503,7 +504,7 @@ update_allowed:
 		if (slot_gap < 0)
 			goto handle_inputs;
 
-		uint16_t new_processed_bins =
+		new_processed_bins =
 				(slot_gap > TIMESLOTS_START_BEFORE) ? (BATCH_SIZE + NUM_BINS) : (slot_gap >> TIMESLOT_SHIFT_PER_PRIORITY);
 
 		/* allow more bins to be processed */

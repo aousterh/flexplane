@@ -45,7 +45,7 @@ public:
 	/**
 	 * @return the packet to transmit, or NULL if no packets should be transmitted
 	 */
-	struct emu_packet *schedule();
+	struct emu_packet *schedule(uint32_t output_port);
 };
 
 /**
@@ -57,10 +57,47 @@ class CompositeRouter : public Router {
 public:
 	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_queues,
 			uint32_t n_ports);
+
 	virtual ~CompositeRouter();
 
 	virtual void push(struct emu_packet *packet);
 	virtual void pull(uint16_t output, struct emu_packet **packet);
+
+private:
+	CLA *m_cla;
+	QM *m_qm;
+	SCH *m_sch;
+	uint32_t m_n_queues;
+	uint32_t m_n_port;
 };
+
+/** implementation */
+template < class CLA, class QM, class SCH >
+CompositeRouter<CLA,QM,SCH>::CompositeRouter(
+		CLA *cla, QM *qm, SCH *sch, uint32_t n_queues, uint32_t n_ports)
+	: m_cla(cla), m_qm(qm), m_sch(sch), m_n_queues(n_queues), m_n_port(n_ports)
+{
+	/* static check: make sure template parameters are of the correct classes */
+	(void)static_cast<Classifier*>((CLA*)0);
+	(void)static_cast<QueueManager*>((QM*)0);
+	(void)static_cast<Scheduler*>((SCH*)0);
+}
+
+template < class CLA, class QM, class SCH >
+CompositeRouter<CLA,QM,SCH>::~CompositeRouter() {}
+
+template < class CLA, class QM, class SCH >
+void CompositeRouter<CLA,QM,SCH>::push(struct emu_packet *packet)
+{
+	int32_t queue_index = m_cla->classify(packet);
+	m_qm->enqueue(packet, queue_index);
+}
+
+template < class CLA, class QM, class SCH >
+void CompositeRouter<CLA,QM,SCH>::pull(uint16_t output,
+		struct emu_packet **packet)
+{
+	*packet = m_sch->schedule(output);
+}
 
 #endif /* COMPOSITE_H_ */

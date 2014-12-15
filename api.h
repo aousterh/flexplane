@@ -35,8 +35,7 @@ void drop_packet(struct emu_packet *packet);
  * Enqueues a packet at an endpoint to pass up the network stack.
  */
 static inline
-void enqueue_packet_at_endpoint(struct emu_endpoint *ep,
-		struct emu_packet *packet);
+void enqueue_packet_at_endpoint(struct emu_packet *packet);
 
 /**
  * Frees a packet when an emulation algorithm is done running.

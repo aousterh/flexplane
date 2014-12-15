@@ -8,7 +8,7 @@ CCFLAGS += -O3
 CCFLAGS += -DNO_DPDK
 #CCFLAGS += -debug inline-debug-info
 CCFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
-CCFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
+CCFLAGS += -I.
 CCFLAGS += -DEMULATION_ALGO
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
@@ -18,9 +18,13 @@ LDFLAGS = -lm
 	$(CC) $(CCFLAGS) -c $<
 
 # Dependency rules for non-file targets
-all: emulation
+all: emulation benchmark
 clean:
-	rm -f emulation *.o *~
+	rm -f emulation benchmark *.o *~
+
+# compile CC file for use in benchmark
+benchmark: admissible.cc
+	$(CC) $(CCFLAGS) -c $<
 
 # Dependency rules for file targets
 emulation: emulation_test.o emulation.o endpoint_group.o router.o packet.o drop_tail.o

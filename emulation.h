@@ -34,7 +34,8 @@ extern Emulation *g_state;
  * @add_backlog: add amount of demand from src to dst for flow
  * @emulate: emulate a single timeslot
  * @reset_sender: reset the state for a single sender
- * @stat: stats
+ * @stat: global emulation stats
+ * @core_stats: stats per emulation core
  * @admitted: the current admitted struct
  * @packet_mempool: pool of packet structs
  * @endpoint_groups: representations of groups of endpoints
@@ -53,6 +54,7 @@ public:
 	void emulate();
 	void reset_sender(uint16_t src);
 	struct emu_admission_statistics			stat;
+	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
 	struct emu_admitted_traffic				*admitted;
 	struct fp_mempool						*packet_mempool;
 private:

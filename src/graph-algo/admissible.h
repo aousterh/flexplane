@@ -15,7 +15,6 @@
 /* dummy struct declarations */
 struct admissible_state;
 struct admitted_traffic;
-struct emu_ops;
 
 /* parallel algo, e.g. pim */
 #ifdef PARALLEL_ALGO
@@ -58,7 +57,7 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_ring *q_spent, struct fp_mempool *bin_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **f,
 		struct fp_ring **q_new_demands, struct fp_ring **q_ready_partitions,
-		struct emu_ops *f)
+		void *g)
 {
 	(void) q_spent; /* unused */
     struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
@@ -139,7 +138,7 @@ create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
 		struct fp_ring *q_head, struct fp_ring *q_admitted_out,
 		struct fp_ring *q_spent, struct fp_mempool *head_bin_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **q_bin,
-		struct fp_ring **a, struct fp_ring **b, struct emu_ops *c)
+		struct fp_ring **a, struct fp_ring **b, void *c)
 {
 	struct seq_admissible_status *status;
     status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
@@ -201,16 +200,20 @@ void handle_spent_demands(struct admissible_state *state)
 #define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
 #define MAX_ADMITTED_PER_TIMESLOT	(EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
 
+/* only used by benchmark, assume only one Emulation at a time */
+struct fp_mempool *emu_admitted_traffic_mempool;
+struct fp_ring *emu_q_admitted_out;
+
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,
 		uint16_t dst, uint32_t amount) {
 	uint16_t dst_node;
 	uint8_t flow;
+	Emulation *emu_state = (Emulation *) state;
 
 	flow = dst & FLOW_MASK;
 	dst_node = dst >> FLOW_SHIFT;
-	state->add_backlog(
-	emu_add_backlog((struct emu_state *) state, src, dst_node, flow, amount);
+	emu_state->add_backlog(src, dst_node, flow, amount);
 }
 
 static inline
@@ -221,7 +224,8 @@ void flush_backlog(struct admissible_state *state) {
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
 		uint64_t b, uint32_t c, uint32_t d) {
-	emu_emulate((struct emu_state *) state);
+	Emulation *emu_state = (Emulation *) state;
+	emu_state->emulate();
 }
 
 static inline
@@ -231,29 +235,34 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_mempool *packet_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
 		struct fp_ring **packet_queues, struct fp_ring **h, void *emu_args) {
-	struct emu_state *state = emu_create_state(admitted_traffic_mempool,
-			q_admitted_out, packet_mempool, packet_queues, emu_args);
+	Emulation *state;
+
+	/* this is used only be the single-core benchmark */
+	emu_admitted_traffic_mempool = admitted_traffic_mempool;
+	emu_q_admitted_out = q_admitted_out;
+
+	state = new Emulation(admitted_traffic_mempool, q_admitted_out,
+			packet_mempool, packet_queues, emu_args);
 	return (struct admissible_state *) state;
 }
 
 static inline
-void reset_sender(struct admissible_state *status, uint16_t src)
+void reset_sender(struct admissible_state *state, uint16_t src)
 {
-	emu_reset_sender((struct emu_state *) status, src);
+	Emulation *emu_state = (Emulation *) state;
+	emu_state->reset_sender(src);
 }
 
 static inline
 struct fp_ring *get_q_admitted_out(struct admissible_state *state)
 {
-	struct emu_state *emu_state = (struct emu_state *) state;
-    return emu_state->q_admitted_out;
+	return emu_q_admitted_out;
 }
 
 static inline
 struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
 {
-	struct emu_state *emu_state = (struct emu_state *) state;
-	return emu_state->admitted_traffic_mempool;
+	return emu_admitted_traffic_mempool;
 }
 
 static inline
@@ -298,8 +307,8 @@ struct emu_admitted_edge *get_admitted_edge(struct admitted_traffic *admitted,
 static inline
 uint32_t bin_num_bytes(uint32_t param)
 {
-        /* bin mempool used for packets instead */
-        return sizeof(struct emu_packet);
+	/* bin mempool used for packets instead */
+    return sizeof(struct emu_packet);
 }
 
 #endif

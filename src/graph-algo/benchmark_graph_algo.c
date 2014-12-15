@@ -204,7 +204,8 @@ struct admissible_state *reset_state(struct admissible_state *state,
 		struct fp_ring **q_bin, struct fp_mempool **bin_mempool) {
 #if defined(EMULATION_ALGO)
 	/* emulation, cleanup and create a new status */
-	emu_cleanup((struct emu_state *) state);
+	Emulation *emu_state = (Emulation *) state;
+	delete emu_state;
     state = setup_state(oversubscribed, inter_rack_capacity,
     		out_of_boundary_capacity, num_nodes, q_bin, bin_mempool);
 #else

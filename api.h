@@ -62,18 +62,6 @@ uint16_t get_output_queue(Router *rtr, struct emu_packet *p);
  */
 
 /**
- * Logs that an endpoint sent a packet into the network.
- */
-static inline __attribute__((always_inline))
-void adm_log_emu_endpoint_sent_packet(struct emu_admission_statistics *st);
-
-/**
- * Logs that a router sent a packet into the network.
- */
-static inline __attribute__((always_inline))
-void adm_log_emu_router_sent_packet(struct emu_admission_statistics *st);
-
-/**
  * Logs that an endpoint dropped a packet.
  */
 static inline __attribute__((always_inline))

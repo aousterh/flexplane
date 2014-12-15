@@ -59,10 +59,11 @@ struct drop_tail_args emu_args = {
 };
 
 // Runs one experiment. Returns the number of packets admitted.
-uint32_t run_experiment(struct request_info *requests, uint32_t start_time, uint32_t end_time,
-                        uint32_t num_requests, struct admissible_state *status,
-                        struct request_info **next_request,
-                        uint32_t *per_batch_times)
+uint32_t run_experiment(struct request_info *requests, uint32_t start_time,
+		uint32_t end_time, uint32_t num_requests,
+		struct admissible_state *status, struct request_info **next_request,
+		uint32_t *per_batch_times, struct fp_ring *q_admitted_out,
+		struct fp_mempool *admitted_traffic_mempool)
 {
     struct admitted_traffic *admitted;
     struct fp_ring *queue_tmp;
@@ -93,11 +94,11 @@ uint32_t run_experiment(struct request_info *requests, uint32_t start_time, uint
 
         for (i = 0; i < ADMITTED_PER_BATCH; i++) {
         	/* get admitted traffic */
-                fp_ring_dequeue(get_q_admitted_out(status), (void **)&admitted);
+                fp_ring_dequeue(q_admitted_out, (void **)&admitted);
         	/* update statistics */
                 num_admitted += get_num_admitted(admitted);
         	/* return admitted traffic to core */
-                fp_mempool_put(get_admitted_traffic_mempool(status), admitted);
+                fp_mempool_put(admitted_traffic_mempool, admitted);
         }
 
         // Record per-batch time
@@ -149,25 +150,24 @@ void run_admissible(struct request_info *requests, uint32_t start_time, uint32_t
 struct admissible_state *setup_state(bool oversubscribed,
 		uint16_t inter_rack_capacity, uint16_t out_of_boundary_capacity,
 		uint16_t num_nodes, struct fp_ring **q_bin,
-		struct fp_mempool **bin_mempool) {
+		struct fp_mempool **bin_mempool, struct fp_ring **q_admitted_out,
+		struct fp_mempool **admitted_traffic_mempool) {
 	uint16_t i;
 
     // Data structures
     struct admissible_state *status;
     struct fp_ring *q_head;
-    struct fp_ring *q_admitted_out;
     struct fp_ring *q_spent;
-    struct fp_mempool *admitted_traffic_mempool;
     struct fp_ring *q_new_demands[NUM_BIN_RINGS];
     struct fp_ring *q_ready_partitions[NUM_BIN_RINGS];
 
     /* init queues */
     *q_bin = fp_ring_create(2 * FP_NODES_SHIFT);
     q_head = fp_ring_create(2 * FP_NODES_SHIFT);
-    q_admitted_out = fp_ring_create(ADMITTED_OUT_RING_LOG_SIZE);
+    *q_admitted_out = fp_ring_create(ADMITTED_OUT_RING_LOG_SIZE);
     q_spent = fp_ring_create(2 * FP_NODES_SHIFT);
     *bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
-    admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
+    *admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
                                                  get_admitted_struct_size());
     for (i = 0; i < NUM_BIN_RINGS; i++) {
             q_new_demands[i] = fp_ring_create(BIN_RING_SHIFT);
@@ -175,14 +175,14 @@ struct admissible_state *setup_state(bool oversubscribed,
             q_ready_partitions[i] = fp_ring_create(READY_PARTITIONS_Q_SIZE);
             if (!q_ready_partitions[i]) exit(-1);
     }
-    if (!*q_bin || !q_head || !q_admitted_out || !q_spent || !*bin_mempool ||
-        !admitted_traffic_mempool)
+    if (!*q_bin || !q_head || !*q_admitted_out || !q_spent || !*bin_mempool ||
+        !*admitted_traffic_mempool)
             exit(-1);
 
     /* init global status */
-    status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
+    status = create_admissible_state(false, 0, 0, 0, q_head, *q_admitted_out,
                                      q_spent, *bin_mempool,
-                                     admitted_traffic_mempool,
+                                     *admitted_traffic_mempool,
                                      q_bin, &q_new_demands[0],
                                      &q_ready_partitions[0],
                                      (void *) &emu_args);
@@ -201,13 +201,16 @@ struct admissible_state *setup_state(bool oversubscribed,
 struct admissible_state *reset_state(struct admissible_state *state,
 		bool oversubscribed, uint16_t inter_rack_capacity,
 		uint16_t out_of_boundary_capacity, uint16_t num_nodes,
-		struct fp_ring **q_bin, struct fp_mempool **bin_mempool) {
+		struct fp_ring **q_bin, struct fp_mempool **bin_mempool,
+		struct fp_ring **q_admitted_out,
+		struct fp_mempool **admitted_traffic_mempool) {
 #if defined(EMULATION_ALGO)
 	/* emulation, cleanup and create a new status */
 	Emulation *emu_state = (Emulation *) state;
 	delete emu_state;
     state = setup_state(oversubscribed, inter_rack_capacity,
-    		out_of_boundary_capacity, num_nodes, q_bin, bin_mempool);
+    		out_of_boundary_capacity, num_nodes, q_bin, bin_mempool,
+    		q_admitted_out, admitted_traffic_mempool);
 #else
 	/* pipelined or parallel algo */
     reset_admissible_state(state, oversubscribed, inter_rack_capacity,
@@ -302,8 +305,10 @@ int main(int argc, char **argv)
 
     struct fp_ring *q_bin;
     struct fp_mempool *bin_mempool;
+    struct fp_ring *q_admitted_out;
+    struct fp_mempool *admitted_traffic_mempool;
     struct admissible_state *status = setup_state(false, 0, 0, 0, &q_bin,
-    		&bin_mempool);
+    		&bin_mempool, &q_admitted_out, &admitted_traffic_mempool);
 
     /* allocate space to record times */
     uint32_t num_batches = (duration - warm_up_duration) / BATCH_SIZE;
@@ -340,20 +345,23 @@ int main(int argc, char **argv)
             if (benchmark_type == ADMISSIBLE) {
                 num_nodes = sizes[j];
                 status = reset_state(status, false, 0, 0, num_nodes, &q_bin,
-                		&bin_mempool);
+                		&bin_mempool, &q_admitted_out,
+                		&admitted_traffic_mempool);
             }
             else if (benchmark_type == PATH_SELECTION_OVERSUBSCRIPTION) {
                 num_nodes = NUM_NODES_P;
                 inter_rack_capacity = capacities[j];
                 status = reset_state(status, true, inter_rack_capacity, 0,
-                		num_nodes, &q_bin, &bin_mempool);
+                		num_nodes, &q_bin, &bin_mempool, &q_admitted_out,
+                		&admitted_traffic_mempool);
                 fraction = fraction * ((double) inter_rack_capacity) / MAX_NODES_PER_RACK;
             } else if (benchmark_type == PATH_SELECTION_RACKS) {
                 num_racks = racks[j];
                 num_nodes = MAX_NODES_PER_RACK * num_racks;
                 inter_rack_capacity = MAX_NODES_PER_RACK;
                 status = reset_state(status, false, 0, 0, num_nodes, &q_bin,
-                		&bin_mempool);
+                		&bin_mempool, &q_admitted_out,
+                		&admitted_traffic_mempool);
             }
 
             struct bin *b;
@@ -375,17 +383,20 @@ int main(int argc, char **argv)
             // Issue/process some requests. This is a warm-up period so that there are pending
             // requests once we start timing
             struct request_info *next_request;
-            run_experiment(requests, 0, warm_up_duration, num_requests,
-                           status, &next_request, per_batch_times);
-   
+            run_experiment(requests, 0, warm_up_duration, num_requests, status,
+            		&next_request, per_batch_times, q_admitted_out,
+            		admitted_traffic_mempool);
+
             if (benchmark_type == ADMISSIBLE) {
                 // Start timining
                 uint64_t start_time = current_time();
 
                 // Run the experiment
-                uint32_t num_admitted = run_experiment(next_request, warm_up_duration, duration,
-                                                       num_requests - (next_request - requests),
-                                                       status, &next_request, per_batch_times);
+                uint32_t num_admitted = run_experiment(next_request,
+                		warm_up_duration, duration,
+                		num_requests - (next_request - requests), status,
+                		&next_request, per_batch_times, q_admitted_out,
+                		admitted_traffic_mempool);
                 uint64_t end_time = current_time();
                 double utilzn = ((double) num_admitted) / ((duration - warm_up_duration) * num_nodes);
 
@@ -423,13 +434,13 @@ int main(int argc, char **argv)
                     struct admitted_traffic *admitted;
 
                     /* get admitted traffic */
-                    fp_ring_dequeue(get_q_admitted_out(status), (void **)&admitted);
+                    fp_ring_dequeue(q_admitted_out, (void **)&admitted);
                     /* update statistics */
                     num_admitted += get_num_admitted(admitted);
 
                     /* supply a new admitted traffic to core */
                     select_paths(admitted, num_nodes / MAX_NODES_PER_RACK);
-                    
+
                     // Record time
                     uint64_t time_now = current_time();
                     assert(time_now - prev_time < (0x1ULL << 32));
@@ -440,7 +451,7 @@ int main(int argc, char **argv)
                     per_timeslot_num_admitted[k] = get_num_admitted(admitted);
 
                     /* free the admitted_traffic */
-                    fp_mempool_put(get_admitted_traffic_mempool(status), admitted);
+                    fp_mempool_put(admitted_traffic_mempool, admitted);
                 }
 
                 uint64_t end_time = current_time();

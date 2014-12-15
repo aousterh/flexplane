@@ -79,20 +79,6 @@ void reset_sender(struct admissible_state *status, uint16_t src)
 }
 
 static inline
-struct fp_ring *get_q_admitted_out(struct admissible_state *state)
-{
-	struct pim_state *pim_state = (struct pim_state *) state;
-	return pim_state->q_admitted_out;
-}
-
-static inline
-struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
-{
-	struct pim_state *pim_state = (struct pim_state *) state;
-    return pim_state->admitted_traffic_mempool;
-}
-
-static inline
 void handle_spent_demands(struct admissible_state *state)
 {
 	/* unused */
@@ -163,20 +149,6 @@ void reset_sender(struct admissible_state *status, uint16_t src)
 }
 
 static inline
-struct fp_ring *get_q_admitted_out(struct admissible_state *state)
-{
-	struct seq_admissible_status *status = (struct seq_admissible_status *) state;
-    return status->q_admitted_out;
-}
-
-static inline
-struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
-{
-	struct seq_admissible_status *status = (struct seq_admissible_status *) state;
-    return status->admitted_traffic_mempool;
-}
-
-static inline
 void handle_spent_demands(struct admissible_state *state)
 {
     struct seq_admissible_status *status = (struct seq_admissible_status *) state;
@@ -187,6 +159,7 @@ void handle_spent_demands(struct admissible_state *state)
 
 /* emulation algo */
 #ifdef EMULATION_ALGO
+
 #include "../emulation/admitted.h"
 #include "../emulation/api.h"
 #include "../emulation/emulation.h"
@@ -200,70 +173,26 @@ void handle_spent_demands(struct admissible_state *state)
 #define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
 #define MAX_ADMITTED_PER_TIMESLOT	(EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
 
-/* only used by benchmark, assume only one Emulation at a time */
-struct fp_mempool *emu_admitted_traffic_mempool;
-struct fp_ring *emu_q_admitted_out;
+/* functions implemented in C++, called by C (arbiter) and C++ (benchmark) */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static inline
-void add_backlog(struct admissible_state *state, uint16_t src,
-		uint16_t dst, uint32_t amount) {
-	uint16_t dst_node;
-	uint8_t flow;
-	Emulation *emu_state = (Emulation *) state;
+void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
+		uint32_t amount);
 
-	flow = dst & FLOW_MASK;
-	dst_node = dst >> FLOW_SHIFT;
-	emu_state->add_backlog(src, dst_node, flow, amount);
+void reset_sender(struct admissible_state *state, uint16_t src);
+
+#ifdef __cplusplus
 }
+#endif
 
+
+/* functions implemented purely in C, called by C and C++ */
 static inline
 void flush_backlog(struct admissible_state *state) {
 	/* unused */
 };
-
-static inline
-void get_admissible_traffic(struct admissible_state *state, uint32_t a,
-		uint64_t b, uint32_t c, uint32_t d) {
-	Emulation *emu_state = (Emulation *) state;
-	emu_state->emulate();
-}
-
-static inline
-struct admissible_state *
-create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
-		struct fp_ring *e, struct fp_ring *q_admitted_out, struct fp_ring *f,
-		struct fp_mempool *packet_mempool,
-		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
-		struct fp_ring **packet_queues, struct fp_ring **h, void *emu_args) {
-	Emulation *state;
-
-	/* this is used only be the single-core benchmark */
-	emu_admitted_traffic_mempool = admitted_traffic_mempool;
-	emu_q_admitted_out = q_admitted_out;
-
-	state = new Emulation(admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, emu_args);
-	return (struct admissible_state *) state;
-}
-
-static inline
-void reset_sender(struct admissible_state *state, uint16_t src)
-{
-	Emulation *emu_state = (Emulation *) state;
-	emu_state->reset_sender(src);
-}
-
-static inline
-struct fp_ring *get_q_admitted_out(struct admissible_state *state)
-{
-	return emu_q_admitted_out;
-}
-
-static inline
-struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
-{
-	return emu_admitted_traffic_mempool;
-}
 
 static inline
 void handle_spent_demands(struct admissible_state *state)
@@ -310,6 +239,33 @@ uint32_t bin_num_bytes(uint32_t param)
 	/* bin mempool used for packets instead */
     return sizeof(struct emu_packet);
 }
+
+
+/* functions called only from C++ (benchmark_graph_algo) */
+#ifdef __cplusplus
+
+static inline
+void get_admissible_traffic(struct admissible_state *state, uint32_t a,
+		uint64_t b, uint32_t c, uint32_t d) {
+	Emulation *emu_state = (Emulation *) state;
+	emu_state->emulate();
+}
+
+static inline
+struct admissible_state *
+create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
+		struct fp_ring *e, struct fp_ring *q_admitted_out, struct fp_ring *f,
+		struct fp_mempool *packet_mempool,
+		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
+		struct fp_ring **packet_queues, struct fp_ring **h, void *emu_args) {
+	Emulation *state;
+
+	state = new Emulation(admitted_traffic_mempool, q_admitted_out,
+			packet_mempool, packet_queues, emu_args);
+	return (struct admissible_state *) state;
+}
+
+#endif
 
 #endif
 

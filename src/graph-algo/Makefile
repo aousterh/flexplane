@@ -27,6 +27,7 @@ LDFLAGS = -lm
 all: test_euler_split benchmark_graph_algo test_bin_computation rdtsc microbench
 clean:
 	rm -f test_euler_split benchmark_graph_algo test_bin_computation rdtsc microbench *.o *~
+	cd $(EMU_DIR); make clean
 
 # Dependency rules for file target
 test_euler_split: test_euler_split.o euler_split.o
@@ -35,8 +36,9 @@ test_euler_split: test_euler_split.o euler_split.o
 #benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o ../grant-accept/pim_admissible_traffic.o ../grant-accept/pim.o
 #	$(CC) $< admissible_traffic.o path_selection.o euler_split.o ../grant-accept/pim_admissible_traffic.o ../grant-accept/pim.o -o $@ $(LDFLAGS)
 
-benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint_group.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o
-	$(CC) $< admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint_group.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o -o $@ $(LDFLAGS)
+benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o
+	cd $(EMU_DIR); make all
+	$(CC) $< admissible_traffic.o path_selection.o euler_split.o $(EMU_DIR)/emulation.o $(EMU_DIR)/endpoint_group.o $(EMU_DIR)/router.o $(EMU_DIR)/packet.o $(EMU_DIR)/drop_tail.o $(EMU_DIR)/admissible.o -o $@ $(LDFLAGS)
 
 #benchmark_sjf: benchmark_sjf.o admissible_traffic_sjf.o path_selection.o euler_split.o
 #	$(CC) $< admissible_traffic_sjf.o path_selection.o euler_split.o -o $@ $(LDFLAGS)

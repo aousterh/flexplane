@@ -35,46 +35,42 @@ struct emu_ops;
 #define MAX_ADMITTED_PER_TIMESLOT	NUM_NODES
 
 static inline
-void add_backlog(struct admissible_state *state, uint16_t src,
-                 uint16_t dst, uint32_t amount) {
-        pim_add_backlog((struct pim_state *) state, src, dst, amount);
+void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
+		uint32_t amount) {
+	pim_add_backlog((struct pim_state *) state, src, dst, amount);
 }
 
 static inline
 void flush_backlog(struct admissible_state *state) {
-        pim_flush_backlog((struct pim_state *) state);
+	pim_flush_backlog((struct pim_state *) state);
 };
 
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
-                            uint64_t b, uint32_t c, uint32_t d) {
-        pim_get_admissible_traffic((struct pim_state *) state);
+		uint64_t b, uint32_t c, uint32_t d) {
+	pim_get_admissible_traffic((struct pim_state *) state);
 }
 
 static inline
 struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
-                        struct fp_ring *e, struct fp_ring *q_admitted_out,
-                        struct fp_ring *q_spent,
-                        struct fp_mempool *bin_mempool,
-                        struct fp_mempool *admitted_traffic_mempool,
-                        struct fp_ring **f, struct fp_ring **q_new_demands,
-                        struct fp_ring **q_ready_partitions,
-                        struct emu_ops *f)
+		struct fp_ring *e, struct fp_ring *q_admitted_out,
+		struct fp_ring *q_spent, struct fp_mempool *bin_mempool,
+		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **f,
+		struct fp_ring **q_new_demands, struct fp_ring **q_ready_partitions,
+		struct emu_ops *f)
 {
-		(void) q_spent; /* unused */
-        struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
-                                                   bin_mempool,
-                                                   admitted_traffic_mempool,
-                                                   q_ready_partitions);
-        return (struct admissible_state *) state;
+	(void) q_spent; /* unused */
+    struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
+    		bin_mempool, admitted_traffic_mempool, q_ready_partitions);
+    return (struct admissible_state *) state;
 }
 
 static inline
 void reset_admissible_state(struct admissible_state *state, bool a, uint16_t b,
-                            uint16_t c, uint16_t d)
+		uint16_t c, uint16_t d)
 {
-        pim_reset_state((struct pim_state *) state);
+	pim_reset_state((struct pim_state *) state);
 }
 
 static inline
@@ -86,21 +82,21 @@ void reset_sender(struct admissible_state *status, uint16_t src)
 static inline
 struct fp_ring *get_q_admitted_out(struct admissible_state *state)
 {
-        struct pim_state *pim_state = (struct pim_state *) state;
-        return pim_state->q_admitted_out;
+	struct pim_state *pim_state = (struct pim_state *) state;
+	return pim_state->q_admitted_out;
 }
 
 static inline
 struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
 {
-        struct pim_state *pim_state = (struct pim_state *) state;
-        return pim_state->admitted_traffic_mempool;
+	struct pim_state *pim_state = (struct pim_state *) state;
+    return pim_state->admitted_traffic_mempool;
 }
 
 static inline
 void handle_spent_demands(struct admissible_state *state)
 {
-        /* unused */
+	/* unused */
 }
 
 #endif
@@ -118,50 +114,47 @@ void handle_spent_demands(struct admissible_state *state)
 #define MAX_ADMITTED_PER_TIMESLOT	NUM_NODES
 
 static inline
-void add_backlog(struct admissible_state *status, uint16_t src,
-                 uint16_t dst, uint32_t amount) {
-        seq_add_backlog((struct seq_admissible_status *) status, src, dst, amount);
+void add_backlog(struct admissible_state *status, uint16_t src, uint16_t dst,
+		uint32_t amount) {
+	seq_add_backlog((struct seq_admissible_status *) status, src, dst, amount);
 }
 
 static inline
 void flush_backlog(struct admissible_state *status) {
-        seq_flush_backlog((struct seq_admissible_status *) status);
+	seq_flush_backlog((struct seq_admissible_status *) status);
 }
 
 static inline
 void get_admissible_traffic(struct admissible_state *status,
-                            uint32_t core_index, uint64_t first_timeslot,
-                            uint32_t tslot_mul, uint32_t tslot_shift) {
-        seq_get_admissible_traffic((struct seq_admissible_status *) status, core_index,
-                                   first_timeslot, tslot_mul, tslot_shift);
+		uint32_t core_index, uint64_t first_timeslot, uint32_t tslot_mul,
+		uint32_t tslot_shift) {
+	seq_get_admissible_traffic((struct seq_admissible_status *) status,
+			core_index, first_timeslot, tslot_mul, tslot_shift);
 }
 
 static inline
 struct admissible_state *
 create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
-                        uint16_t out_of_boundary_capacity, uint16_t num_nodes,
-                        struct fp_ring *q_head, struct fp_ring *q_admitted_out,
-                        struct fp_ring *q_spent,
-                        struct fp_mempool *head_bin_mempool,
-                        struct fp_mempool *admitted_traffic_mempool,
-                        struct fp_ring **q_bin, struct fp_ring **a,
-                        struct fp_ring **b, struct emu_ops *c)
+		uint16_t out_of_boundary_capacity, uint16_t num_nodes,
+		struct fp_ring *q_head, struct fp_ring *q_admitted_out,
+		struct fp_ring *q_spent, struct fp_mempool *head_bin_mempool,
+		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **q_bin,
+		struct fp_ring **a, struct fp_ring **b, struct emu_ops *c)
 {
-        struct seq_admissible_status *status;
-        status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
-                                              out_of_boundary_capacity, num_nodes, q_head,
-                                              q_admitted_out, q_spent, head_bin_mempool,
-                                              admitted_traffic_mempool, q_bin);
-        return (struct admissible_state *) status;
+	struct seq_admissible_status *status;
+    status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
+    		out_of_boundary_capacity, num_nodes, q_head, q_admitted_out,
+    		q_spent, head_bin_mempool, admitted_traffic_mempool, q_bin);
+    return (struct admissible_state *) status;
 }
 
 static inline
 void reset_admissible_state(struct admissible_state *status,
-                            bool oversubscribed, uint16_t inter_rack_capacity,
-                            uint16_t out_of_boundary_capacity, uint16_t num_nodes)
+		bool oversubscribed, uint16_t inter_rack_capacity,
+		uint16_t out_of_boundary_capacity, uint16_t num_nodes)
 {
-        seq_reset_admissible_status((struct seq_admissible_status *) status, oversubscribed,
-                                    inter_rack_capacity, out_of_boundary_capacity, num_nodes);
+	seq_reset_admissible_status((struct seq_admissible_status *) status, oversubscribed,
+			inter_rack_capacity, out_of_boundary_capacity, num_nodes);
 }
 
 static inline
@@ -173,15 +166,15 @@ void reset_sender(struct admissible_state *status, uint16_t src)
 static inline
 struct fp_ring *get_q_admitted_out(struct admissible_state *state)
 {
-        struct seq_admissible_status *status = (struct seq_admissible_status *) state;
-        return status->q_admitted_out;
+	struct seq_admissible_status *status = (struct seq_admissible_status *) state;
+    return status->q_admitted_out;
 }
 
 static inline
 struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
 {
-        struct seq_admissible_status *status = (struct seq_admissible_status *) state;
-        return status->admitted_traffic_mempool;
+	struct seq_admissible_status *status = (struct seq_admissible_status *) state;
+    return status->admitted_traffic_mempool;
 }
 
 static inline
@@ -210,68 +203,63 @@ void handle_spent_demands(struct admissible_state *state)
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src,
-                 uint16_t dst, uint32_t amount) {
-        uint16_t dst_node;
-        uint8_t flow;
+		uint16_t dst, uint32_t amount) {
+	uint16_t dst_node;
+	uint8_t flow;
 
-        flow = dst & FLOW_MASK;
-        dst_node = dst >> FLOW_SHIFT;
-        emu_add_backlog((struct emu_state *) state, src, dst_node, flow, amount);
+	flow = dst & FLOW_MASK;
+	dst_node = dst >> FLOW_SHIFT;
+	state->add_backlog(
+	emu_add_backlog((struct emu_state *) state, src, dst_node, flow, amount);
 }
 
 static inline
 void flush_backlog(struct admissible_state *state) {
-        /* unused */
+	/* unused */
 };
 
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
-                            uint64_t b, uint32_t c, uint32_t d) {
-        emu_emulate((struct emu_state *) state);
+		uint64_t b, uint32_t c, uint32_t d) {
+	emu_emulate((struct emu_state *) state);
 }
 
 static inline
 struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
-                        struct fp_ring *e, struct fp_ring *q_admitted_out,
-                        struct fp_ring *f,
-                        struct fp_mempool *packet_mempool,
-                        struct fp_mempool *admitted_traffic_mempool,
-                        struct fp_ring **g, struct fp_ring **packet_queues,
-                        struct fp_ring **h, void *emu_args)
-{
-        struct emu_state *state = emu_create_state(admitted_traffic_mempool,
-                                                   q_admitted_out,
-                                                   packet_mempool,
-                                                   packet_queues,
-                                                   emu_args);
-        return (struct admissible_state *) state;
+		struct fp_ring *e, struct fp_ring *q_admitted_out, struct fp_ring *f,
+		struct fp_mempool *packet_mempool,
+		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
+		struct fp_ring **packet_queues, struct fp_ring **h, void *emu_args) {
+	struct emu_state *state = emu_create_state(admitted_traffic_mempool,
+			q_admitted_out, packet_mempool, packet_queues, emu_args);
+	return (struct admissible_state *) state;
 }
 
 static inline
 void reset_sender(struct admissible_state *status, uint16_t src)
 {
-        emu_reset_sender((struct emu_state *) status, src);
+	emu_reset_sender((struct emu_state *) status, src);
 }
 
 static inline
 struct fp_ring *get_q_admitted_out(struct admissible_state *state)
 {
-        struct emu_state *emu_state = (struct emu_state *) state;
-        return emu_state->q_admitted_out;
+	struct emu_state *emu_state = (struct emu_state *) state;
+    return emu_state->q_admitted_out;
 }
 
 static inline
 struct fp_mempool *get_admitted_traffic_mempool(struct admissible_state *state)
 {
-        struct emu_state *emu_state = (struct emu_state *) state;
-        return emu_state->admitted_traffic_mempool;
+	struct emu_state *emu_state = (struct emu_state *) state;
+	return emu_state->admitted_traffic_mempool;
 }
 
 static inline
 void handle_spent_demands(struct admissible_state *state)
 {
-        /* unused */
+	/* unused */
 }
 
 static inline

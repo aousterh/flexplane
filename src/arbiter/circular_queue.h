@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 /**
  * @param head: index of the first item in the queue
@@ -32,7 +33,7 @@ uint32_t cq_memsize(uint32_t num_elems)
 {
 	assert((num_elems & (num_elems - 1)) == 0);
 
-	uint32_t elem_offset = (uint32_t)(&((struct circular_queue *)0)->elem[0]);
+	uint32_t elem_offset = offsetof(struct circular_queue, elem);
 	return elem_offset + (sizeof(void *) * num_elems);
 }
 
@@ -99,7 +100,7 @@ uint32_t cq_occupancy(struct circular_queue *q)
  * Returns 1 if @q is full, 0 otherwise.
  */
 static inline
-uint32_t cq_full(struct circular_queue *q)
+int cq_full(struct circular_queue *q)
 {
 	return (cq_occupancy(q) >= q->mask + 1);
 }

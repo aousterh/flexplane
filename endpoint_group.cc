@@ -6,12 +6,14 @@
  */
 
 #include "endpoint_group.h"
+#include "emulation.h"
 #include "endpoint.h"
 #include "api.h"
 #include "api_impl.h"
 #include "packet.h"
 #include "admissible_log.h"
 #include "../graph-algo/platform.h"
+#include "../graph-algo/fp_ring.h"
 #include "assert.h"
 
 #define ENDPOINT_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)

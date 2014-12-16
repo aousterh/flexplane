@@ -7,6 +7,9 @@
  *      Author: aousterh
  */
 
+#ifndef API_IMPL_H__
+#define API_IMPL_H__
+
 #include "admitted.h"
 #include "api.h"
 #include "emulation.h"
@@ -50,3 +53,5 @@ static inline
 void *packet_priv(struct emu_packet *packet) {
 	return (char *) packet + EMU_ALIGN(sizeof(struct emu_packet));
 }
+
+#endif /* API_IMPL_H__ */

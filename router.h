@@ -8,10 +8,10 @@
 #ifndef ROUTER_H_
 #define ROUTER_H_
 
+#include "../graph-algo/fp_ring.h"
 #include <inttypes.h>
 
 struct emu_packet;
-struct fp_ring;
 
 /**
  * A representation of a router in the emulated network.

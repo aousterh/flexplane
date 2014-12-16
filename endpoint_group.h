@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "endpoint.h"
+#include "../graph-algo/fp_ring.h"
 
 #define MAX_ENDPOINTS_PER_GROUP		EMU_NUM_ENDPOINTS
 

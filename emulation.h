@@ -10,6 +10,8 @@
 
 #include "admissible_log.h"
 #include "config.h"
+#include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 #include <inttypes.h>
 
 #define ADMITTED_MEMPOOL_SIZE	10
@@ -19,8 +21,6 @@
 #define EMU_NUM_PACKET_QS		(2 + EMU_NUM_ROUTERS)
 
 struct emu_state;
-struct fp_ring;
-struct fp_mempool;
 
 extern struct emu_state *g_state;
 

@@ -16,6 +16,7 @@
 #include "endpoint_group.h"
 #include "composite.h"
 #include "queue_bank.h"
+#include "../graph-algo/fp_ring.h"
 
 #include <stdexcept>
 

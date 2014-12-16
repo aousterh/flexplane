@@ -13,7 +13,6 @@
 #include <inttypes.h>
 
 struct emu_packet;
-class Router;
 struct emu_admission_statistics;
 
 /* alignment macros based on /net/pkt_sched.h */
@@ -53,7 +52,7 @@ struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow);
  * (static routing).
  */
 static inline
-uint16_t get_output_queue(Router *rtr, struct emu_packet *p);
+uint16_t get_output_queue(struct emu_packet *p);
 
 
 /*

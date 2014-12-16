@@ -12,9 +12,7 @@
 
 #include "admitted.h"
 #include "api.h"
-#include "endpoint.h"
 #include "packet.h"
-#include "router.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
@@ -45,7 +43,7 @@ void free_packet(struct emu_packet *packet) {
 }
 
 static inline
-uint16_t get_output_queue(Router *rtr, struct emu_packet *p) {
+uint16_t get_output_queue(struct emu_packet *p) {
 	return p->dst;
 }
 

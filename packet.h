@@ -34,10 +34,4 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 	packet->flow = flow;
 }
 
-/**
- * Add a dropped demand to the 'admitted' list to be passed to the comm cores.
- * Used as a helper function or when allocating memory for a packet fails.
- */
-void drop_demand(uint16_t src, uint16_t dst, uint16_t flow);
-
 #endif /* PACKET_H_ */

@@ -245,6 +245,7 @@ uint32_t bin_num_bytes(uint32_t param)
 }
 
 /* functions called only in benchmark_graph_algo (not arbiter) */
+#ifdef __cplusplus
 
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
@@ -266,6 +267,8 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 			packet_mempool, packet_queues, emu_args);
 	return (struct admissible_state *) emu_state;
 }
+
+#endif
 
 #endif
 

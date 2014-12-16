@@ -9,7 +9,8 @@
 #define QUEUE_BANK_H_
 
 #include <vector>
-#include <cstdint>
+#include <stdint.h>
+#include <stdexcept>
 #include "circular_queue.h"
 
 /**
@@ -32,6 +33,7 @@ public:
 
 	/**
 	 * d'tor
+	 * @assumes all memory pointed to by queues is already freed
 	 */
 	~QueueBank();
 
@@ -60,6 +62,17 @@ public:
 	 */
 	inline int empty(uint32_t queue_index);
 
+	/**
+	 * @returns the number of elements in queue
+	 * @param queue_index: the flat index of the queue
+	 */
+	inline uint32_t occupancy(uint32_t queue_index);
+
+	/**
+	 * @returns 1 if queue is empty, 0 otherwise
+	 */
+	inline int full(uint32_t queue_index);
+
 private:
 	uint32_t m_n_ports;
 
@@ -69,8 +82,9 @@ private:
 };
 
 
-/** implementation */
+typedef QueueBank<struct emu_packet> PacketQueueBank;
 
+/** implementation */
 
 template <typename ELEM >
 QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
@@ -81,22 +95,59 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 	uint32_t size_bytes = cq_memsize(queue_max_size);
 
 	m_queues.reserve(n_ports * n_queues);
+
+	/* for every queue in the queue bank: */
 	for (i = 0; i < n_ports * n_queues; i++) {
-		struct circular_queue *q = malloc(size_bytes);
+		/* allocate queue */
+		struct circular_queue *q = (struct circular_queue *)malloc(size_bytes);
 		if (q == NULL)
-			throw Run
+			throw std::runtime_error("could not allocate circular queue");
+		/* initialize */
+		cq_init(q, queue_max_size);
+		/* add to queue list */
+		m_queues.push_back(q);
 	}
 }
-template <typename ELEM >
-QueueBank<ELEM>::~QueueBank();
-template <typename ELEM >
-inline uint32_t QueueBank<ELEM>::flat_index(uint32_t port, uint32_t queue);
-template <typename ELEM >
-inline void QueueBank<ELEM>::enqueue(uint32_t queue_index, ELEM *e);
-template <typename ELEM >
-inline ELEM *QueueBank<ELEM>::dequeue(uint32_t queue_index);
-template <typename ELEM >
-inline int QueueBank<ELEM>::empty(uint32_t queue_index);
 
+template <typename ELEM >
+QueueBank<ELEM>::~QueueBank()
+{
+	for (uint32_t i = 0; i < m_n_ports * m_n_queues; i++)
+		free(m_queues[i]);
+}
+
+template <typename ELEM >
+inline uint32_t QueueBank<ELEM>::flat_index(uint32_t port, uint32_t queue) {
+	return (port * m_n_queues) + queue;
+}
+
+template <typename ELEM >
+inline void QueueBank<ELEM>::enqueue(uint32_t queue_index, ELEM *e) {
+	cq_enqueue(m_queues[queue_index], (void *)e);
+}
+
+template <typename ELEM >
+inline ELEM *QueueBank<ELEM>::dequeue(uint32_t queue_index)
+{
+	return (ELEM *)cq_dequeue(m_queues[queue_index]);
+}
+
+template <typename ELEM >
+inline int QueueBank<ELEM>::empty(uint32_t queue_index)
+{
+	return cq_empty(m_queues[queue_index]);
+}
+
+template <typename ELEM >
+inline uint32_t QueueBank<ELEM>:: occupancy(uint32_t queue_index)
+{
+	return cq_occupancy(m_queues[queue_index]);
+}
+
+template <typename ELEM >
+inline int QueueBank<ELEM>::full(uint32_t queue_index)
+{
+	return cq_full(m_queues[queue_index]);
+}
 
 #endif /* QUEUE_BANK_H_ */

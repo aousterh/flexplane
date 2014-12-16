@@ -16,6 +16,7 @@
 #include "admission_core_common.h"
 #include "admission_log.h"
 #include "../emulation/admissible_log.h"
+#include "../emulation/admissible_log_impl.h"
 #include "../grant-accept/partitioning.h"
 #include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/algo_config.h"

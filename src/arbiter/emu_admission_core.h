@@ -20,12 +20,20 @@
 /* emu state */
 extern struct emu_state g_emu_state;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void emu_admission_init_global(struct rte_ring *q_admitted_out);
 
 /**
  * Runs the admission core
  */
 int exec_emu_admission_core(void *void_cmd_p);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* EMU_ADMISSION_CORE_H */

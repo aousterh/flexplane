@@ -17,13 +17,11 @@ SRCS-y := main.c \
           ../graph-algo/admissible_traffic.c \
           ../graph-algo/path_selection.c \
           ../graph-algo/euler_split.c \
-          emu_admission_core.c \
-          $(EMU_DIR)/admissible_log.c \
-          $(EMU_DIR)/drop_tail.c \
-          $(EMU_DIR)/emulation.c \
-          $(EMU_DIR)/endpoint.c \
-          $(EMU_DIR)/packet.c \
-          $(EMU_DIR)/router.c \
+          emu_admission_core.cc \
+          $(EMU_DIR)/drop_tail.cc \
+          $(EMU_DIR)/emulation.cc \
+          $(EMU_DIR)/endpoint_group.cc \
+          $(EMU_DIR)/router.cc \
 
 #          pim_admission_core.c \
 #          ../grant-accept/pim.c
@@ -46,5 +44,9 @@ CFLAGS += -march=core2
 #CFLAGS += -DPIPELINED_ALGO
 CFLAGS += -DEMULATION_ALGO
 CFLAGS += $(CMD_LINE_CFLAGS)
+
+# linker settings to work with C++
+LD = g++
+LDFLAGS += -lstdc++
 
 include $(RTE_SDK)/mk/rte.extapp.mk

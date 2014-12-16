@@ -49,15 +49,13 @@ public:
 };
 
 /**
- * A CompositeRouter is made of a Classifier, a QueueManager, N queues, and
- *   M Schedulers (one scheduler for each outgoing port).
+ * A CompositeRouter is made of a Classifier, a QueueManager and a Scheduler.
  */
 template < class CLA, class QM, class SCH >
 class CompositeRouter : public Router {
 public:
-	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_queues,
-			uint32_t n_ports);
-
+	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint16_t id,
+			struct fp_ring *q_ingress);
 	virtual ~CompositeRouter();
 
 	virtual void push(struct emu_packet *packet);
@@ -67,15 +65,14 @@ private:
 	CLA *m_cla;
 	QM *m_qm;
 	SCH *m_sch;
-	uint32_t m_n_queues;
-	uint32_t m_n_port;
 };
 
 /** implementation */
 template < class CLA, class QM, class SCH >
 CompositeRouter<CLA,QM,SCH>::CompositeRouter(
-		CLA *cla, QM *qm, SCH *sch, uint32_t n_queues, uint32_t n_ports)
-	: m_cla(cla), m_qm(qm), m_sch(sch), m_n_queues(n_queues), m_n_port(n_ports)
+		CLA *cla, QM *qm, SCH *sch, uint16_t id, struct fp_ring *q_ingress)
+	: Router(id, q_ingress),
+	  m_cla(cla), m_qm(qm), m_sch(sch)
 {
 	/* static check: make sure template parameters are of the correct classes */
 	(void)static_cast<Classifier*>((CLA*)0);

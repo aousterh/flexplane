@@ -65,11 +65,6 @@ void drop_demand(uint16_t src, uint16_t dst, uint16_t flow) {
 }
 
 static inline
-uint16_t get_output_queue(struct emu_packet *p) {
-	return p->dst;
-}
-
-static inline
 void *packet_priv(struct emu_packet *packet) {
 	return (char *) packet + EMU_ALIGN(sizeof(struct emu_packet));
 }

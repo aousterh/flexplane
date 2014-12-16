@@ -55,14 +55,6 @@ void free_packet(struct emu_packet *packet);
 static inline
 void drop_demand(uint16_t src, uint16_t dst, uint16_t flow);
 
-/**
- * Return the queue that packet p should be sent out of at router rtr
- * (static routing).
- */
-static inline
-uint16_t get_output_queue(struct emu_packet *p);
-
-
 /*
  * Logging functions that emulation algorithms may call.
  */

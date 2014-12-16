@@ -206,11 +206,10 @@ struct admissible_state *reset_state(struct admissible_state *state,
 		struct fp_mempool **admitted_traffic_mempool) {
 #if defined(EMULATION_ALGO)
 	/* emulation, cleanup and create a new status */
-	Emulation *emu_state = (Emulation *) state;
-	delete emu_state;
-    state = setup_state(oversubscribed, inter_rack_capacity,
-    		out_of_boundary_capacity, num_nodes, q_bin, bin_mempool,
-    		q_admitted_out, admitted_traffic_mempool);
+	emu_cleanup((struct emu_state *) state);
+	state = setup_state(oversubscribed, inter_rack_capacity,
+			out_of_boundary_capacity, num_nodes, q_bin, bin_mempool,
+			q_admitted_out, admitted_traffic_mempool);
 #else
 	/* pipelined or parallel algo */
     reset_admissible_state(state, oversubscribed, inter_rack_capacity,

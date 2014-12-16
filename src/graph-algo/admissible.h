@@ -163,6 +163,7 @@ void handle_spent_demands(struct admissible_state *state)
 #include "../emulation/admitted.h"
 #include "../emulation/api.h"
 #include "../emulation/emulation.h"
+#include "../emulation/emulation_impl.h"
 #include "../emulation/packet.h"
 
 #define SMALL_BIN_SIZE				0
@@ -173,22 +174,25 @@ void handle_spent_demands(struct admissible_state *state)
 #define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
 #define MAX_ADMITTED_PER_TIMESLOT	(EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
 
-/* functions implemented in C++, called by C (arbiter) and C++ (benchmark) */
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+static inline
 void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
-		uint32_t amount);
+		uint32_t amount) {
+	uint16_t dst_node;
+	uint8_t flow;
+	struct emu_state *emu_state = (struct emu_state *) state;
 
-void reset_sender(struct admissible_state *state, uint16_t src);
-
-#ifdef __cplusplus
+	flow = dst & FLOW_MASK;
+	dst_node = dst >> FLOW_SHIFT;
+	emu_add_backlog(emu_state, src, dst_node, flow, amount);
 }
-#endif
 
+static inline
+void reset_sender(struct admissible_state *state, uint16_t src)
+{
+	struct emu_state *emu_state = (struct emu_state *) state;
+	emu_reset_sender(emu_state, src);
+}
 
-/* functions implemented purely in C, called by C and C++ */
 static inline
 void flush_backlog(struct admissible_state *state) {
 	/* unused */
@@ -240,15 +244,13 @@ uint32_t bin_num_bytes(uint32_t param)
     return sizeof(struct emu_packet);
 }
 
-
-/* functions called only from C++ (benchmark_graph_algo) */
-#ifdef __cplusplus
+/* functions called only in benchmark_graph_algo (not arbiter) */
 
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
 		uint64_t b, uint32_t c, uint32_t d) {
-	Emulation *emu_state = (Emulation *) state;
-	emu_state->emulate();
+	struct emu_state *emu_state = (struct emu_state *) state;
+	emu_emulate(emu_state);
 }
 
 static inline
@@ -258,14 +260,12 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_mempool *packet_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
 		struct fp_ring **packet_queues, struct fp_ring **h, void *emu_args) {
-	Emulation *state;
+	struct emu_state *emu_state = (struct emu_state *) malloc(sizeof(struct emu_state));
 
-	state = new Emulation(admitted_traffic_mempool, q_admitted_out,
+	emu_init_state(emu_state, admitted_traffic_mempool, q_admitted_out,
 			packet_mempool, packet_queues, emu_args);
-	return (struct admissible_state *) state;
+	return (struct admissible_state *) emu_state;
 }
-
-#endif
 
 #endif
 

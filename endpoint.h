@@ -28,7 +28,6 @@ public:
 	virtual void new_packet(struct emu_packet *packet) {};
 	virtual void push(struct emu_packet *packet) {};
 	virtual void pull(struct emu_packet **packet) {};
-private:
 	uint16_t id;
 };
 

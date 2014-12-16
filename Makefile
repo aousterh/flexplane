@@ -19,13 +19,9 @@ LDFLAGS = -lm
 	$(CC) $(CCFLAGS) -c $<
 
 # Dependency rules for non-file targets
-all: emulation benchmark
+all: emulation
 clean:
-	rm -f emulation benchmark *.o *~
-
-# compile CC file for use in benchmark
-benchmark: admissible.cc
-	$(CC) $(CCFLAGS) -c $<
+	rm -f emulation *.o *~
 
 # Dependency rules for file targets
 emulation: emulation_test.o emulation.o endpoint_group.o router.o packet.o drop_tail.o

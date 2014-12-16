@@ -12,11 +12,11 @@
 
 #include "admitted.h"
 #include "api.h"
-#include "emulation.h"
 #include "endpoint.h"
 #include "packet.h"
 #include "router.h"
 #include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 
 #include <assert.h>
 

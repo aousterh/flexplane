@@ -59,6 +59,18 @@ public:
 	inline ELEM *dequeue(uint32_t port, uint32_t queue);
 
 	/**
+	 * @return a pointer to a bit mask with 1 for ports with packets, 0 o/w.
+	 * @important user must not modify the bitmask contents
+	 */
+	inline uint64_t *non_empty_port_mask();
+
+	/**
+	 * @param port: the port for which to get the empty queue mask
+	 * @return a bit mask, with 1 for queues with packets
+	 */
+	inline uint64_t non_empty_queue_mask(uint32_t port);
+
+	/**
 	 * @returns 1 if queue is empty, 0 otherwise
 	 */
 	inline int empty(uint32_t port, uint32_t queue);
@@ -81,13 +93,10 @@ private:
 
 	std::vector<struct circular_queue *> m_queues;
 
-	/** A mask to extract the lowest @m_log_n_queues bits */
-	uint32_t m_queue_mask;
-
 	/** a mask with 1 for non-empty ports, 0 for empty ports */
 	uint64_t *m_non_empty_ports;
 
-	/** a mask with 1 for non-empty ports, 0 for empty ports */
+	/** a mask with 1 for non-empty queues, 0 for empty queues */
 	uint64_t *m_non_empty_queues;
 };
 
@@ -103,6 +112,11 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 {
 	uint32_t i;
 	uint32_t size_bytes = cq_memsize(queue_max_size);
+
+	if (n_queues > 64)
+		throw std::runtime_error("QueueBank: n_queues must be <= 64");
+	if (queue_max_size & (queue_max_size - 1))
+		throw std::runtime_error("queue_max_size must be a power of 2");
 
 	m_queues.reserve(n_ports * n_queues);
 
@@ -123,6 +137,9 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 	if (m_non_empty_ports == NULL)
 		throw std::runtime_error("could not allocate m_non_empty_ports");
 
+	m_non_empty_queues = (uint64_t *)calloc(1, sizeof(uint64_t) * n_ports);
+	if (m_non_empty_queues == NULL)
+		throw std::runtime_error("could not allocate m_non_empty_queues");
 }
 
 template <typename ELEM >
@@ -130,6 +147,9 @@ QueueBank<ELEM>::~QueueBank()
 {
 	for (uint32_t i = 0; i < (m_n_ports << m_n_queues); i++)
 		free(m_queues[i]);
+
+	free(m_non_empty_ports);
+	free(m_non_empty_queues);
 }
 
 template <typename ELEM >
@@ -155,9 +175,31 @@ template <typename ELEM >
 inline ELEM *QueueBank<ELEM>::dequeue(uint32_t port, uint32_t queue)
 {
 	uint32_t flat = flat_index(port, queue);
+	ELEM *res;
 
-	return (ELEM *)cq_dequeue(m_queues[flat]);
+	res = (ELEM *)cq_dequeue(m_queues[flat]);
+
+	uint64_t queue_empty = cq_empty(m_queues[flat]) & 0x1;
+	m_non_empty_queues[port] ^= (queue_empty << queue);
+
+	uint64_t port_empty = (m_non_empty_queues[port] == 0) & 0x1;
+	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
+
+	return res;
 }
+
+template <typename ELEM >
+inline uint64_t *QueueBank<ELEM>::non_empty_port_mask()
+{
+	return m_non_empty_ports;
+}
+
+template <typename ELEM >
+inline uint64_t QueueBank<ELEM>::non_empty_queue_mask(uint32_t port)
+{
+	return m_non_empty_queues[port];
+}
+
 
 template <typename ELEM >
 inline int QueueBank<ELEM>::empty(uint32_t port, uint32_t queue)

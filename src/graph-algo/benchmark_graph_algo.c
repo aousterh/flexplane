@@ -231,6 +231,11 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    if (FLOW_SHIFT != 0) {
+	    printf("%s does not currently support non-zero FLOW_SHIFT\n", argv[0]);
+	    return -1;
+    }
+
     int type;
     sscanf(argv[1], "%d", &type);
     enum benchmark_type benchmark_type;

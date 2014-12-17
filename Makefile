@@ -6,6 +6,7 @@ CCFLAGS += -DNDEBUG
 CCFLAGS += -O3
 #CCFLAGS += -O1
 CCFLAGS += -DNO_DPDK
+#CCFLAGS += -DEMU_NO_BATCH_CALLS
 #CCFLAGS += -debug inline-debug-info
 CCFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
 CCFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter

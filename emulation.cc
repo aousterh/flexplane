@@ -104,16 +104,7 @@ void emu_emulate(struct emu_state *state) {
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		router = state->routers[i];
 
-#ifdef EMU_BATCH_CALLS
-		struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
-
-		uint32_t n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
-
-		for (uint32_t j = 0; j < n_pkts; j++) {
-			epg = state->endpoint_groups[0];
-			epg->enqueue_packet_from_network(pkt_ptrs[j]);
-		}
-#else
+#ifdef EMU_NO_BATCH_CALLS
 		/* for each output, try to fetch a packet and send it */
 		for (uint32_t j = 0; j < EMU_ROUTER_NUM_PORTS; j++) {
 			router->pull(j, &packet);
@@ -125,6 +116,15 @@ void emu_emulate(struct emu_state *state) {
 			// TODO: handle multiple endpoint queues
 			epg = state->endpoint_groups[0];
 			epg->enqueue_packet_from_network(packet);
+		}
+#else
+		struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
+
+		uint32_t n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
+
+		for (uint32_t j = 0; j < n_pkts; j++) {
+			epg = state->endpoint_groups[0];
+			epg->enqueue_packet_from_network(pkt_ptrs[j]);
 		}
 #endif
 

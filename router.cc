@@ -39,7 +39,11 @@ void Router::push_batch() {
 	/* pass all incoming packets to the router */
 	num_packets = fp_ring_dequeue_burst(this->q_ingress,
 			(void **) &packets, ROUTER_MAX_BURST);
+#ifdef EMU_NO_BATCH_CALLS
 	for (i = 0; i < num_packets; i++) {
 		this->push(packets[i]);
 	}
+#else
+	this->push_batch(&packets[0], num_packets);
+#endif
 }

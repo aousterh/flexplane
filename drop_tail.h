@@ -29,13 +29,14 @@ struct drop_tail_args {
 
 class DropTailClassifier : public Classifier {
 public:
-	inline uint32_t classify(struct emu_packet *pkt);
+	inline void classify(struct emu_packet *pkt, uint32_t *port,
+			uint32_t *queue);
 };
 
 class DropTailQueueManager : public QueueManager {
 public:
 	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity);
-	inline void enqueue(struct emu_packet *pkt, uint32_t queue_index);
+	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
 	/** the QueueBank where packets are stored */
@@ -51,10 +52,14 @@ public:
 	DropTailScheduler(PacketQueueBank *bank) : m_bank(bank) {}
 
 	inline struct emu_packet *schedule(uint32_t output_port) {
-		if (m_bank->empty(output_port))
-			return NULL;
+		if (unlikely(m_bank->empty(output_port, 0)))
+			throw std::runtime_error("called schedule on an empty port");
 		else
-			return m_bank->dequeue(output_port);
+			return m_bank->dequeue(output_port, 0);
+	}
+
+	uint64_t *non_empty_port_mask() {
+		return m_bank->non_empty_port_mask();
 	}
 
 private:

@@ -12,8 +12,11 @@
 #define DROP_TAIL_PORT_CAPACITY 128
 #define DROP_TAIL_MAX_CAPACITY 256
 
-inline uint32_t DropTailClassifier::classify(struct emu_packet *pkt) {
-	return pkt->dst;
+inline void DropTailClassifier::classify(struct emu_packet *pkt,
+		uint32_t *port, uint32_t *queue)
+{
+	*port = pkt->dst;
+	*queue = 0;
 }
 
 DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
@@ -25,14 +28,14 @@ DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 }
 
 inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
-		uint32_t queue_index)
+		uint32_t port, uint32_t queue)
 {
-	if (m_bank->occupancy(queue_index) >= m_q_capacity) {
+	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */
 		adm_log_emu_router_dropped_packet(&g_state->stat);
 		drop_packet(pkt);
 	} else {
-		m_bank->enqueue(queue_index, pkt);
+		m_bank->enqueue(port, queue, pkt);
 	}
 }
 
@@ -42,7 +45,7 @@ DropTailRouter::DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
 	  m_cla(),
 	  m_qm(&m_bank, ((args == NULL) ? DROP_TAIL_PORT_CAPACITY : args->port_capacity)),
 	  m_sch(&m_bank),
-	  DropTailRouterBase(&m_cla, &m_qm, &m_sch, id, q_ingress)
+	  DropTailRouterBase(&m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS, id, q_ingress)
 {}
 
 DropTailRouter::~DropTailRouter() {
@@ -51,8 +54,8 @@ DropTailRouter::~DropTailRouter() {
 
 	/* free all queued packets */
 	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		while (!m_bank.empty(i))
-			free_packet(m_bank.dequeue(i));
+		while (!m_bank.empty(i, 0))
+			free_packet(m_bank.dequeue(i, 0));
 	}
 }
 

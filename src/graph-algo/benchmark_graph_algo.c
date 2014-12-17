@@ -26,8 +26,8 @@
 #define NUM_RACKS_P 4
 #define NUM_NODES_P 1024
 #define PROCESSOR_SPEED 2.8
-#define ADMITTED_TRAFFIC_MEMPOOL_SIZE	(51*1000)
-#define ADMITTED_OUT_RING_LOG_SIZE		16
+#define ADMITTED_TRAFFIC_MEMPOOL_SIZE	(201*1000)
+#define ADMITTED_OUT_RING_LOG_SIZE		18
 #define READY_PARTITIONS_Q_SIZE                 2
 #define ROUTER_OUTPUT_PORT_CAPACITY             512
 
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 
     // keep both durations an even number of batches so that bin pointers return to queue_0
     uint32_t warm_up_duration = ((10000 + 127) / 128) * 128;
-    uint32_t duration = warm_up_duration + ((50000 + 127) / 128) * 128;
+    uint32_t duration = warm_up_duration + ((200000 + 127) / 128) * 128;
     double mean = 10; // Mean request size and inter-arrival time
 
     /* sanity checks */

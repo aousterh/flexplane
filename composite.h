@@ -135,7 +135,7 @@ uint32_t CompositeRouter<CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
 	if (unlikely(n_pkts < m_n_ports))
 		throw std::runtime_error("pull_batch should be passed space for at least n_ports packets");
 
-	for (uint32_t i = 0; i < (m_n_ports >> 6); i++) {
+	for (uint32_t i = 0; i < ((m_n_ports + 63) >> 6); i++) {
 		uint64_t mask = non_empty_port_mask[i];
 		uint64_t port;
 		while (mask) {

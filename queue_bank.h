@@ -145,7 +145,7 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 template <typename ELEM >
 QueueBank<ELEM>::~QueueBank()
 {
-	for (uint32_t i = 0; i < (m_n_ports << m_n_queues); i++)
+	for (uint32_t i = 0; i < (m_n_ports * m_n_queues); i++)
 		free(m_queues[i]);
 
 	free(m_non_empty_ports);
@@ -154,7 +154,7 @@ QueueBank<ELEM>::~QueueBank()
 
 template <typename ELEM >
 inline uint32_t QueueBank<ELEM>::flat_index(uint32_t port, uint32_t queue) {
-	return (port << m_n_queues) + queue;
+	return (port * m_n_queues) + queue;
 }
 
 template <typename ELEM >

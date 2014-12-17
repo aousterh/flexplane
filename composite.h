@@ -9,6 +9,7 @@
 #define COMPOSITE_H_
 
 #include "packet.h"
+#include <stdio.h>
 
 /**
  * Classifier classes decide for a given packet, which queue they should
@@ -46,6 +47,14 @@ public:
 	 * @return the packet to transmit, or NULL if no packets should be transmitted
 	 */
 	struct emu_packet *schedule(uint32_t output_port);
+
+	/**
+	 * schedules a batch of packets
+	 * @param pkts: [out] an array to store scheduled packets
+	 * @param n_pkts: the maximum number of packets to schedule
+	 *
+	 */
+	uint32_t schedule_batch(struct emu_packet **pkts, uint32_t n_pkts);
 };
 
 /**
@@ -60,6 +69,9 @@ public:
 
 	virtual void push(struct emu_packet *packet);
 	virtual void pull(uint16_t output, struct emu_packet **packet);
+
+	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
+	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 
 private:
 	CLA *m_cla;
@@ -95,6 +107,23 @@ void CompositeRouter<CLA,QM,SCH>::pull(uint16_t output,
 		struct emu_packet **packet)
 {
 	*packet = m_sch->schedule(output);
+}
+
+template < class CLA, class QM, class SCH >
+void CompositeRouter<CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
+		uint32_t n_pkts)
+{
+	for (uint32_t i = 0; i < n_pkts; i++) {
+		int32_t queue_index = m_cla->classify(pkts[i]);
+		m_qm->enqueue(pkts[i], queue_index);
+	}
+}
+
+template < class CLA, class QM, class SCH >
+uint32_t CompositeRouter<CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
+		uint32_t n_pkts)
+{
+	return m_sch->schedule_batch(pkts, n_pkts);
 }
 
 #endif /* COMPOSITE_H_ */

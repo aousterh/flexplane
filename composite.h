@@ -10,6 +10,8 @@
 
 #include "packet.h"
 #include <stdio.h>
+#include <stdexcept>
+#include "../graph-algo/platform.h"
 
 /**
  * Classifier classes decide for a given packet, which queue they should
@@ -19,9 +21,10 @@ class Classifier {
 public:
 	/**
 	 * @param pkt: packet to classify
-	 * @return index of queue into which packet should go
+	 * @param port: [out] port where packet should leave
+	 * @param queue: [out] index of per-port queue to enqueue packet
 	 */
-	uint32_t classify(struct emu_packet *pkt);
+	void classify(struct emu_packet *pkt, uint32_t *port, uint32_t *queue);
 };
 
 /**
@@ -33,9 +36,10 @@ class QueueManager {
 public:
 	/**
 	 * @param pkt: packet to enqueue
-	 * @param queue_index: the index of the queue to use
+	 * @param port: port to enqueue packet
+	 * @param queue: index of per-port queue where packet should be enqueued
 	 */
-	void enqueue(struct emu_packet *pkt, uint32_t queue_index);
+	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 };
 
 /**
@@ -49,12 +53,9 @@ public:
 	struct emu_packet *schedule(uint32_t output_port);
 
 	/**
-	 * schedules a batch of packets
-	 * @param pkts: [out] an array to store scheduled packets
-	 * @param n_pkts: the maximum number of packets to schedule
-	 *
+	 * @return a pointer to a bit mask with 1 for ports with packets, 0 o/w.
 	 */
-	uint32_t schedule_batch(struct emu_packet **pkts, uint32_t n_pkts);
+	uint64_t *non_empty_port_mask();
 };
 
 /**
@@ -63,12 +64,12 @@ public:
 template < class CLA, class QM, class SCH >
 class CompositeRouter : public Router {
 public:
-	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint16_t id,
+	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id,
 			struct fp_ring *q_ingress);
 	virtual ~CompositeRouter();
 
 	virtual void push(struct emu_packet *packet);
-	virtual void pull(uint16_t output, struct emu_packet **packet);
+	virtual void pull(uint16_t port, struct emu_packet **packet);
 
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
@@ -77,14 +78,17 @@ private:
 	CLA *m_cla;
 	QM *m_qm;
 	SCH *m_sch;
+	uint32_t m_n_ports;
 };
 
 /** implementation */
 template < class CLA, class QM, class SCH >
 CompositeRouter<CLA,QM,SCH>::CompositeRouter(
-		CLA *cla, QM *qm, SCH *sch, uint16_t id, struct fp_ring *q_ingress)
+		CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id,
+		struct fp_ring *q_ingress)
 	: Router(id, q_ingress),
-	  m_cla(cla), m_qm(qm), m_sch(sch)
+	  m_cla(cla), m_qm(qm), m_sch(sch),
+	  m_n_ports(n_ports)
 {
 	/* static check: make sure template parameters are of the correct classes */
 	(void)static_cast<Classifier*>((CLA*)0);
@@ -98,15 +102,16 @@ CompositeRouter<CLA,QM,SCH>::~CompositeRouter() {}
 template < class CLA, class QM, class SCH >
 void CompositeRouter<CLA,QM,SCH>::push(struct emu_packet *packet)
 {
-	int32_t queue_index = m_cla->classify(packet);
-	m_qm->enqueue(packet, queue_index);
+	uint32_t port, queue;
+	m_cla->classify(packet, &port, &queue);
+	m_qm->enqueue(packet, port, queue);
 }
 
 template < class CLA, class QM, class SCH >
-void CompositeRouter<CLA,QM,SCH>::pull(uint16_t output,
+void CompositeRouter<CLA,QM,SCH>::pull(uint16_t port,
 		struct emu_packet **packet)
 {
-	*packet = m_sch->schedule(output);
+	*packet = m_sch->schedule(port);
 }
 
 template < class CLA, class QM, class SCH >
@@ -114,8 +119,9 @@ void CompositeRouter<CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
 		uint32_t n_pkts)
 {
 	for (uint32_t i = 0; i < n_pkts; i++) {
-		int32_t queue_index = m_cla->classify(pkts[i]);
-		m_qm->enqueue(pkts[i], queue_index);
+		uint32_t port, queue;
+		m_cla->classify(pkts[i], &port, &queue);
+		m_qm->enqueue(pkts[i], port, queue);
 	}
 }
 
@@ -123,7 +129,27 @@ template < class CLA, class QM, class SCH >
 uint32_t CompositeRouter<CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
 		uint32_t n_pkts)
 {
-	return m_sch->schedule_batch(pkts, n_pkts);
+	uint64_t *non_empty_port_mask = m_sch->non_empty_port_mask();
+	uint32_t res = 0;
+
+	if (unlikely(n_pkts < m_n_ports))
+		throw std::runtime_error("pull_batch should be passed space for at least n_ports packets");
+
+	for (uint32_t i = 0; i < (m_n_ports >> 6); i++) {
+		uint64_t mask = non_empty_port_mask[i];
+		uint64_t port;
+		while (mask) {
+			/* get the index of the lsb that is set */
+			asm("bsfq %1,%0" : "=r"(port) : "r"(mask));
+			/* turn off the set bit in the mask */
+			mask &= (mask - 1);
+			port += 64 * i;
+
+			pkts[res++] = m_sch->schedule(port);
+		}
+	}
+
+	return res;
 }
 
 #endif /* COMPOSITE_H_ */

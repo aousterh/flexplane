@@ -24,7 +24,7 @@ struct emu_packet;
 class Router {
 public:
 	Router(uint16_t id, struct fp_ring *q_ingress);
-	~Router();
+	virtual ~Router();
 	virtual void push_batch();
 	// TODO: make these bulk functions
 	virtual void push(struct emu_packet *packet) = 0;

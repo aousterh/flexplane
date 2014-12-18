@@ -1,23 +1,22 @@
 # Macros
-CC = g++
-#CC = gcc
-CCFLAGS = -g
-CCFLAGS += -DNDEBUG
-CCFLAGS += -O3
-#CCFLAGS += -O1
-CCFLAGS += -DNO_DPDK
-#CCFLAGS += -DEMU_NO_BATCH_CALLS
-#CCFLAGS += -debug inline-debug-info
-CCFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
-CCFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
-CCFLAGS += -I.
-CCFLAGS += -DEMULATION_ALGO
+CXX = g++
+CXXFLAGS = -g
+CXXFLAGS += -DNDEBUG
+CXXFLAGS += -O3
+#CXXFLAGS += -O1
+CXXFLAGS += -DNO_DPDK
+#CXXFLAGS += -DEMU_NO_BATCH_CALLS
+#CXXFLAGS += -debug inline-debug-info
+CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
+CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
+CXXFLAGS += -I.
+CXXFLAGS += -DEMULATION_ALGO
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 
 # Pattern rule
 %.o: %.cc
-	$(CC) $(CCFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) -c $<
 
 # Dependency rules for non-file targets
 all: emulation
@@ -25,5 +24,5 @@ clean:
 	rm -f emulation *.o *~
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o endpoint_group.o router.o drop_tail.o
-	$(CC) $< emulation.o endpoint_group.o router.o drop_tail.o -o $@ $(LDFLAGS)
+emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o
+	$(CXX) $< emulation.o endpoint_group.o drop_tail.o -o $@ $(LDFLAGS)

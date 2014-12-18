@@ -16,7 +16,11 @@
 
 #include <assert.h>
 
+#define ROUTER_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
+
 emu_state *g_state; /* global emulation state */
+
+static inline void free_packet_ring(struct fp_ring *packet_ring);
 
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
@@ -41,9 +45,10 @@ void emu_init_state(struct emu_state *state,
 		// TODO: use fp_malloc?
 		q_to_router = packet_queues[pq++];
 		q_to_endpoints = packet_queues[pq++];
-		state->routers[i] = new DropTailRouter(i, q_to_router,
+		state->routers[i] = new DropTailRouter(i,
 				(struct drop_tail_args *) args);
 		assert(state->routers[i] != NULL);
+		state->q_router_ingress[i] = q_to_router;
 	}
 
 	/* initialize all the endpoints in one endpoint group */
@@ -73,6 +78,9 @@ void emu_cleanup(struct emu_state *state) {
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		// TODO: call fp_free?
 		delete state->routers[i];
+
+		/* free ingress queue for this router (and all its packets) */
+		free_packet_ring(state->q_router_ingress[i]);
 	}
 
 	/* return admitted struct to mempool */
@@ -88,10 +96,59 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
+/*
+ * Emulate a timeslot at a single router with index @index
+ */
+static inline void emu_emulate_router(struct emu_state *state,
+		uint32_t index) {
+	Router *router;
+	EndpointGroup *epg;
+	uint16_t i, num_packets;
+
+	/* get the corresponding router */
+	router = state->routers[index];
+
+#ifdef EMU_NO_BATCH_CALLS
+	/* for each output, try to fetch a packet and send it */
+	for (uint32_t j = 0; j < EMU_ROUTER_NUM_PORTS; j++) {
+		router->pull(j, &packet);
+
+		if (packet == NULL)
+			continue;
+
+		// TODO: handle multiple endpoint queues
+		epg = state->endpoint_groups[0];
+		epg->enqueue_packet_from_network(packet);
+	}
+#else
+	struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
+
+	uint32_t n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
+
+	for (uint32_t j = 0; j < n_pkts; j++) {
+		epg = state->endpoint_groups[0];
+		epg->enqueue_packet_from_network(pkt_ptrs[j]);
+	}
+#endif
+
+	/* push a batch of packets from the network into the router */
+	struct emu_packet *packets[ROUTER_MAX_BURST];
+
+	/* pass all incoming packets to the router */
+	num_packets = fp_ring_dequeue_burst(state->q_router_ingress[index],
+			(void **) &packets, ROUTER_MAX_BURST);
+#ifdef EMU_NO_BATCH_CALLS
+	for (i = 0; i < num_packets; i++) {
+		router->push(packets[i]);
+	}
+#else
+	router->push_batch(&packets[0], num_packets);
+#endif
+}
+
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
 	EndpointGroup *epg;
-	Router *router;
 	struct emu_packet *packet;
 
 	/* handle push at each endpoint group */
@@ -102,34 +159,7 @@ void emu_emulate(struct emu_state *state) {
 
 	/* emulate one timeslot at each router */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		router = state->routers[i];
-
-#ifdef EMU_NO_BATCH_CALLS
-		/* for each output, try to fetch a packet and send it */
-		for (uint32_t j = 0; j < EMU_ROUTER_NUM_PORTS; j++) {
-			router->pull(j, &packet);
-
-			if (packet == NULL)
-				continue;
-
-			// TODO: use bulk enqueue?
-			// TODO: handle multiple endpoint queues
-			epg = state->endpoint_groups[0];
-			epg->enqueue_packet_from_network(packet);
-		}
-#else
-		struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
-
-		uint32_t n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
-
-		for (uint32_t j = 0; j < n_pkts; j++) {
-			epg = state->endpoint_groups[0];
-			epg->enqueue_packet_from_network(pkt_ptrs[j]);
-		}
-#endif
-
-		/* push a batch of packets from the network into the router */
-		router->push_batch();
+		emu_emulate_router(state, i);
 	}
 
 	/* handle pull/new packets at each endpoint group */
@@ -154,4 +184,14 @@ void emu_reset_sender(struct emu_state *state, uint16_t src) {
 
 	/* TODO: clear the packets in the routers too? */
 	state->endpoint_groups[0]->reset(src);
+}
+
+/* frees all the packets in an fp_ring, and frees the ring itself */
+static inline void free_packet_ring(struct fp_ring *packet_ring) {
+	struct emu_packet *packet;
+
+	while (fp_ring_dequeue(packet_ring, (void **) &packet) == 0) {
+		free_packet(packet);
+	}
+	fp_free(packet_ring);
 }

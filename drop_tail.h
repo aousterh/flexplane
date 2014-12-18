@@ -57,7 +57,7 @@ public:
 			return m_bank->dequeue(output_port, 0);
 	}
 
-	uint64_t *non_empty_port_mask() {
+	inline uint64_t *non_empty_port_mask() {
 		return m_bank->non_empty_port_mask();
 	}
 
@@ -75,8 +75,7 @@ typedef CompositeRouter<TorClassifier, DropTailQueueManager, DropTailScheduler>
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-	DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
-			struct drop_tail_args *args);
+	DropTailRouter(uint16_t id, struct drop_tail_args *args);
 	virtual ~DropTailRouter();
 
 private:
@@ -112,7 +111,7 @@ public:
 			struct fp_ring *q_new_packets, struct fp_ring *q_from_network,
 			struct fp_ring *q_to_router) : EndpointGroup(num_endpoints,
 					q_new_packets, q_from_network, q_to_router) {}
-	~DropTailEndpointGroup();
+	~DropTailEndpointGroup() {};
 	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args) {
 		return new DropTailEndpoint(id, args);
 	}

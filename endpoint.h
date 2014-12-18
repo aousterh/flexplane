@@ -23,7 +23,7 @@ struct emu_packet;
 class Endpoint {
 public:
 	Endpoint(uint16_t id) : id(id) {};
-	~Endpoint() {};
+	virtual ~Endpoint() {};
 	virtual void reset() {};
 	virtual void new_packet(struct emu_packet *packet) {};
 	virtual void push(struct emu_packet *packet) {};

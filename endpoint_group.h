@@ -31,7 +31,7 @@ class EndpointGroup {
 public:
 	EndpointGroup(uint16_t num_endpoints, struct fp_ring *q_new_packets,
 			struct fp_ring *q_from_network, struct fp_ring *q_to_router);
-	~EndpointGroup();
+	virtual ~EndpointGroup();
 	virtual void init(uint16_t start_id, struct drop_tail_args *args);
 	virtual void reset(uint16_t id);
 	// TODO: make these bulk functions

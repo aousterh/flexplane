@@ -65,7 +65,7 @@ uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
 		ep = endpoints[i];
 		ep->pull(&pkts[count]);
 
-		if (pkts[count] != NULL)  // TODO: remove conditional
+		if (pkts[count] != NULL)
 			count++;
 	}
 	assert(count <= num_endpoints);

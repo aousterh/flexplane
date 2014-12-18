@@ -94,7 +94,6 @@ public:
 	DropTailEndpoint(uint16_t id, struct drop_tail_args *args);
 	~DropTailEndpoint();
 	virtual void reset();
-	// TODO: make these bulk functions
 	virtual void new_packet(struct emu_packet *packet);
 	virtual void push(struct emu_packet *packet);
 	virtual void pull(struct emu_packet **packet);

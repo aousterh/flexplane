@@ -19,13 +19,11 @@ struct emu_packet;
  * @push_batch: enqueue a batch of several packets to this router
  * @pull_batch: dequeue a batch of several packets from this router
  * @id: the unique id of this router
- * @q_ingress: queue of incoming packets
  */
 class Router {
 public:
 	Router(uint16_t id) : id(id) {};
 	virtual ~Router() {};
-	// TODO: make these bulk functions
 	virtual void push(struct emu_packet *packet) = 0;
 	virtual void pull(uint16_t output, struct emu_packet **packet) = 0;
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;

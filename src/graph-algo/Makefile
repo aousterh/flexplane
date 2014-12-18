@@ -40,7 +40,7 @@ test_euler_split: test_euler_split.o euler_split.o
 #benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o ../grant-accept/pim_admissible_traffic.o ../grant-accept/pim.o
 #	$(CC) $< admissible_traffic.o path_selection.o euler_split.o ../grant-accept/pim_admissible_traffic.o ../grant-accept/pim.o -o $@ $(LDFLAGS)
 
-benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o emulation.emu.o endpoint_group.emu.o router.emu.o drop_tail.emu.o
+benchmark_graph_algo: benchmark_graph_algo.o admissible_traffic.o path_selection.o euler_split.o emulation.emu.o endpoint_group.emu.o drop_tail.emu.o
 	cd $(EMU_DIR); make all
 	$(CC) $^ -o $@ $(LDFLAGS)
 

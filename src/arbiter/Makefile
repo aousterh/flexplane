@@ -21,7 +21,6 @@ SRCS-y := main.c \
           $(EMU_DIR)/drop_tail.cc \
           $(EMU_DIR)/emulation.cc \
           $(EMU_DIR)/endpoint_group.cc \
-          $(EMU_DIR)/router.cc \
 
 #          pim_admission_core.c \
 #          ../grant-accept/pim.c

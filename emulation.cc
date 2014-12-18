@@ -103,35 +103,27 @@ void emu_cleanup(struct emu_state *state) {
 static inline void emu_emulate_router(struct emu_state *state,
 		uint32_t index) {
 	Router *router;
-	uint16_t i, num_packets;
-	struct emu_packet *packet;
+	uint32_t i, j, n_pkts;
 
 	/* get the corresponding router */
 	router = state->routers[index];
 
+	struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
+	/* fetch packets to send from router */
 #ifdef EMU_NO_BATCH_CALLS
-	/* for each output, try to fetch a packet and send it */
+	n_pkts = 0;
 	for (uint32_t i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		router->pull(i, &packet);
+		router->pull(i, &pkt_ptrs[n_pkts]);
 
-		if (packet == NULL)
-			continue;
-
-		// TODO: handle multiple endpoint queues
-		if (fp_ring_enqueue(state->q_epg_ingress[0], packet) == -ENOBUFS) {
-			adm_log_emu_send_packet_failed(&state->stat);
-			drop_packet(packet);
-		} else {
-			adm_log_emu_router_sent_packet(&state->stat);
-		}
+		if (pkt_ptrs[n_pkts] != NULL)
+			n_pkts++;
 	}
 #else
-	struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
-
-	uint32_t n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
-
-	// TODO: remove duplication with above
-	for (uint32_t j = 0; j < n_pkts; j++) {
+	n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
+#endif
+	/* send packets */
+	// TODO: use bulk enqueue
+	for (j = 0; j < n_pkts; j++) {
 		if (fp_ring_enqueue(state->q_epg_ingress[0], pkt_ptrs[j])
 				== -ENOBUFS) {
 			adm_log_emu_send_packet_failed(&state->stat);
@@ -140,20 +132,19 @@ static inline void emu_emulate_router(struct emu_state *state,
 			adm_log_emu_router_sent_packet(&state->stat);
 		}
 	}
-#endif
 
 	/* push a batch of packets from the network into the router */
 	struct emu_packet *packets[ROUTER_MAX_BURST];
 
 	/* pass all incoming packets to the router */
-	num_packets = fp_ring_dequeue_burst(state->q_router_ingress[index],
+	n_pkts = fp_ring_dequeue_burst(state->q_router_ingress[index],
 			(void **) &packets, ROUTER_MAX_BURST);
 #ifdef EMU_NO_BATCH_CALLS
-	for (i = 0; i < num_packets; i++) {
+	for (i = 0; i < n_pkts; i++) {
 		router->push(packets[i]);
 	}
 #else
-	router->push_batch(&packets[0], num_packets);
+	router->push_batch(&packets[0], n_pkts);
 #endif
 }
 

@@ -44,6 +44,10 @@ CFLAGS += -march=core2
 CFLAGS += -DEMULATION_ALGO
 CFLAGS += $(CMD_LINE_CFLAGS)
 
+# C++ flags
+CPPFLAGS += $(CFLAGS)
+CPPFLAGS += -D__STDC_LIMIT_MACROS
+
 # linker settings to work with C++
 LD = g++
 LDFLAGS += -lstdc++

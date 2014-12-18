@@ -33,27 +33,29 @@ class Router;
  * Data structure to store the state of the emulation.
  * @admitted: the current admitted struct
  * @packet_mempool: pool of packet structs
- * @q_new_packets: queue of packets from comm core to endpoint groups
  * @admitted_traffic_mempool: pool of admitted traffic structs
  * @q_admitted_out: queue of admitted structs to comm core
  * @stat: global emulation stats
  * @core_stats: stats per emulation core
+ * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
  * @endpoint_groups: representations of groups of endpoints
+ * @q_epg_ingress: queues of packets to endpoint groups from the network
  * @routers: representations of routers
  * @q_router_ingress: a queue of incoming packets for each router
  */
 struct emu_state {
 	struct emu_admitted_traffic				*admitted;
 	struct fp_mempool						*packet_mempool;
-	struct fp_ring							*q_new_packets[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct fp_ring							*q_admitted_out;
 	struct emu_admission_statistics			stat;
 	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
+	struct fp_ring							*q_epg_new_pkts[EMU_NUM_ENDPOINT_GROUPS];
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus
 	EndpointGroup	*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
+	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
 	Router			*routers[EMU_NUM_ROUTERS];
 	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
 #endif

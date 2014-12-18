@@ -6,26 +6,9 @@
  */
 
 #include "endpoint_group.h"
-#include "emulation.h"
 #include "endpoint.h"
-#include "api.h"
-#include "api_impl.h"
 #include "packet.h"
-#include "admissible_log.h"
-#include "../graph-algo/platform.h"
-#include "../graph-algo/fp_ring.h"
 #include "assert.h"
-
-#define ENDPOINT_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
-
-EndpointGroup::EndpointGroup(uint16_t num_endpoints,
-		struct fp_ring *q_new_packets, struct fp_ring *q_from_network,
-		struct fp_ring *q_to_router) {
-	this->num_endpoints = num_endpoints;
-	this->q_new_packets = q_new_packets;
-	this->q_from_network = q_from_network;
-	this->q_to_router = q_to_router;
-}
 
 EndpointGroup::~EndpointGroup() {
 	uint16_t i;
@@ -33,20 +16,6 @@ EndpointGroup::~EndpointGroup() {
 
 	for (i = 0; i < num_endpoints; i++)
 		delete endpoints[i];
-
-	/* free q_new_packets and return its packets to the mempool */
-	while (fp_ring_dequeue(q_new_packets, (void **) &p) == 0) {
-		free_packet(p);
-	}
-	fp_free(q_new_packets);
-
-	/* free q_from_network and return its packets to the mempool */
-	while (fp_ring_dequeue(q_from_network, (void **) &p) == 0) {
-		free_packet(p);
-	}
-	fp_free(q_from_network);
-
-	/* router will free its q_to_router */
 }
 
 void EndpointGroup::init(uint16_t start_id, struct drop_tail_args *args) {
@@ -63,65 +32,41 @@ void EndpointGroup::reset(uint16_t endpoint_id) {
 	endpoints[endpoint_id]->reset();
 }
 
-void EndpointGroup::new_packets() {
-	uint16_t num_packets, i;
-	struct emu_packet *packets[ENDPOINT_MAX_BURST];
+void EndpointGroup::new_packets(struct emu_packet **pkts, uint32_t n_pkts) {
+	uint32_t i;
 	Endpoint *ep;
 
-	/* dequeue packets from network, pass to endpoints */
-	num_packets = fp_ring_dequeue_burst(q_new_packets, (void **) &packets,
-			ENDPOINT_MAX_BURST);
-	for (i = 0; i < num_packets; i++) {
-		// TODO: support multiple endpoint groups
-		ep = endpoints[packets[i]->src];
-		ep->new_packet(packets[i]);
+	/* pass packets from network to endpoints */
+	for (i = 0; i < n_pkts; i++) {
+		ep = endpoints[pkts[i]->src];
+		ep->new_packet(pkts[i]);
 	}
 }
 
-void EndpointGroup::push() {
-	uint16_t num_packets, i;
-	struct emu_packet *packets[ENDPOINT_MAX_BURST];
-	Endpoint *ep;
-
-	/* dequeue packets from network, pass to endpoints */
-	num_packets = fp_ring_dequeue_burst(q_from_network, (void **) &packets,
-			ENDPOINT_MAX_BURST);
-	for (i = 0; i < num_packets; i++) {
-		// TODO: support multiple endpoint groups
-		ep = endpoints[packets[i]->dst];
-		ep->push(packets[i]);
-	}
-}
-
-void EndpointGroup::pull() {
+void EndpointGroup::push_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 	uint16_t i;
 	Endpoint *ep;
-	struct emu_packet *packet;
+
+	for (i = 0; i < n_pkts; i++) {
+		ep = endpoints[pkts[i]->dst];
+		ep->push(pkts[i]);
+	}
+}
+
+uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
+	uint32_t i, count;
+	Endpoint *ep;
 
 	// TODO: do in random order
 	/* dequeue one packet from each endpoint, send to next hop in network */
+	count = 0;
 	for (i = 0; i < num_endpoints; i++) {
 		ep = endpoints[i];
-		ep->pull(&packet);
+		ep->pull(&pkts[count]);
 
-		if (packet == NULL)
-			continue;
-
-		// TODO: use bulk enqueue?
-		if (fp_ring_enqueue(q_to_router, packet) == -ENOBUFS) {
-			adm_log_emu_send_packet_failed(&g_state->stat);
-			drop_packet(packet);
-		} else {
-			adm_log_emu_endpoint_sent_packet(&g_state->stat);
-		}
+		if (pkts[count] != NULL)  // TODO: remove conditional
+			count++;
 	}
-}
-
-void EndpointGroup::enqueue_packet_from_network(struct emu_packet *packet) {
-	if (fp_ring_enqueue(q_from_network, packet) == -ENOBUFS) {
-		adm_log_emu_send_packet_failed(&g_state->stat);
-		drop_packet(packet);
-	} else {
-		adm_log_emu_router_sent_packet(&g_state->stat);
-	}
+	assert(count <= num_endpoints);
+	return count;
 }

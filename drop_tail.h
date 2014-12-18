@@ -107,10 +107,8 @@ private:
  */
 class DropTailEndpointGroup : public EndpointGroup {
 public:
-	DropTailEndpointGroup(uint16_t num_endpoints,
-			struct fp_ring *q_new_packets, struct fp_ring *q_from_network,
-			struct fp_ring *q_to_router) : EndpointGroup(num_endpoints,
-					q_new_packets, q_from_network, q_to_router) {}
+	DropTailEndpointGroup(uint16_t num_endpoints)
+	: EndpointGroup(num_endpoints) {}
 	~DropTailEndpointGroup() {};
 	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args) {
 		return new DropTailEndpoint(id, args);

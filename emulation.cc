@@ -121,16 +121,15 @@ static inline void emu_emulate_router(struct emu_state *state,
 #else
 	n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
 #endif
-	/* send packets */
-	// TODO: use bulk enqueue
-	for (j = 0; j < n_pkts; j++) {
-		if (fp_ring_enqueue(state->q_epg_ingress[0], pkt_ptrs[j])
-				== -ENOBUFS) {
-			adm_log_emu_send_packet_failed(&state->stat);
+	/* send packets to endpoint groups */
+	if (fp_ring_enqueue_bulk(state->q_epg_ingress[0], (void **) &pkt_ptrs[0],
+			n_pkts) == -ENOBUFS) {
+		/* enqueue failed, drop packets and log failure */
+		for (j = 0; j < n_pkts; j++)
 			drop_packet(pkt_ptrs[j]);
-		} else {
-			adm_log_emu_router_sent_packet(&state->stat);
-		}
+		adm_log_emu_send_packets_failed(&state->stat, n_pkts);
+	} else {
+		adm_log_emu_router_sent_packets(&state->stat, n_pkts);
 	}
 
 	/* push a batch of packets from the network into the router */
@@ -173,15 +172,14 @@ void emu_emulate(struct emu_state *state) {
 
 		/* pull a batch of packets from the epg, enqueue to router */
 		n_pkts = epg->pull_batch(&pkts[0]);
-		for (j = 0; j < n_pkts; j++) {
-			// TODO: use bulk enqueue?
-			if (fp_ring_enqueue(state->q_router_ingress[0], pkts[j])
-					== -ENOBUFS) {
-				adm_log_emu_send_packet_failed(&state->stat);
+		if (fp_ring_enqueue_bulk(state->q_router_ingress[0],
+				(void **) &pkts[0], n_pkts) == -ENOBUFS) {
+			/* enqueue failed, drop packets and log failure */
+			for (j = 0; j < n_pkts; j++)
 				drop_packet(pkts[j]);
-			} else {
-				adm_log_emu_endpoint_sent_packet(&state->stat);
-			}
+			adm_log_emu_send_packets_failed(&state->stat, n_pkts);
+		} else {
+			adm_log_emu_endpoint_sent_packets(&state->stat, n_pkts);
 		}
 
 		/* dequeue new packets, pass to endpoint group */

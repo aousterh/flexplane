@@ -105,16 +105,16 @@ void adm_log_emu_packet_alloc_failed(
 
 static inline __attribute__((always_inline))
 void adm_log_emu_endpoint_enqueue_backlog_failed(
-		struct emu_admission_statistics *st) {
+		struct emu_admission_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->endpoint_enqueue_backlog_failed++;
+		st->endpoint_enqueue_backlog_failed += n_pkts;
 }
 
 static inline __attribute__((always_inline))
-void adm_log_emu_send_packet_failed(
-		struct emu_admission_statistics *st) {
+void adm_log_emu_send_packets_failed(
+		struct emu_admission_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->send_packet_failed++;
+		st->send_packet_failed += n_pkts;
 }
 
 static inline __attribute__((always_inline))
@@ -125,17 +125,17 @@ void adm_log_emu_admitted_struct_overflow(
 }
 
 static inline __attribute__((always_inline))
-void adm_log_emu_endpoint_sent_packet(
-		struct emu_admission_statistics *st) {
+void adm_log_emu_endpoint_sent_packets(
+		struct emu_admission_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->endpoint_sent_packet++;
+		st->endpoint_sent_packet += n_pkts;
 }
 
 static inline __attribute__((always_inline))
-void adm_log_emu_router_sent_packet (
-		struct emu_admission_statistics *st) {
+void adm_log_emu_router_sent_packets (
+		struct emu_admission_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->router_sent_packet++;
+		st->router_sent_packet += n_pkts;
 }
 
 static inline __attribute__((always_inline))

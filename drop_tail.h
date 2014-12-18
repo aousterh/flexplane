@@ -17,6 +17,7 @@
 #include "composite.h"
 #include "queue_bank.h"
 #include "../graph-algo/fp_ring.h"
+#include "classifiers/TorClassifier.h"
 
 #include <stdexcept>
 
@@ -26,12 +27,6 @@ struct drop_tail_args {
 	uint16_t port_capacity;
 };
 
-
-class DropTailClassifier : public Classifier {
-public:
-	inline void classify(struct emu_packet *pkt, uint32_t *port,
-			uint32_t *queue);
-};
 
 class DropTailQueueManager : public QueueManager {
 public:
@@ -71,7 +66,7 @@ private:
 	PacketQueueBank *m_bank;
 };
 
-typedef CompositeRouter<DropTailClassifier, DropTailQueueManager, DropTailScheduler>
+typedef CompositeRouter<TorClassifier, DropTailQueueManager, DropTailScheduler>
 	DropTailRouterBase;
 
 /**
@@ -86,7 +81,7 @@ public:
 
 private:
 	PacketQueueBank m_bank;
-	DropTailClassifier m_cla;
+	TorClassifier m_cla;
 	DropTailQueueManager m_qm;
 	DropTailScheduler m_sch;
 };

@@ -12,13 +12,6 @@
 #define DROP_TAIL_PORT_CAPACITY 128
 #define DROP_TAIL_MAX_CAPACITY 256
 
-inline void DropTailClassifier::classify(struct emu_packet *pkt,
-		uint32_t *port, uint32_t *queue)
-{
-	*port = pkt->dst;
-	*queue = 0;
-}
-
 DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 		uint32_t queue_capacity)
 	: m_bank(bank), m_q_capacity(queue_capacity)
@@ -42,7 +35,7 @@ inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 DropTailRouter::DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
 		struct drop_tail_args *args)
 	: m_bank(EMU_ROUTER_NUM_PORTS, 1, DROP_TAIL_MAX_CAPACITY),
-	  m_cla(),
+	  m_cla(16, 0, EMU_ROUTER_NUM_PORTS, 0),
 	  m_qm(&m_bank, ((args == NULL) ? DROP_TAIL_PORT_CAPACITY : args->port_capacity)),
 	  m_sch(&m_bank),
 	  DropTailRouterBase(&m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS, id, q_ingress)

@@ -62,7 +62,7 @@ public:
 			return m_bank->dequeue(output_port, 0);
 	}
 
-	uint64_t *non_empty_port_mask() {
+	inline uint64_t *non_empty_port_mask() {
 		return m_bank->non_empty_port_mask();
 	}
 

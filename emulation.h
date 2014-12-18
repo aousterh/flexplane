@@ -40,6 +40,7 @@ class Router;
  * @core_stats: stats per emulation core
  * @endpoint_groups: representations of groups of endpoints
  * @routers: representations of routers
+ * @q_router_ingress: a queue of incoming packets for each router
  */
 struct emu_state {
 	struct emu_admitted_traffic				*admitted;
@@ -52,8 +53,9 @@ struct emu_state {
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus
-	EndpointGroup							*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
-	Router									*routers[EMU_NUM_ROUTERS];
+	EndpointGroup	*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
+	Router			*routers[EMU_NUM_ROUTERS];
+	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
 #endif
 };
 

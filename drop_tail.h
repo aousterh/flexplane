@@ -80,8 +80,7 @@ typedef CompositeRouter<DropTailClassifier, DropTailQueueManager, DropTailSchedu
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-	DropTailRouter(uint16_t id, struct fp_ring *q_ingress,
-			struct drop_tail_args *args);
+	DropTailRouter(uint16_t id, struct drop_tail_args *args);
 	virtual ~DropTailRouter();
 
 private:

@@ -64,8 +64,7 @@ public:
 template < class CLA, class QM, class SCH >
 class CompositeRouter : public Router {
 public:
-	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id,
-			struct fp_ring *q_ingress);
+	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id);
 	virtual ~CompositeRouter();
 
 	virtual void push(struct emu_packet *packet);
@@ -84,9 +83,8 @@ private:
 /** implementation */
 template < class CLA, class QM, class SCH >
 CompositeRouter<CLA,QM,SCH>::CompositeRouter(
-		CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id,
-		struct fp_ring *q_ingress)
-	: Router(id, q_ingress),
+		CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id)
+	: Router(id),
 	  m_cla(cla), m_qm(qm), m_sch(sch),
 	  m_n_ports(n_ports)
 {

@@ -9,6 +9,7 @@
 #include "endpoint.h"
 #include "packet.h"
 #include "assert.h"
+#include <stddef.h>
 
 EndpointGroup::~EndpointGroup() {
 	uint16_t i;

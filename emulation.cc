@@ -199,7 +199,7 @@ static inline void emu_emulate_router(struct emu_state *state,
 	/* pass all incoming packets to the router */
 #ifdef EMU_NO_BATCH_CALLS
 	for (i = 0; i < n_pkts; i++) {
-		router->push(pkts_ptrs[i]);
+		router->push(pkt_ptrs[i]);
 	}
 #else
 	router->push_batch(&pkt_ptrs[0], n_pkts);

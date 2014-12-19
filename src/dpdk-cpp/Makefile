@@ -3,10 +3,15 @@
 include $(RTE_SDK)/mk/rte.vars.mk
 
 # binary name
-APP = abc
+SHARED = _dpdk.so
+
+%_wrap.cc: %.i EthernetDevice.h
+	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
+CFLAGS_dpdk_wrap_cc.o = -I /usr/include/python2.7/
+
 
 SRCS-y := EthernetDevice.cc \
-	
+	dpdk_wrap.cc
 
 CFLAGS += -O3 
 #CFLAGS += $(WERROR_FLAGS)
@@ -30,5 +35,6 @@ CFLAGS += $(CMD_LINE_CFLAGS)
 # linker settings to work with C++
 LD = g++
 LDFLAGS += -lstdc++
+CC = g++
 
-include $(RTE_SDK)/mk/rte.extapp.mk
+include $(RTE_SDK)/mk/rte.extshared.mk

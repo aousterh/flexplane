@@ -28,6 +28,7 @@
 #include "api_impl.h"
 #include "router.h"
 #include "composite.h"
+#include "queue_bank.h"
 #include "classifiers/TorClassifier.h"
 #include "classifiers/PyClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
@@ -40,6 +41,8 @@
 %include "api.h"
 %include "router.h"
 %include "composite.h"
+%include "queue_bank.h"
+%template(PacketQueueBank) QueueBank<struct emu_packet>;
 
 
 /** Classifiers */
@@ -52,6 +55,7 @@
 %include "schedulers/SingleQueueScheduler.h"
 %feature("director") PyScheduler;
 %include "schedulers/PyScheduler.h"
+
 
 
 /*********************

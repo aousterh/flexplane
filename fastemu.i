@@ -30,6 +30,8 @@
 #include "composite.h"
 #include "classifiers/TorClassifier.h"
 #include "classifiers/PyClassifier.h"
+#include "schedulers/SingleQueueScheduler.h"
+#include "schedulers/PyScheduler.h"
 %}
 
 #define __attribute__(x)
@@ -40,13 +42,20 @@
 %include "composite.h"
 
 
+/** Classifiers */
 %apply uint32_t *OUTPUT {uint32_t *port, uint32_t *queue};
 %include "classifiers/TorClassifier.h"
-%clear uint32_t *port;
+%clear uint32_t *port;	
 %clear uint32_t *queue;
 
+/** Schedulers */
+%include "schedulers/SingleQueueScheduler.h"
+%feature("director") PyScheduler;
+%include "schedulers/PyScheduler.h"
+
+
 /*********************
- * Wrap PyClassifier
+ * PyClassifier
  *********************/
 %feature("director") PyClassifier;
 

@@ -55,14 +55,26 @@ void EndpointGroup::push_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 }
 
 uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
-	uint32_t i, count;
+	uint32_t i, j, count;
 	Endpoint *ep;
+	uint32_t endpoint_order[MAX_ENDPOINTS_PER_GROUP];
 
-	// TODO: do in random order
-	/* dequeue one packet from each endpoint, send to next hop in network */
+	/* generate a random permutation of endpoint indices.
+	 * use the Fisher-Yates/Knuth shuffle. */
+	for (i = 0; i < num_endpoints; i++) {
+		/* choose random index <= i to swap with */
+		j = ga_rand(&random_state, i + 1);
+
+		/* swap the element at index j with i */
+		endpoint_order[i] = endpoint_order[j];
+		endpoint_order[j] = i;
+	}
+
+	/* dequeue one packet from each endpoint, send to next hop in network
+	 * process endpoints in a random order */
 	count = 0;
 	for (i = 0; i < num_endpoints; i++) {
-		ep = endpoints[i];
+		ep = endpoints[endpoint_order[i]];
 		ep->pull(&pkts[count]);
 
 		if (pkts[count] != NULL)

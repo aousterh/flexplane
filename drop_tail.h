@@ -83,7 +83,7 @@ private:
 class DropTailEndpointGroup : public EndpointGroup {
 public:
 	DropTailEndpointGroup(uint16_t num_endpoints)
-	: EndpointGroup(num_endpoints) {}
+	: EndpointGroup(num_endpoints) {};
 	~DropTailEndpointGroup() {};
 	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args) {
 		return new DropTailEndpoint(id, args);

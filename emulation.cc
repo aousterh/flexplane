@@ -97,19 +97,79 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
-/*
+/**
+ * Emulate push at a single endpoint group with index @index
+ */
+static inline void emu_emulate_epg_push(struct emu_state *state,
+		uint32_t index) {
+	EndpointGroup *epg;
+	uint32_t n_pkts;
+	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
+
+	epg = state->endpoint_groups[index];
+
+	/* dequeue packets from network, pass to endpoint group */
+	n_pkts = fp_ring_dequeue_burst(state->q_epg_ingress[index],
+			(void **) &pkts[0], ENDPOINT_MAX_BURST);
+	epg->push_batch(&pkts[0], n_pkts);
+}
+
+/**
+ * Emulate pull at a single endpoint group with index @index
+ */
+static inline void emu_emulate_epg_pull(struct emu_state *state,
+		uint32_t index) {
+	EndpointGroup *epg;
+	uint32_t n_pkts, i;
+	struct emu_packet *pkts[MAX_ENDPOINTS_PER_GROUP];
+
+	epg = state->endpoint_groups[index];
+
+	/* pull a batch of packets from the epg, enqueue to router */
+	n_pkts = epg->pull_batch(&pkts[0]);
+	assert(n_pkts <= MAX_ENDPOINTS_PER_GROUP);
+	if (fp_ring_enqueue_bulk(state->q_router_ingress[0],
+			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
+		/* enqueue failed, drop packets and log failure */
+		for (i = 0; i < n_pkts; i++)
+			drop_packet(pkts[i]);
+		adm_log_emu_send_packets_failed(&state->stat, n_pkts);
+	} else {
+		adm_log_emu_endpoint_sent_packets(&state->stat, n_pkts);
+	}
+}
+
+/**
+ * Emulate new packets at a single endpoint group with index @index
+ */
+static inline void emu_emulate_epg_new_pkts(struct emu_state *state,
+		uint32_t index) {
+	EndpointGroup *epg;
+	uint32_t n_pkts;
+	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
+
+	epg = state->endpoint_groups[index];
+
+	/* dequeue new packets, pass to endpoint group */
+	n_pkts = fp_ring_dequeue_burst(state->q_epg_new_pkts[index],
+			(void **) &pkts, ENDPOINT_MAX_BURST);
+	epg->new_packets(&pkts[0], n_pkts);
+}
+
+/**
  * Emulate a timeslot at a single router with index @index
  */
 static inline void emu_emulate_router(struct emu_state *state,
 		uint32_t index) {
 	Router *router;
 	uint32_t i, j, n_pkts;
+	struct emu_packet *pkt_ptrs[ROUTER_MAX_BURST];
+	assert(ROUTER_MAX_BURST >= EMU_ROUTER_NUM_PORTS);
 
 	/* get the corresponding router */
 	router = state->routers[index];
 
-	struct emu_packet *pkt_ptrs[EMU_ROUTER_NUM_PORTS];
-	/* fetch packets to send from router */
+	/* fetch packets to send from router to endpoints */
 #ifdef EMU_NO_BATCH_CALLS
 	n_pkts = 0;
 	for (uint32_t i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
@@ -121,6 +181,7 @@ static inline void emu_emulate_router(struct emu_state *state,
 #else
 	n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
 #endif
+	assert(n_pkts <= EMU_ROUTER_NUM_PORTS);
 	/* send packets to endpoint groups */
 	if (fp_ring_enqueue_bulk(state->q_epg_ingress[0], (void **) &pkt_ptrs[0],
 			n_pkts) == -ENOBUFS) {
@@ -132,60 +193,41 @@ static inline void emu_emulate_router(struct emu_state *state,
 		adm_log_emu_router_sent_packets(&state->stat, n_pkts);
 	}
 
-	/* push a batch of packets from the network into the router */
-	struct emu_packet *packets[ROUTER_MAX_BURST];
-
-	/* pass all incoming packets to the router */
+	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(state->q_router_ingress[index],
-			(void **) &packets, ROUTER_MAX_BURST);
+			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
+	/* pass all incoming packets to the router */
 #ifdef EMU_NO_BATCH_CALLS
 	for (i = 0; i < n_pkts; i++) {
-		router->push(packets[i]);
+		router->push(pkts_ptrs[i]);
 	}
 #else
-	router->push_batch(&packets[0], n_pkts);
+	router->push_batch(&pkt_ptrs[0], n_pkts);
 #endif
 }
 
 void emu_emulate(struct emu_state *state) {
-	uint32_t i, j, n_pkts;
-	EndpointGroup *epg;
-	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
+	uint32_t i;
 
-	/* handle push at each endpoint group */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		epg = state->endpoint_groups[i];
+	/* push/pull at endpoints and routers must be done in a specific order to
+	 * ensure that packets pushed in one timeslot cannot be pulled until the
+	 * next. */
 
-		/* dequeue packets from network, pass to endpoint group */
-		n_pkts = fp_ring_dequeue_burst(state->q_epg_ingress[i],
-				(void **) &pkts[0], ENDPOINT_MAX_BURST);
-		epg->push_batch(&pkts[0], n_pkts);
-	}
-	/* emulate one timeslot at each router */
-	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+	/* push new packets from the network to endpoints */
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++)
+		emu_emulate_epg_push(state, i);
+
+	/* emulate one timeslot at each router (push and pull) */
+	for (i = 0; i < EMU_NUM_ROUTERS; i++)
 		emu_emulate_router(state, i);
-	}
 
 	/* handle pull/new packets at each endpoint group */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		epg = state->endpoint_groups[i];
+		/* pull packets from epg, send to next router */
+		emu_emulate_epg_pull(state, i);
 
-		/* pull a batch of packets from the epg, enqueue to router */
-		n_pkts = epg->pull_batch(&pkts[0]);
-		if (fp_ring_enqueue_bulk(state->q_router_ingress[0],
-				(void **) &pkts[0], n_pkts) == -ENOBUFS) {
-			/* enqueue failed, drop packets and log failure */
-			for (j = 0; j < n_pkts; j++)
-				drop_packet(pkts[j]);
-			adm_log_emu_send_packets_failed(&state->stat, n_pkts);
-		} else {
-			adm_log_emu_endpoint_sent_packets(&state->stat, n_pkts);
-		}
-
-		/* dequeue new packets, pass to endpoint group */
-		n_pkts = fp_ring_dequeue_burst(state->q_epg_new_pkts[i],
-				(void **) &pkts, ENDPOINT_MAX_BURST);
-		epg->new_packets(&pkts[0], n_pkts);
+		/* deliver new packets from network stack (aka comm core) to epgs */
+		emu_emulate_epg_new_pkts(state, i);
 	}
 
 	/* send out the admitted traffic */

@@ -16,16 +16,16 @@
  * @param struct_name: the name of the struct
  */
 
-#define GETTER_SETTER(class_name, fn_name, type, memb, attr) 		\
-	inline class_name & fn_name (typeof(((type *)NULL)->attr) val) 	\
+#define GETTER_SETTER(class_name, fn_name, type, attr) 		\
+	inline type fn_name()					\
 	{																\
-		memb.attr = val;													\
+		return attr;												\
+	}																\
+	inline class_name & fn_name (type _val) 	\
+	{																\
+		attr = _val;													\
 		return *this;												\
 	}																\
-	inline typeof(((type *)NULL)->attr) fn_name()					\
-	{																\
-		return memb.attr;												\
-	}
 
 
 #endif /* UTIL_GETTER_SETTER_H_ */

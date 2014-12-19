@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include "../graph-algo/platform.h"
 
+#define THROW 	throw std::runtime_error("not implemented")
 /**
  * Classifier classes decide for a given packet, which queue they should
  *   go into.
@@ -24,7 +25,7 @@ public:
 	 * @param port: [out] port where packet should leave
 	 * @param queue: [out] index of per-port queue to enqueue packet
 	 */
-	void classify(struct emu_packet *pkt, uint32_t *port, uint32_t *queue);
+	void classify(struct emu_packet *pkt, uint32_t *port, uint32_t *queue) {THROW;}
 };
 
 /**
@@ -39,7 +40,7 @@ public:
 	 * @param port: port to enqueue packet
 	 * @param queue: index of per-port queue where packet should be enqueued
 	 */
-	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue) {THROW;}
 };
 
 /**
@@ -50,13 +51,15 @@ public:
 	/**
 	 * @return the packet to transmit, or NULL if no packets should be transmitted
 	 */
-	struct emu_packet *schedule(uint32_t output_port);
+	struct emu_packet *schedule(uint32_t output_port) {THROW;}
 
 	/**
 	 * @return a pointer to a bit mask with 1 for ports with packets, 0 o/w.
 	 */
-	uint64_t *non_empty_port_mask();
+	uint64_t *non_empty_port_mask() {THROW;}
 };
+
+#undef THROW
 
 /**
  * A CompositeRouter is made of a Classifier, a QueueManager and a Scheduler.

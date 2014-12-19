@@ -1,2 +1,4 @@
 emulation
 .DS_Store
+fastemu.py
+*_wrap.cc

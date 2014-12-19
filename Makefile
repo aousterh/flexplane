@@ -15,14 +15,37 @@ LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 
 # Pattern rule
+%_wrap.o: %_wrap.cc
+	$(CXX) $(CXXFLAGS) -c $< -fPIC -I /usr/include/python2.7/ -o $@
 %.o: %.cc
-	$(CXX) $(CXXFLAGS) -c $<
-
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+%.pic.o: %.cc
+	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	
 # Dependency rules for non-file targets
-all: emulation
+.PHONY: py clean
+all: emulation py
 clean:
-	rm -f emulation *.o *~
+	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
+py: _fastemu.so
 
 # Dependency rules for file targets
 emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o
-	$(CXX) $< emulation.o endpoint_group.o drop_tail.o -o $@ $(LDFLAGS)
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+
+WRAP_HEADERS = \
+	packet.h \
+	api.h \
+	api_impl.h \
+	router.h \
+	composite.h \
+	classifiers/TorClassifier.h
+
+%_wrap.cc: %.i $(WRAP_HEADERS) 
+	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
+
+
+_fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o drop_tail.pic.o
+	$(CXX) $^ -o $@ $(LDFLAGS) -shared
+

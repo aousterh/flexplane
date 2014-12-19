@@ -17,7 +17,7 @@
 #include <assert.h>
 
 #define ENDPOINT_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
-#define ROUTER_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
+#define ROUTER_MAX_BURST	(EMU_ROUTER_NUM_PORTS * 2)
 
 emu_state *g_state; /* global emulation state */
 

@@ -44,7 +44,7 @@ WRAP_HEADERS = \
 	router.h \
 	composite.h \
 	classifiers/TorClassifier.h \
-	classifiers/VirtualClassifier.h
+	classifiers/PyClassifier.h
 
 %_wrap.cc: %.i $(WRAP_HEADERS) 
 	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 

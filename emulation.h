@@ -49,7 +49,7 @@ struct emu_state {
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct fp_ring							*q_admitted_out;
 	struct emu_admission_statistics			stat;
-	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
+//	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
 	struct fp_ring							*q_epg_new_pkts[EMU_NUM_ENDPOINT_GROUPS];
 
 	/* this state is not directly accessible from the arbiter */

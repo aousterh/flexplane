@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "endpoint.h"
-#include "../grant-accept/ga_random.h"
 #include <time.h> /* for seeding the random number generator */
 
 #define MAX_ENDPOINTS_PER_GROUP		EMU_NUM_ENDPOINTS
@@ -29,8 +28,7 @@
  */
 class EndpointGroup {
 public:
-	EndpointGroup(uint16_t num_endpoints)
-		: num_endpoints(num_endpoints) { ga_srand(&random_state, time(NULL)); };
+	EndpointGroup(uint16_t num_endpoints);
 	virtual ~EndpointGroup();
 	virtual void init(uint16_t start_id, struct drop_tail_args *args);
 	virtual void reset(uint16_t id);

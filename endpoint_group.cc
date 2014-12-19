@@ -9,7 +9,15 @@
 #include "endpoint.h"
 #include "packet.h"
 #include "assert.h"
+#include "../protocol/platform/generic.h"
+#include "../grant-accept/ga_random.h"
 #include <stddef.h>
+
+EndpointGroup::EndpointGroup(uint16_t num_endpoints)
+	: num_endpoints(num_endpoints)
+{
+	ga_srand(&random_state, time(NULL));
+}
 
 EndpointGroup::~EndpointGroup() {
 	uint16_t i;

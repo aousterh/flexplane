@@ -1,12 +1,12 @@
 /*
- * VirtualClassifier.h
+ * PyClassifier.h
  *
  *  Created on: Dec 19, 2014
  *      Author: yonch
  */
 
-#ifndef CLASSIFIERS_VIRTUALCLASSIFIER_H_
-#define CLASSIFIERS_VIRTUALCLASSIFIER_H_
+#ifndef CLASSIFIERS_PYCLASSIFIER_H_
+#define CLASSIFIERS_PYCLASSIFIER_H_
 
 #include <stdexcept>
 #include "../composite.h"
@@ -17,16 +17,24 @@
  *
  * Envisioned for Python wrapper support
  */
-class VirtualClassifier : public Classifier {
+class PyClassifier : public Classifier {
 public:
-	VirtualClassifier() {};
-	virtual ~VirtualClassifier() {};
+	PyClassifier() {};
+	virtual ~PyClassifier() {};
 
-	virtual void classify(struct emu_packet *pkt, uint32_t *port,
+	virtual void py_classify(struct emu_packet *pkt, uint32_t *port,
 			uint32_t *queue)
 		{
-		printf("pkt=%p port=%u queue=%u\n", pkt, *port, *queue);
-		throw std::runtime_error("not implemented"); }
+			throw std::runtime_error("not implemented");
+		}
+
+	void classify(struct emu_packet *pkt, uint32_t *port,
+			uint32_t *queue)
+		{
+			py_classify(pkt,port,queue);
+		}
+
+
 };
 
-#endif /* CLASSIFIERS_VIRTUALCLASSIFIER_H_ */
+#endif /* CLASSIFIERS_PYCLASSIFIER_H_ */

@@ -45,6 +45,7 @@ WRAP_HEADERS = \
 	composite.h \
 	classifiers/TorClassifier.h \
 	classifiers/PyClassifier.h \
+	queue_managers/PyQueueManager.h \
 	schedulers/SingleQueueScheduler.h \
 	schedulers/PyScheduler.h
 	

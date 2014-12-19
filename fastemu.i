@@ -31,6 +31,7 @@
 #include "queue_bank.h"
 #include "classifiers/TorClassifier.h"
 #include "classifiers/PyClassifier.h"
+#include "queue_managers/PyQueueManager.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "schedulers/PyScheduler.h"
 %}
@@ -38,12 +39,13 @@
 #define __attribute__(x)
 
 %include "packet.h"
+%pointer_functions(struct emu_packet, pkt)
+
 %include "api.h"
 %include "router.h"
 %include "composite.h"
 %include "queue_bank.h"
 %template(PacketQueueBank) QueueBank<struct emu_packet>;
-
 
 /** Classifiers */
 %apply uint32_t *OUTPUT {uint32_t *port, uint32_t *queue};
@@ -51,11 +53,14 @@
 %clear uint32_t *port;	
 %clear uint32_t *queue;
 
+/** Queue Managers */
+%feature("director") PyQueueManager;
+%include "queue_managers/PyQueueManager.h"
+
 /** Schedulers */
 %include "schedulers/SingleQueueScheduler.h"
 %feature("director") PyScheduler;
 %include "schedulers/PyScheduler.h"
-
 
 
 /*********************
@@ -81,3 +86,7 @@
 
 %include "classifiers/PyClassifier.h"
 
+
+
+/** Composite Routers */
+%template(PyCompositeRouter) CompositeRouter<PyClassifier, PyQueueManager, PyScheduler>;

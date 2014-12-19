@@ -18,6 +18,7 @@
 #include "queue_bank.h"
 #include "../graph-algo/fp_ring.h"
 #include "classifiers/TorClassifier.h"
+#include "schedulers/SingleQueueScheduler.h"
 
 #include <stdexcept>
 
@@ -41,32 +42,7 @@ private:
 	uint32_t m_q_capacity;
 };
 
-
-class DropTailScheduler : public Scheduler {
-public:
-	DropTailScheduler(PacketQueueBank *bank) : m_bank(bank) {}
-
-	inline struct emu_packet *schedule(uint32_t output_port) {
-		if (unlikely(m_bank->empty(output_port, 0)))
-#ifdef EMU_NO_BATCH_CALLS
-			return NULL;
-#else
-			throw std::runtime_error("called schedule on an empty port");
-#endif
-		else
-			return m_bank->dequeue(output_port, 0);
-	}
-
-	inline uint64_t *non_empty_port_mask() {
-		return m_bank->non_empty_port_mask();
-	}
-
-private:
-	/** the QueueBank where packets are stored */
-	PacketQueueBank *m_bank;
-};
-
-typedef CompositeRouter<TorClassifier, DropTailQueueManager, DropTailScheduler>
+typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueScheduler>
 	DropTailRouterBase;
 
 /**
@@ -82,7 +58,7 @@ private:
 	PacketQueueBank m_bank;
 	TorClassifier m_cla;
 	DropTailQueueManager m_qm;
-	DropTailScheduler m_sch;
+	SingleQueueScheduler m_sch;
 };
 
 /**

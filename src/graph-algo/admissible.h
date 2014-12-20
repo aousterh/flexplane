@@ -9,6 +9,8 @@
 #define ADMISSIBLE_H_
 
 #include "algo_config.h"
+#include "../emulation/endpoint.h"
+#include "../emulation/router.h"
 
 #include <stdbool.h>
 
@@ -57,7 +59,7 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_ring *q_spent, struct fp_mempool *bin_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **f,
 		struct fp_ring **q_new_demands, struct fp_ring **q_ready_partitions,
-		void *g)
+		enum RouterType g, void *h, enum EndpointType i, void *j)
 {
 	(void) q_spent; /* unused */
     struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
@@ -124,7 +126,8 @@ create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
 		struct fp_ring *q_head, struct fp_ring *q_admitted_out,
 		struct fp_ring *q_spent, struct fp_mempool *head_bin_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **q_bin,
-		struct fp_ring **a, struct fp_ring **b, void *c)
+		struct fp_ring **a, struct fp_ring **b, enum RouterType c, void *d,
+		enum EndpointType e, void *f)
 {
 	struct seq_admissible_status *status;
     status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
@@ -260,11 +263,13 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_ring *e, struct fp_ring *q_admitted_out, struct fp_ring *f,
 		struct fp_mempool *packet_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
-		struct fp_ring **packet_queues, struct fp_ring **h, void *emu_args) {
+		struct fp_ring **packet_queues, struct fp_ring **h,
+		enum RouterType r_type, void *r_args, enum EndpointType e_type,
+		void *e_args) {
 	struct emu_state *emu_state = (struct emu_state *) malloc(sizeof(struct emu_state));
 
 	emu_init_state(emu_state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, emu_args);
+			packet_mempool, packet_queues, r_type, r_args, e_type, e_args);
 	return (struct admissible_state *) emu_state;
 }
 

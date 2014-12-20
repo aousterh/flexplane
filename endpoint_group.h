@@ -34,7 +34,7 @@ public:
 	virtual void reset(uint16_t id);
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
-	virtual uint32_t pull_batch(struct emu_packet **pkts);
+	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual Endpoint *make_endpoint(uint16_t id,
 			struct drop_tail_args *args) = 0;
 private:

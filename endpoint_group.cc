@@ -63,10 +63,11 @@ void EndpointGroup::push_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 	}
 }
 
-uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
+uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 	uint32_t i, j, count;
 	Endpoint *ep;
 	uint32_t endpoint_order[MAX_ENDPOINTS_PER_GROUP];
+	assert(n_pkts >= num_endpoints);
 
 	/* generate a random permutation of endpoint indices.
 	 * use the Fisher-Yates/Knuth shuffle. */

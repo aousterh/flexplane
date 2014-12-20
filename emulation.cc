@@ -126,7 +126,7 @@ static inline void emu_emulate_epg_pull(struct emu_state *state,
 	epg = state->endpoint_groups[index];
 
 	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = epg->pull_batch(&pkts[0]);
+	n_pkts = epg->pull_batch(&pkts[0], MAX_ENDPOINTS_PER_GROUP);
 	assert(n_pkts <= MAX_ENDPOINTS_PER_GROUP);
 	if (fp_ring_enqueue_bulk(state->q_router_ingress[0],
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {

@@ -69,8 +69,8 @@ struct emu_state {
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-		struct fp_ring **packet_queues, RouterType r_type, void *r_args,
-		EndpointType e_type, void *e_args);
+		struct fp_ring **packet_queues, enum RouterType r_type, void *r_args,
+		enum EndpointType e_type, void *e_args);
 
 /**
  * Cleanup state and memory. Called when emulation terminates.

@@ -14,8 +14,10 @@
 #include "admission_log.h"
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
+#include "../emulation/endpoint.h"
 #include "../emulation/drop_tail.h"
 #include "../emulation/packet.h"
+#include "../emulation/router.h"
 #include "../graph-algo/algo_config.h"
 
 #define TIMESLOTS_PER_ONE_WAY_DELAY 4
@@ -97,7 +99,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 	/* init emu_state */
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
-			(fp_ring **) packet_queues, &args);
+            (fp_ring **) packet_queues, R_DropTail, &args, E_DropTail, &args);
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

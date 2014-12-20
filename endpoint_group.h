@@ -43,4 +43,14 @@ private:
 	uint32_t		random_state;
 };
 
+/**
+ * A class for constructing endpoint groups of different types.
+ * @NewEndpointGroup: constructs an endpoint group
+ */
+class EndpointGroupFactory {
+public:
+	static EndpointGroup *NewEndpointGroup(enum EndpointType type,
+			uint16_t num_endpoints);
+};
+
 #endif /* ENDPOINT_GROUP_H_ */

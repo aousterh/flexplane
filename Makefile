@@ -21,7 +21,7 @@ LDFLAGS = -lm
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 %.pic.o: %.cc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
-	
+
 # Dependency rules for non-file targets
 .PHONY: clean
 all: emulation py
@@ -29,7 +29,7 @@ clean:
 	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o
+emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o router.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 ####################
@@ -54,6 +54,6 @@ WRAP_HEADERS = \
 	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
 
 
-_fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o drop_tail.pic.o
+_fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o drop_tail.pic.o
 	$(CXX) $^ -o $@ $(LDFLAGS) -shared
 

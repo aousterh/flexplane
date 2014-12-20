@@ -9,7 +9,6 @@
 #include "api.h"
 #include "api_impl.h"
 #include "admitted.h"
-#include "drop_tail.h"
 #include "endpoint_group.h"
 #include "router.h"
 #include "../protocol/topology.h"
@@ -26,7 +25,8 @@ static inline void free_packet_ring(struct fp_ring *packet_ring);
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-	    struct fp_ring **packet_queues, void *args) {
+	    struct fp_ring **packet_queues, RouterType r_type, void *r_args,
+		EndpointType e_type, void *e_args) {
 	uint32_t i, pq;
 	uint32_t size;
 
@@ -42,8 +42,7 @@ void emu_init_state(struct emu_state *state,
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		// TODO: use fp_malloc?
-		state->routers[i] = new DropTailRouter(i,
-				(struct drop_tail_args *) args);
+		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i);
 		assert(state->routers[i] != NULL);
 		state->q_router_ingress[i] = packet_queues[pq++];
 	}
@@ -51,8 +50,9 @@ void emu_init_state(struct emu_state *state,
 	/* initialize all the endpoints in one endpoint group */
 	state->q_epg_new_pkts[0] = packet_queues[pq++];
 	state->q_epg_ingress[0] = packet_queues[pq++];
-	state->endpoint_groups[0] = new DropTailEndpointGroup(EMU_NUM_ENDPOINTS);
-	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) args);
+	state->endpoint_groups[0] = EndpointGroupFactory::NewEndpointGroup(e_type,
+			EMU_NUM_ENDPOINTS);
+	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) e_args);
 	assert(state->endpoint_groups[0] != NULL);
 
 	/* get 1 admitted traffic for the core, init it */

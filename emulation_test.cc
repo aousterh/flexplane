@@ -9,6 +9,7 @@
 #include "api_impl.h"
 #include "emulation.h"
 #include "emulation_impl.h"
+#include "endpoint.h"
 #include "packet.h"
 #include "drop_tail.h"
 #include "../graph-algo/fp_ring.h"
@@ -62,7 +63,8 @@ emu_state *setup_state() {
 	}
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, &args);
+			packet_mempool, packet_queues, R_DropTail, &args,
+			E_DropTail, &args);
 
 	return state;
 }

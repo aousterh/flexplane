@@ -12,6 +12,11 @@
 
 struct emu_packet;
 
+enum RouterType {
+	R_DropTail
+};
+
+#ifdef __cplusplus
 /**
  * A representation of a router in the emulated network.
  * @push: enqueue a single packet to this router
@@ -31,5 +36,15 @@ public:
 private:
 	uint16_t id;
 };
+
+/**
+ * A class for constructing routers of different types.
+ * @NewRouter: constructs a router with id @id of the specified type
+ */
+class RouterFactory {
+public:
+	static Router *NewRouter(enum RouterType type, void *args, uint16_t id);
+};
+#endif
 
 #endif /* ROUTER_H_ */

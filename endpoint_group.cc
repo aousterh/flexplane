@@ -7,10 +7,11 @@
 
 #include "endpoint_group.h"
 #include "endpoint.h"
+#include "drop_tail.h"
 #include "packet.h"
-#include "assert.h"
 #include "../protocol/platform/generic.h"
 #include "../grant-accept/ga_random.h"
+#include <assert.h>
 #include <stddef.h>
 
 EndpointGroup::EndpointGroup(uint16_t num_endpoints)
@@ -90,4 +91,13 @@ uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
 	}
 	assert(count <= num_endpoints);
 	return count;
+}
+
+EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
+		uint16_t num_endpoints) {
+	switch(type) {
+	case(E_DropTail):
+		return new DropTailEndpointGroup(num_endpoints);
+	}
+	throw std::runtime_error("invalid endpoint type\n");
 }

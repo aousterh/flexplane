@@ -12,6 +12,11 @@
 
 struct emu_packet;
 
+enum EndpointType {
+	E_DropTail
+};
+
+#ifdef __cplusplus
 /**
  * A representation of an endpoint (server) in the emulated network.
  * @reset: reset state when an endpoint loses sync with the arbiter
@@ -30,5 +35,6 @@ public:
 	virtual void pull(struct emu_packet **packet) {};
 	uint16_t id;
 };
+#endif
 
 #endif /* ENDPOINT_H_ */

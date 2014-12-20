@@ -91,3 +91,9 @@ void DropTailEndpoint::pull(struct emu_packet **packet) {
 	*packet = NULL;
 	queue_dequeue(&output_queue, packet);
 }
+
+DropTailEndpointGroup::DropTailEndpointGroup(uint16_t num_endpoints,
+		uint16_t start_id, struct drop_tail_args *args)
+	: EndpointGroup(num_endpoints) {
+	CONSTRUCT_ENDPOINTS(start_id, num_endpoints, DropTailEndpoint, args);
+}

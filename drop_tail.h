@@ -89,7 +89,8 @@ private:
  */
 class DropTailEndpointGroup : public EndpointGroup {
 public:
-	DropTailEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output)
+	DropTailEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output,
+			uint16_t start_id, struct drop_tail_args *args)
 	: EndpointGroup(num_endpoints, emu_output) {};
 	~DropTailEndpointGroup() {};
 	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args,

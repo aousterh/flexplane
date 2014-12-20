@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "endpoint.h"
+#include <assert.h>
 #include <time.h> /* for seeding the random number generator */
 #include "output.h"
 
@@ -31,19 +32,29 @@ class EndpointGroup {
 public:
 	EndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output);
 	virtual ~EndpointGroup();
-	virtual void init(uint16_t start_id, struct drop_tail_args *args);
 	virtual void reset(uint16_t id);
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
-	virtual Endpoint *make_endpoint(uint16_t id,
-			struct drop_tail_args *args, EmulationOutput &emu_output) = 0;
+	Endpoint		*endpoints[MAX_ENDPOINTS_PER_GROUP];
 private:
 	uint16_t		num_endpoints;
-	Endpoint		*endpoints[MAX_ENDPOINTS_PER_GROUP];
 	uint32_t		random_state;
 	EmulationOutput	&m_emu_output;
 };
+
+/**
+ * Calls the constructors for each endpoint in this endpoint group.
+ */
+#define CONSTRUCT_ENDPOINTS(start_id, num_endpoints, endpoint_type, args)	\
+	{																		\
+		uint16_t i;															\
+		/* initialize all the endpoints */									\
+		for (i = 0; i < num_endpoints; i++) {								\
+			endpoints[i] = new endpoint_type(start_id + i, args);			\
+			assert(endpoints[i] != NULL);									\
+		}																	\
+	}																		\
 
 /**
  * A class for constructing endpoint groups of different types.
@@ -52,7 +63,8 @@ private:
 class EndpointGroupFactory {
 public:
 	static EndpointGroup *NewEndpointGroup(enum EndpointType type,
-			uint16_t num_endpoints, EmulationOutput &emu_output);
+			uint16_t num_endpoints, EmulationOutput &emu_output,
+			uint16_t start_id, void *args);
 };
 
 #endif /* ENDPOINT_GROUP_H_ */

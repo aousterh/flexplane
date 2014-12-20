@@ -28,16 +28,6 @@ EndpointGroup::~EndpointGroup() {
 		delete endpoints[i];
 }
 
-void EndpointGroup::init(uint16_t start_id, struct drop_tail_args *args) {
-	uint16_t i;
-
-	/* initialize all the endpoints */
-	for (i = 0; i < num_endpoints; i++) {
-		endpoints[i] = make_endpoint(start_id + i, args, m_emu_output);
-		assert(endpoints[i] != NULL);
-	}
-}
-
 void EndpointGroup::reset(uint16_t endpoint_id) {
 	endpoints[endpoint_id]->reset();
 }
@@ -95,10 +85,12 @@ uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 }
 
 EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
-		uint16_t num_endpoints, EmulationOutput &emu_output) {
+		uint16_t num_endpoints, EmulationOutput &emu_output, uint16_t start_id,
+		void *args) {
 	switch(type) {
 	case(E_DropTail):
-		return new DropTailEndpointGroup(num_endpoints, emu_output);
+		return new DropTailEndpointGroup(num_endpoints, emu_output, start_id,
+				(struct drop_tail_args *) args);
 	}
 	throw std::runtime_error("invalid endpoint type\n");
 }

@@ -66,7 +66,7 @@ void emu_init_state(struct emu_state *state,
 
 	/* initialize all the endpoints in one endpoint group */
 	state->endpoint_groups[0] = EndpointGroupFactory::NewEndpointGroup(e_type,
-			EMU_NUM_ENDPOINTS, *state->out);
+			EMU_NUM_ENDPOINTS, *state->out, 0, e_args);
 	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) e_args);
 	assert(state->endpoint_groups[0] != NULL);
 	state->endpoint_drivers[0] =

@@ -15,25 +15,18 @@
 #include "packet.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
+#include "output.h"
 
 #include <assert.h>
 
 static inline
 void drop_packet(struct emu_packet *packet) {
-	drop_demand(packet->src, packet->dst, packet->flow);
-
-	free_packet(packet);
-
-	adm_log_emu_dropped_packet(&g_state->stat);
+	g_state->out->drop(packet);
 }
 
 static inline
 void enqueue_packet_at_endpoint(struct emu_packet *packet) {
-	admitted_insert_admitted_edge(g_state->admitted, packet->src,
-			packet->dst, packet->flow);
-	adm_log_emu_admitted_packet(&g_state->stat);
-
-	free_packet(packet);
+	g_state->out->admit(packet);
 }
 
 static inline
@@ -59,9 +52,7 @@ void free_packet(struct emu_packet *packet) {
 
 static inline
 void drop_demand(uint16_t src, uint16_t dst, uint16_t flow) {
-	/* this packet should be dropped */
-	admitted_insert_dropped_edge(g_state->admitted, src, dst, flow);
-	adm_log_emu_dropped_demand(&g_state->stat);
+	g_state->out->drop_raw(src, dst, flow);
 }
 
 static inline

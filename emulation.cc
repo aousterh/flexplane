@@ -12,6 +12,7 @@
 #include "endpoint_group.h"
 #include "router.h"
 #include "../protocol/topology.h"
+#include "output.h"
 
 #include <assert.h>
 
@@ -33,6 +34,10 @@ void emu_init_state(struct emu_state *state,
 	state->admitted_traffic_mempool = admitted_traffic_mempool;
 	state->q_admitted_out = q_admitted_out;
 	state->packet_mempool = packet_mempool;
+
+	state->out = new EmulationOutput(state->q_admitted_out,
+			state->admitted_traffic_mempool, state->packet_mempool,
+			&state->stat);
 
 	/* construct topology: 1 router with 1 rack of endpoints */
 
@@ -64,12 +69,6 @@ void emu_init_state(struct emu_state *state,
 					state->q_epg_ingress[0],
 					state->endpoint_groups[0],
 					&state->stat);
-
-	/* get 1 admitted traffic for the core, init it */
-	while (fp_mempool_get(state->admitted_traffic_mempool,
-			(void **) &state->admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(&state->stat);
-	admitted_init(state->admitted);
 }
 
 void emu_cleanup(struct emu_state *state) {
@@ -96,9 +95,7 @@ void emu_cleanup(struct emu_state *state) {
 		free_packet_ring(state->q_router_ingress[i]);
 	}
 
-	/* return admitted struct to mempool */
-	if (state->admitted != NULL)
-		fp_mempool_put(state->admitted_traffic_mempool, state->admitted);
+	delete state->out;
 
 	/* empty queue of admitted traffic, return structs to the mempool */
 	while (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) == 0)
@@ -126,15 +123,7 @@ void emu_emulate(struct emu_state *state) {
 	for (i = 0; i < EMU_NUM_ROUTERS; i++)
 		state->router_drivers[i]->step();
 
-	/* send out the admitted traffic */
-	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)
-		adm_log_emu_wait_for_admitted_enqueue(&state->stat);
-
-	/* get 1 new admitted traffic for the core, init it */
-	while (fp_mempool_get(state->admitted_traffic_mempool,
-				(void **) &state->admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(&state->stat);
-	admitted_init(state->admitted);
+	state->out->flush();
 }
 
 void emu_reset_sender(struct emu_state *state, uint16_t src) {

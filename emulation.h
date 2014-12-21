@@ -32,6 +32,7 @@ extern struct emu_state *g_state;
 #ifdef __cplusplus
 class EndpointGroup;
 class Router;
+class EmulationOutput;
 #endif
 
 /**
@@ -59,6 +60,8 @@ struct emu_state {
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus
+	EmulationOutput	*out;
+
 	EndpointGroup	*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];

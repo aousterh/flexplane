@@ -46,11 +46,9 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 
 		/* enqueue the packets to the correct endpoint group packet queue */
 		// TODO: support multiple endpoint groups
-		if (fp_ring_enqueue_bulk(state->q_epg_new_pkts[0],
+		while (fp_ring_enqueue_bulk(state->q_epg_new_pkts[0],
 				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
-			/* no space to enqueue these packets, drop them */
-			for (i = 0; i < n_pkts; i++)
-				drop_packet(pkt_ptrs[i]);
+			/* no space in ring. log and retry. */
 			adm_log_emu_endpoint_enqueue_backlog_failed(&state->stat, n_pkts);
 		}
 

@@ -92,7 +92,7 @@ void DropTailEndpoint::push(struct emu_packet *packet) {
 	assert(packet->dst == id);
 
 	/* pass the packet up the stack */
-	enqueue_packet_at_endpoint(packet);
+	m_emu_output.admit(packet);
 }
 
 void DropTailEndpoint::pull(struct emu_packet **packet) {

@@ -20,11 +20,6 @@
 #include <assert.h>
 
 static inline
-void enqueue_packet_at_endpoint(struct emu_packet *packet) {
-	g_state->out->admit(packet);
-}
-
-static inline
 struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow) {
 	struct emu_packet *packet;
 

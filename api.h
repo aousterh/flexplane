@@ -25,12 +25,6 @@ struct emu_admission_statistics;
  */
 
 /**
- * Enqueues a packet at an endpoint to pass up the network stack.
- */
-static inline
-void enqueue_packet_at_endpoint(struct emu_packet *packet);
-
-/**
  * Creates a packet, returns a pointer to the packet.
  */
 static inline

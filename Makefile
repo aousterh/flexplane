@@ -29,7 +29,8 @@ clean:
 	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o router.o
+emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o router.o \
+			drivers/RouterDriver.o drivers/EndpointDriver.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 ####################
@@ -54,6 +55,8 @@ WRAP_HEADERS = \
 	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
 
 
-_fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o drop_tail.pic.o
+_fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \
+			drop_tail.pic.o	drivers/EndpointDriver.pic.o \
+			drivers/RouterDriver.pic.o
 	$(CXX) $^ -o $@ $(LDFLAGS) -shared
 

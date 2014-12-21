@@ -15,6 +15,9 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include <inttypes.h>
+#include "drivers/EndpointDriver.h"
+#include "drivers/RouterDriver.h"
+
 
 #define ADMITTED_MEMPOOL_SIZE	10
 #define ADMITTED_Q_LOG_SIZE		4
@@ -29,43 +32,6 @@ extern struct emu_state *g_state;
 #ifdef __cplusplus
 class EndpointGroup;
 class Router;
-class EndpointDriver {
-public:
-	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
-			struct fp_ring *q_from_router, EndpointGroup *epg,
-			struct emu_admission_statistics *stat);
-
-	/**
-	 * Emulate a single timeslot
-	 */
-	void step();
-
-private:
-	void push();
-	void pull();
-	void process_new();
-
-	struct fp_ring *m_q_new_packets;
-	struct fp_ring *m_q_to_router;
-	struct fp_ring *m_q_from_router;
-	EndpointGroup *m_epg;
-	struct emu_admission_statistics	*m_stat;
-};
-
-class RouterDriver {
-public:
-	RouterDriver(Router *router, struct fp_ring *q_to_router,
-			struct fp_ring *q_from_router,
-			struct emu_admission_statistics *stat);
-
-	void step();
-private:
-	Router *m_router;
-	struct fp_ring *m_q_to_router;
-	struct fp_ring *m_q_from_router;
-	struct emu_admission_statistics	*m_stat;
-};
-
 #endif
 
 /**

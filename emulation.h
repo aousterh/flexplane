@@ -52,6 +52,20 @@ private:
 	struct emu_admission_statistics	*m_stat;
 };
 
+class RouterDriver {
+public:
+	RouterDriver(Router *router, struct fp_ring *q_to_router,
+			struct fp_ring *q_from_router,
+			struct emu_admission_statistics *stat);
+
+	void step();
+private:
+	Router *m_router;
+	struct fp_ring *m_q_to_router;
+	struct fp_ring *m_q_from_router;
+	struct emu_admission_statistics	*m_stat;
+};
+
 #endif
 
 /**
@@ -84,6 +98,7 @@ struct emu_state {
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	Router			*routers[EMU_NUM_ROUTERS];
 	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
+	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
 #endif
 };
 

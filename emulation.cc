@@ -39,17 +39,24 @@ void emu_init_state(struct emu_state *state,
 
 	/* construct topology: 1 router with 1 rack of endpoints */
 
+	/* initialize rings */
+	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		state->q_router_ingress[i] = packet_queues[pq++];
+	}
+	state->q_epg_new_pkts[0] = packet_queues[pq++];
+	state->q_epg_ingress[0] = packet_queues[pq++];
+
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		// TODO: use fp_malloc?
 		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i);
 		assert(state->routers[i] != NULL);
-		state->q_router_ingress[i] = packet_queues[pq++];
+		state->router_drivers[i] = new RouterDriver(state->routers[i],
+				state->q_router_ingress[0], state->q_epg_ingress[0],
+				&state->stat);
 	}
 
 	/* initialize all the endpoints in one endpoint group */
-	state->q_epg_new_pkts[0] = packet_queues[pq++];
-	state->q_epg_ingress[0] = packet_queues[pq++];
 	state->endpoint_groups[0] = EndpointGroupFactory::NewEndpointGroup(e_type,
 			EMU_NUM_ENDPOINTS);
 	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) e_args);
@@ -84,6 +91,7 @@ void emu_cleanup(struct emu_state *state) {
 
 	/* free all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		delete state->router_drivers[i];
 		// TODO: call fp_free?
 		delete state->routers[i];
 
@@ -169,53 +177,56 @@ inline void EndpointDriver::process_new()
 	m_epg->new_packets(&pkts[0], n_pkts);
 }
 
+RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
+		struct fp_ring* q_from_router, struct emu_admission_statistics* stat)
+	: m_router(router),
+	  m_q_to_router(q_to_router),
+	  m_q_from_router(q_from_router),
+	  m_stat(stat)
+{}
+
 /**
  * Emulate a timeslot at a single router with index @index
  */
-static inline void emu_emulate_router(struct emu_state *state,
-		uint32_t index) {
-	Router *router;
+inline void RouterDriver::step() {
 	uint32_t i, j, n_pkts;
 	struct emu_packet *pkt_ptrs[ROUTER_MAX_BURST];
 	assert(ROUTER_MAX_BURST >= EMU_ROUTER_NUM_PORTS);
-
-	/* get the corresponding router */
-	router = state->routers[index];
 
 	/* fetch packets to send from router to endpoints */
 #ifdef EMU_NO_BATCH_CALLS
 	n_pkts = 0;
 	for (uint32_t i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		router->pull(i, &pkt_ptrs[n_pkts]);
+		m_router->pull(i, &pkt_ptrs[n_pkts]);
 
 		if (pkt_ptrs[n_pkts] != NULL)
 			n_pkts++;
 	}
 #else
-	n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
+	n_pkts = m_router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
 #endif
 	assert(n_pkts <= EMU_ROUTER_NUM_PORTS);
 	/* send packets to endpoint groups */
-	if (fp_ring_enqueue_bulk(state->q_epg_ingress[0], (void **) &pkt_ptrs[0],
+	if (fp_ring_enqueue_bulk(m_q_from_router, (void **) &pkt_ptrs[0],
 			n_pkts) == -ENOBUFS) {
 		/* enqueue failed, drop packets and log failure */
 		for (j = 0; j < n_pkts; j++)
 			drop_packet(pkt_ptrs[j]);
-		adm_log_emu_send_packets_failed(&state->stat, n_pkts);
+		adm_log_emu_send_packets_failed(m_stat, n_pkts);
 	} else {
-		adm_log_emu_router_sent_packets(&state->stat, n_pkts);
+		adm_log_emu_router_sent_packets(m_stat, n_pkts);
 	}
 
 	/* fetch a batch of packets from the network */
-	n_pkts = fp_ring_dequeue_burst(state->q_router_ingress[index],
+	n_pkts = fp_ring_dequeue_burst(m_q_to_router,
 			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
 	/* pass all incoming packets to the router */
 #ifdef EMU_NO_BATCH_CALLS
 	for (i = 0; i < n_pkts; i++) {
-		router->push(pkt_ptrs[i]);
+		m_router->push(pkt_ptrs[i]);
 	}
 #else
-	router->push_batch(&pkt_ptrs[0], n_pkts);
+	m_router->push_batch(&pkt_ptrs[0], n_pkts);
 #endif
 }
 
@@ -232,7 +243,7 @@ void emu_emulate(struct emu_state *state) {
 
 	/* emulate one timeslot at each router (push and pull) */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++)
-		emu_emulate_router(state, i);
+		state->router_drivers[i]->step();
 
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)

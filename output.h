@@ -33,7 +33,7 @@ public:
 	~EmulationOutput();
 
 	/**
-	 * Drops the given packet
+	 * Notifies physical endpoint to drop packet and frees packet memory.
 	 * @param packet: packet to be dropped
 	 */
 	inline void drop(struct emu_packet *packet);
@@ -78,6 +78,19 @@ private:
 	struct emu_admitted_traffic		*admitted;
 };
 
+/**
+ * A class that can be used for dropping packets
+ */
+class Dropper : private EmulationOutput {
+public:
+	Dropper(struct fp_ring *q_admitted,
+			struct fp_mempool *admitted_mempool,
+			struct fp_mempool *packet_mempool,
+			struct emu_admission_statistics	*stat)
+		: EmulationOutput(q_admitted, admitted_mempool, packet_mempool, stat) {}
+
+	using EmulationOutput::drop;
+};
 
 /** implementation */
 
@@ -107,7 +120,7 @@ inline EmulationOutput::~EmulationOutput() {
 inline void __attribute__((always_inline))
 EmulationOutput::drop(struct emu_packet* packet)
 {
-	drop_demand(packet->src, packet->dst, packet->flow);
+	drop_raw(packet->src, packet->dst, packet->flow);
 
 	free_packet(packet);
 

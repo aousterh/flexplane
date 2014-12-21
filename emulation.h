@@ -29,6 +29,29 @@ extern struct emu_state *g_state;
 #ifdef __cplusplus
 class EndpointGroup;
 class Router;
+class EndpointDriver {
+public:
+	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
+			struct fp_ring *q_from_router, EndpointGroup *epg,
+			struct emu_admission_statistics *stat);
+
+	/**
+	 * Emulate a single timeslot
+	 */
+	void step();
+
+private:
+	void push();
+	void pull();
+	void process_new();
+
+	struct fp_ring *m_q_new_packets;
+	struct fp_ring *m_q_to_router;
+	struct fp_ring *m_q_from_router;
+	EndpointGroup *m_epg;
+	struct emu_admission_statistics	*m_stat;
+};
+
 #endif
 
 /**
@@ -58,6 +81,7 @@ struct emu_state {
 #ifdef __cplusplus
 	EndpointGroup	*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
+	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	Router			*routers[EMU_NUM_ROUTERS];
 	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
 #endif

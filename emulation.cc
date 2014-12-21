@@ -54,6 +54,12 @@ void emu_init_state(struct emu_state *state,
 			EMU_NUM_ENDPOINTS);
 	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) e_args);
 	assert(state->endpoint_groups[0] != NULL);
+	state->endpoint_drivers[0] =
+			new EndpointDriver(state->q_epg_new_pkts[0],
+					state->q_router_ingress[0],
+					state->q_epg_ingress[0],
+					state->endpoint_groups[0],
+					&state->stat);
 
 	/* get 1 admitted traffic for the core, init it */
 	while (fp_mempool_get(state->admitted_traffic_mempool,
@@ -68,6 +74,7 @@ void emu_cleanup(struct emu_state *state) {
 
 	/* free all endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		delete state->endpoint_drivers[i];
 		delete state->endpoint_groups[i];
 
 		/* free packet queues, return packets to mempool */
@@ -97,63 +104,69 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
+EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
+		struct fp_ring* q_to_router, struct fp_ring* q_from_router,
+		EndpointGroup* epg, struct emu_admission_statistics *stat)
+	: m_q_new_packets(q_new_packets),
+	  m_q_to_router(q_to_router),
+	  m_q_from_router(q_from_router),
+	  m_epg(epg),
+	  m_stat(stat)
+{}
+
+void EndpointDriver::step() {
+	push();
+	pull();
+	process_new();
+}
+
 /**
  * Emulate push at a single endpoint group with index @index
  */
-static inline void emu_emulate_epg_push(struct emu_state *state,
-		uint32_t index) {
-	EndpointGroup *epg;
+
+inline void EndpointDriver::push() {
 	uint32_t n_pkts;
 	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
 
-	epg = state->endpoint_groups[index];
-
 	/* dequeue packets from network, pass to endpoint group */
-	n_pkts = fp_ring_dequeue_burst(state->q_epg_ingress[index],
+	n_pkts = fp_ring_dequeue_burst(m_q_from_router,
 			(void **) &pkts[0], ENDPOINT_MAX_BURST);
-	epg->push_batch(&pkts[0], n_pkts);
+	m_epg->push_batch(&pkts[0], n_pkts);
 }
 
 /**
  * Emulate pull at a single endpoint group with index @index
  */
-static inline void emu_emulate_epg_pull(struct emu_state *state,
-		uint32_t index) {
-	EndpointGroup *epg;
+inline void EndpointDriver::pull() {
 	uint32_t n_pkts, i;
 	struct emu_packet *pkts[MAX_ENDPOINTS_PER_GROUP];
 
-	epg = state->endpoint_groups[index];
-
 	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = epg->pull_batch(&pkts[0], MAX_ENDPOINTS_PER_GROUP);
+	n_pkts = m_epg->pull_batch(&pkts[0], MAX_ENDPOINTS_PER_GROUP);
 	assert(n_pkts <= MAX_ENDPOINTS_PER_GROUP);
-	if (fp_ring_enqueue_bulk(state->q_router_ingress[0],
+	if (fp_ring_enqueue_bulk(m_q_to_router,
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
 		/* enqueue failed, drop packets and log failure */
 		for (i = 0; i < n_pkts; i++)
 			drop_packet(pkts[i]);
-		adm_log_emu_send_packets_failed(&state->stat, n_pkts);
+		adm_log_emu_send_packets_failed(m_stat, n_pkts);
 	} else {
-		adm_log_emu_endpoint_sent_packets(&state->stat, n_pkts);
+		adm_log_emu_endpoint_sent_packets(m_stat, n_pkts);
 	}
 }
 
 /**
  * Emulate new packets at a single endpoint group with index @index
  */
-static inline void emu_emulate_epg_new_pkts(struct emu_state *state,
-		uint32_t index) {
-	EndpointGroup *epg;
+inline void EndpointDriver::process_new()
+{
 	uint32_t n_pkts;
 	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
 
-	epg = state->endpoint_groups[index];
-
 	/* dequeue new packets, pass to endpoint group */
-	n_pkts = fp_ring_dequeue_burst(state->q_epg_new_pkts[index],
+	n_pkts = fp_ring_dequeue_burst(m_q_new_packets,
 			(void **) &pkts, ENDPOINT_MAX_BURST);
-	epg->new_packets(&pkts[0], n_pkts);
+	m_epg->new_packets(&pkts[0], n_pkts);
 }
 
 /**
@@ -215,20 +228,11 @@ void emu_emulate(struct emu_state *state) {
 
 	/* push new packets from the network to endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++)
-		emu_emulate_epg_push(state, i);
+		state->endpoint_drivers[i]->step();
 
 	/* emulate one timeslot at each router (push and pull) */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++)
 		emu_emulate_router(state, i);
-
-	/* handle pull/new packets at each endpoint group */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		/* pull packets from epg, send to next router */
-		emu_emulate_epg_pull(state, i);
-
-		/* deliver new packets from network stack (aka comm core) to epgs */
-		emu_emulate_epg_new_pkts(state, i);
-	}
 
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)

@@ -70,30 +70,30 @@ emu_state *setup_state() {
 }
 
 int main() {
-	struct emu_state *state;
-	uint16_t i;
+    struct emu_state *state;
+    uint16_t i;
 
-	/* run a basic test of emulation framework */
-	state = setup_state();
-	printf("\nTEST 1: basic\n");
-	emu_add_backlog(state, 0, 1, 0, 1);
-	emu_add_backlog(state, 0, 3, 0, 3);
-	emu_add_backlog(state, 7, 3, 0, 2);
+    /* run a basic test of emulation framework */
+    state = setup_state();
+    printf("\nTEST 1: basic\n");
+    emu_add_backlog(state, 0, 1, 0, 1);
+    emu_add_backlog(state, 0, 3, 0, 3);
+    emu_add_backlog(state, 7, 3, 0, 2);
 
-	for (i = 0; i < 8; i++)
-		emulate_and_print_admitted(state);
-	delete state;
+    for (i = 0; i < 8; i++)
+        emulate_and_print_admitted(state);
+    delete state;
 
-	/* test drop-tail behavior at routers */
-	printf("\nTEST 2: drop-tail\n");
-	state = setup_state();
-	for (i = 0; i < 10; i++) {
-		emu_add_backlog(state, i, 13, 0, 3);
-		emulate_and_print_admitted(state);
-	}
-	for (i = 0; i < 10; i++) {
-		emulate_and_print_admitted(state);
-	}
-
-	delete state;
+    /* test drop-tail behavior at routers */
+    printf("\nTEST 2: drop-tail\n");
+    state = setup_state();
+    for (i = 0; i < 10; i++) {
+        emu_add_backlog(state, i, 13, 0, 3);
+        emulate_and_print_admitted(state);
+    }
+    for (i = 0; i < 10; i++) {
+        emulate_and_print_admitted(state);
+    }
+    
+    delete state;
 }

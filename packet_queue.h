@@ -29,6 +29,10 @@ struct packet_queue {
 	uint32_t head;
 	uint32_t tail;
 	struct emu_packet *elem[MAX_PACKET_QUEUE_LEN];
+        /* Useful statistics */
+        uint32_t count_pkts_since_last_drop_or_mark;
+        uint32_t count_pkts_dropped;
+        uint32_t count_pkts_marked;
 };
 
 /**
@@ -43,6 +47,11 @@ void queue_create(struct packet_queue *q, uint32_t num_elems) {
 	q->occupancy = 0;
 	q->head = 0;
 	q->tail = 0;
+
+        /* Statistics */
+        q->count_pkts_since_last_drop_or_mark = 0;
+        q->count_pkts_dropped = 0;
+        q->count_pkts_marked = 0;
 }
 
 /**

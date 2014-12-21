@@ -26,36 +26,36 @@
  */
 static inline
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount) {
-	uint32_t i, n_pkts;
-	assert(src < EMU_NUM_ENDPOINTS);
-	assert(dst < EMU_NUM_ENDPOINTS);
-	assert(flow < FLOWS_PER_NODE);
+                     uint16_t flow, uint32_t amount) {
+    uint32_t i, n_pkts;
+    assert(src < EMU_NUM_ENDPOINTS);
+    assert(dst < EMU_NUM_ENDPOINTS);
+    assert(flow < FLOWS_PER_NODE);
 
-	/* create and enqueue a packet for each MTU, do this in batches */
-	struct emu_packet *pkt_ptrs[EMU_ADD_BACKLOG_BATCH_SIZE];
-	while (amount > 0) {
-		n_pkts = 0;
-		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
-			pkt_ptrs[n_pkts] = create_packet(src, dst, flow);
-			if (pkt_ptrs[n_pkts] == NULL)
-				drop_demand(src, dst, flow);
-			else
-				n_pkts++;
-		}
-
-		/* enqueue the packets to the correct endpoint group packet queue */
-		// TODO: support multiple endpoint groups
-		if (fp_ring_enqueue_bulk(state->q_epg_new_pkts[0],
-				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
-			/* no space to enqueue these packets, drop them */
-			for (i = 0; i < n_pkts; i++)
-				drop_packet(pkt_ptrs[i]);
-			adm_log_emu_endpoint_enqueue_backlog_failed(&state->stat, n_pkts);
-		}
-
-		amount -= n_pkts;
-	}
+    /* create and enqueue a packet for each MTU, do this in batches */
+    struct emu_packet *pkt_ptrs[EMU_ADD_BACKLOG_BATCH_SIZE];
+    while (amount > 0) {
+        n_pkts = 0;
+        for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
+            pkt_ptrs[n_pkts] = create_packet(src, dst, flow);
+            if (pkt_ptrs[n_pkts] == NULL)
+                drop_demand(src, dst, flow);
+            else
+                n_pkts++;
+        }
+        
+        /* enqueue the packets to the correct endpoint group packet queue */
+        // TODO: support multiple endpoint groups
+        if (fp_ring_enqueue_bulk(state->q_epg_new_pkts[0],
+                                 (void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
+            /* no space to enqueue these packets, drop them */
+            for (i = 0; i < n_pkts; i++)
+                drop_packet(pkt_ptrs[i]);
+            adm_log_emu_endpoint_enqueue_backlog_failed(&state->stat, n_pkts);
+        }
+        
+        amount -= n_pkts;
+    }
 }
 
 #endif /* EMULATION_IMPL_H_ */

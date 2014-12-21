@@ -48,15 +48,12 @@ void RouterDriver::step() {
 #endif
 	assert(n_pkts <= EMU_ROUTER_NUM_PORTS);
 	/* send packets to endpoint groups */
-	if (fp_ring_enqueue_bulk(m_q_from_router, (void **) &pkt_ptrs[0],
+	while (fp_ring_enqueue_bulk(m_q_from_router, (void **) &pkt_ptrs[0],
 			n_pkts) == -ENOBUFS) {
-		/* enqueue failed, drop packets and log failure */
-		for (j = 0; j < n_pkts; j++)
-			drop_packet(pkt_ptrs[j]);
+		/* no space in ring. log and retry. */
 		adm_log_emu_send_packets_failed(m_stat, n_pkts);
-	} else {
-		adm_log_emu_router_sent_packets(m_stat, n_pkts);
 	}
+	adm_log_emu_router_sent_packets(m_stat, n_pkts);
 
 	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(m_q_to_router,

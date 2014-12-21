@@ -58,15 +58,12 @@ inline void EndpointDriver::pull() {
 	/* pull a batch of packets from the epg, enqueue to router */
 	n_pkts = m_epg->pull_batch(&pkts[0], MAX_ENDPOINTS_PER_GROUP);
 	assert(n_pkts <= MAX_ENDPOINTS_PER_GROUP);
-	if (fp_ring_enqueue_bulk(m_q_to_router,
+	while (fp_ring_enqueue_bulk(m_q_to_router,
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
-		/* enqueue failed, drop packets and log failure */
-		for (i = 0; i < n_pkts; i++)
-			drop_packet(pkts[i]);
+		/* no space in ring. log and retry. */
 		adm_log_emu_send_packets_failed(m_stat, n_pkts);
-	} else {
-		adm_log_emu_endpoint_sent_packets(m_stat, n_pkts);
 	}
+	adm_log_emu_endpoint_sent_packets(m_stat, n_pkts);
 }
 
 /**

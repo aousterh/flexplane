@@ -36,13 +36,6 @@ struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow);
 static inline
 void free_packet(struct emu_packet *packet);
 
-/**
- * Add a dropped demand to the 'admitted' list to be passed to the comm cores.
- * Used as a helper function or when allocating memory for a packet fails.
- */
-static inline
-void drop_demand(uint16_t src, uint16_t dst, uint16_t flow);
-
 /*
  * Logging functions that emulation algorithms may call.
  */

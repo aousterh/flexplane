@@ -38,10 +38,7 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		n_pkts = 0;
 		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
 			pkt_ptrs[n_pkts] = create_packet(src, dst, flow);
-			if (pkt_ptrs[n_pkts] == NULL)
-				drop_demand(src, dst, flow);
-			else
-				n_pkts++;
+			n_pkts++;
 		}
 
 		/* enqueue the packets to the correct endpoint group packet queue */

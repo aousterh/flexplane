@@ -24,10 +24,9 @@ struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow) {
 	struct emu_packet *packet;
 
 	/* allocate a packet */
-	if (fp_mempool_get(g_state->packet_mempool, (void **) &packet)
+	while (fp_mempool_get(g_state->packet_mempool, (void **) &packet)
 	       == -ENOENT) {
 		adm_log_emu_packet_alloc_failed(&g_state->stat);
-		return NULL;
 	}
 	packet_init(packet, src, dst, flow);
 
@@ -38,11 +37,6 @@ static inline
 void free_packet(struct emu_packet *packet) {
 	/* return the packet to the mempool */
 	fp_mempool_put(g_state->packet_mempool, packet);
-}
-
-static inline
-void drop_demand(uint16_t src, uint16_t dst, uint16_t flow) {
-	g_state->out->drop_raw(src, dst, flow);
 }
 
 static inline

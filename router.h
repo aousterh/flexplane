@@ -11,6 +11,7 @@
 #include <inttypes.h>
 
 struct emu_packet;
+class Dropper;
 
 enum RouterType {
 	R_DropTail
@@ -43,7 +44,8 @@ private:
  */
 class RouterFactory {
 public:
-	static Router *NewRouter(enum RouterType type, void *args, uint16_t id);
+	static Router *NewRouter(enum RouterType type, void *args, uint16_t id,
+			Dropper &dropper);
 };
 #endif
 

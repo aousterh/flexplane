@@ -20,11 +20,6 @@
 #include <assert.h>
 
 static inline
-void drop_packet(struct emu_packet *packet) {
-	g_state->out->drop(packet);
-}
-
-static inline
 void enqueue_packet_at_endpoint(struct emu_packet *packet) {
 	g_state->out->admit(packet);
 }

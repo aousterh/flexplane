@@ -14,8 +14,8 @@
 #include <assert.h>
 #include <stddef.h>
 
-EndpointGroup::EndpointGroup(uint16_t num_endpoints)
-	: num_endpoints(num_endpoints)
+EndpointGroup::EndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output)
+	: num_endpoints(num_endpoints), m_emu_output(emu_output)
 {
 	ga_srand(&random_state, time(NULL));
 }
@@ -33,7 +33,7 @@ void EndpointGroup::init(uint16_t start_id, struct drop_tail_args *args) {
 
 	/* initialize all the endpoints */
 	for (i = 0; i < num_endpoints; i++) {
-		endpoints[i] = make_endpoint(start_id + i, args);
+		endpoints[i] = make_endpoint(start_id + i, args, m_emu_output);
 		assert(endpoints[i] != NULL);
 	}
 }
@@ -95,10 +95,10 @@ uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 }
 
 EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
-		uint16_t num_endpoints) {
+		uint16_t num_endpoints, EmulationOutput &emu_output) {
 	switch(type) {
 	case(E_DropTail):
-		return new DropTailEndpointGroup(num_endpoints);
+		return new DropTailEndpointGroup(num_endpoints, emu_output);
 	}
 	throw std::runtime_error("invalid endpoint type\n");
 }

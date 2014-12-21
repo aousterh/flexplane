@@ -19,6 +19,7 @@
 #include "../graph-algo/fp_ring.h"
 #include "classifiers/TorClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
+#include "output.h"
 
 #include <stdexcept>
 
@@ -31,7 +32,8 @@ struct drop_tail_args {
 
 class DropTailQueueManager : public QueueManager {
 public:
-	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity);
+	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity,
+			Dropper &dropper);
 	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -40,6 +42,9 @@ private:
 
 	/** the maximum capacity of each single queue */
 	uint32_t m_q_capacity;
+
+	/** the means to drop packets */
+	Dropper m_dropper;
 };
 
 typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueScheduler>
@@ -51,7 +56,7 @@ typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueSchedule
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-	DropTailRouter(uint16_t id, struct drop_tail_args *args);
+	DropTailRouter(uint16_t id, struct drop_tail_args *args, Dropper &dropper);
 	virtual ~DropTailRouter();
 
 private:
@@ -67,7 +72,8 @@ private:
  */
 class DropTailEndpoint : public Endpoint {
 public:
-	DropTailEndpoint(uint16_t id, struct drop_tail_args *args);
+	DropTailEndpoint(uint16_t id, struct drop_tail_args *args,
+			EmulationOutput &emu_output);
 	~DropTailEndpoint();
 	virtual void reset();
 	virtual void new_packet(struct emu_packet *packet);
@@ -75,6 +81,7 @@ public:
 	virtual void pull(struct emu_packet **packet);
 private:
 	struct packet_queue	output_queue;
+	EmulationOutput &m_emu_output;
 };
 
 /**
@@ -82,11 +89,12 @@ private:
  */
 class DropTailEndpointGroup : public EndpointGroup {
 public:
-	DropTailEndpointGroup(uint16_t num_endpoints)
-	: EndpointGroup(num_endpoints) {};
+	DropTailEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output)
+	: EndpointGroup(num_endpoints, emu_output) {};
 	~DropTailEndpointGroup() {};
-	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args) {
-		return new DropTailEndpoint(id, args);
+	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args,
+			EmulationOutput &emu_output) {
+		return new DropTailEndpoint(id, args, emu_output);
 	}
 	/* TODO: replace new_packets/push/pull functions with more efficient batch
 	 * versions */

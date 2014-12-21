@@ -81,15 +81,16 @@ private:
 /**
  * A class that can be used for dropping packets
  */
-class Dropper : private EmulationOutput {
+class Dropper {
 public:
-	Dropper(struct fp_ring *q_admitted,
-			struct fp_mempool *admitted_mempool,
-			struct fp_mempool *packet_mempool,
-			struct emu_admission_statistics	*stat)
-		: EmulationOutput(q_admitted, admitted_mempool, packet_mempool, stat) {}
+	Dropper(EmulationOutput &emu_output)
+		: m_emu_output(emu_output) {}
 
-	using EmulationOutput::drop;
+	inline void  __attribute__((always_inline))	drop(struct emu_packet *packet)
+	{ m_emu_output.drop(packet); }
+
+private:
+	EmulationOutput &m_emu_output;
 };
 
 /** implementation */

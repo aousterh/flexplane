@@ -25,12 +25,6 @@ struct emu_admission_statistics;
  */
 
 /**
- * Notifies physical endpoint to drop packet and frees packet memory.
- */
-static inline
-void drop_packet(struct emu_packet *packet);
-
-/**
  * Enqueues a packet at an endpoint to pass up the network stack.
  */
 static inline

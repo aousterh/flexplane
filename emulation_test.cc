@@ -30,7 +30,7 @@ public:
 				  &state.stat),
 		  m_dropper(m_emu_output),
 		  m_epg(EMU_NUM_ENDPOINTS, m_emu_output),
-		  m_router(0, NULL, m_dropper),
+		  m_router(0, 5, m_dropper),
 		  m_driver(q_new_packets, &m_epg, &m_router, &state.stat, 1 << PACKET_Q_LOG_SIZE)
 	{
 		uint16_t i;

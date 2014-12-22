@@ -23,6 +23,7 @@
 
 
 %{
+#include "util/make_ring.h"
 #include "packet.h"
 #include "api.h"
 #include "api_impl.h"
@@ -41,6 +42,7 @@
 %include "packet.h"
 %pointer_functions(struct emu_packet, pkt)
 
+%include "util/make_ring.h"
 %include "api.h"
 %include "router.h"
 %include "composite.h"
@@ -90,3 +92,5 @@
 
 /** Composite Routers */
 %template(PyCompositeRouter) CompositeRouter<PyClassifier, PyQueueManager, PyScheduler>;
+
+

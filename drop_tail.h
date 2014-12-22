@@ -56,7 +56,7 @@ typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueSchedule
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-	DropTailRouter(uint16_t id, struct drop_tail_args *args, Dropper &dropper);
+	DropTailRouter(uint16_t id, uint16_t port_capacity, Dropper &dropper);
 	virtual ~DropTailRouter();
 
 private:

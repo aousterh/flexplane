@@ -32,11 +32,11 @@ inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 	}
 }
 
-DropTailRouter::DropTailRouter(uint16_t id, struct drop_tail_args *args,
+DropTailRouter::DropTailRouter(uint16_t id, uint16_t port_capacity,
 		Dropper &dropper)
 	: m_bank(EMU_ROUTER_NUM_PORTS, 1, DROP_TAIL_MAX_CAPACITY),
 	  m_cla(16, 0, EMU_ROUTER_NUM_PORTS, 0),
-	  m_qm(&m_bank, ((args == NULL) ? DROP_TAIL_PORT_CAPACITY : args->port_capacity), dropper),
+	  m_qm(&m_bank, port_capacity, dropper),
 	  m_sch(&m_bank),
 	  DropTailRouterBase(&m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS, id)
 {}

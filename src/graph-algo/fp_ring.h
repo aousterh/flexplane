@@ -29,6 +29,9 @@ struct fp_ring {
 	void *elem[0]; // must be last in struct
 };
 
+#define RING_F_SP_ENQ 1
+#define RING_F_SC_DEQ 2
+
 /**
  * Creates a new backlog queue, with 2^{log_size} elements
  */

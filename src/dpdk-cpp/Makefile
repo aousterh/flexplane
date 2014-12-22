@@ -13,6 +13,8 @@ CFLAGS_dpdk_wrap_cc.o = -I /usr/include/python2.7/
 SRCS-y := EthernetDevice.cc \
 	dpdk_wrap.cc
 
+#CFLAGS += -std=c++11
+#CFLAGS += -Wno-literal-suffix
 CFLAGS += -O3 
 #CFLAGS += $(WERROR_FLAGS)
 CFLAGS += -DFASTPASS_CONTROLLER 

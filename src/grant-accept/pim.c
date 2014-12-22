@@ -203,7 +203,7 @@ void pim_do_grant_first_it(struct pim_state *state, uint16_t partition_index) {
                         continue; /* no requests for this src */
 
                 /* pick a random destination to grant to */
-                dst_adj_index = ga_rand(&core->rand_state, degree);
+                dst_adj_index = random_int(&core->rand_state, degree);
                 dst = state->requests_by_src[partition_index].neigh[src_index][dst_adj_index];
 
                 /* add the granted edge */
@@ -244,7 +244,7 @@ void pim_do_grant(struct pim_state *state, uint16_t partition_index) {
                 uint16_t dst_adj_index, dst;
                 bool dst_is_alloc;
                 do {
-                        dst_adj_index = ga_rand(&core->rand_state, degree);
+                        dst_adj_index = random_int(&core->rand_state, degree);
                         dst = state->requests_by_src[partition_index].neigh[src_index][dst_adj_index];
                         dst_is_alloc = dst_is_allocated(state, dst);
                 } while (dst_is_alloc && (--tries > 0));
@@ -317,7 +317,7 @@ void pim_do_accept(struct pim_state *state, uint16_t partition_index) {
                         continue; /* no grants for this dst */
 
                 /* choose an edge and accept it */
-                uint16_t src_adj_index = ga_rand(&core->rand_state, degree);
+                uint16_t src_adj_index = random_int(&core->rand_state, degree);
                 uint16_t src = state->grants_by_dst[partition_index].neigh[dst_index][src_adj_index];
                 ga_partd_edgelist_add(&state->accepts, src, dst);
 

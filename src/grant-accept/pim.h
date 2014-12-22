@@ -139,7 +139,7 @@ void pim_init_state(struct pim_state *state, struct fp_ring **q_new_demands,
                 fp_mempool_get(bin_mempool, (void**) &state->new_demands[partition]);
                 init_bin(state->new_demands[partition]);
                 state->cores[partition].q_new_demands = q_new_demands[partition];
-                ga_srand(&state->cores[partition].rand_state, rand());
+                seed_random(&state->cores[partition].rand_state, rand());
         }
         phase_state_init(&state->phase, q_ready_partitions);
 }

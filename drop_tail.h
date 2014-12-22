@@ -34,7 +34,7 @@ class DropTailQueueManager : public QueueManager {
 public:
 	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity,
 			Dropper &dropper);
-	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
 	/** the QueueBank where packets are stored */

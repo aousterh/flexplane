@@ -20,7 +20,7 @@ DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 		throw std::runtime_error("bank should be non-NULL");
 }
 
-inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
+void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 		uint32_t port, uint32_t queue)
 {
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {

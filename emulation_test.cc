@@ -56,10 +56,10 @@ emu_state *setup_state() {
 
 	admitted_traffic_mempool = fp_mempool_create(ADMITTED_MEMPOOL_SIZE,
 						     sizeof(struct emu_admitted_traffic));
-	q_admitted_out = fp_ring_create(ADMITTED_Q_LOG_SIZE);
+	q_admitted_out = fp_ring_create("",1 << ADMITTED_Q_LOG_SIZE, 0, 0);
 	packet_mempool = fp_mempool_create(PACKET_MEMPOOL_SIZE, packet_size);
 	for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
-		packet_queues[i] = fp_ring_create(PACKET_Q_LOG_SIZE);
+		packet_queues[i] = fp_ring_create("", 1 << PACKET_Q_LOG_SIZE, 0, 0);
 	}
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,

@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "phase.h"
-#include "ga_random.h"
+#include "../graph-algo/random.h"
 
 #define MAX_TRIES 10
 #define RING_DEQUEUE_BURST_SIZE		8

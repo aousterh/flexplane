@@ -11,7 +11,7 @@
 #include "edgelist.h"
 #include "grant-accept.h"
 #include "phase.h"
-#include "ga_random.h"
+#include "../graph-algo/random.h"
 #include "../graph-algo/admitted.h"
 #include "../graph-algo/backlog.h"
 #include "../graph-algo/bin.h"

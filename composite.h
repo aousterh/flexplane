@@ -68,8 +68,9 @@ public:
 	/**
 	 * @param pkt: packet to handle
 	 */
-	void handle(struct emu_packet *pkt);
+	void handle(struct emu_packet *pkt) {THROW;}
 };
+
 #undef THROW
 
 /**

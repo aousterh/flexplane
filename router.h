@@ -31,7 +31,7 @@ public:
 	Router(uint16_t id) : id(id) {};
 	virtual ~Router() {};
 	virtual void push(struct emu_packet *packet) = 0;
-	virtual void pull(uint16_t output, struct emu_packet **packet) = 0;
+	virtual struct emu_packet *pull(uint16_t output) = 0;
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 private:

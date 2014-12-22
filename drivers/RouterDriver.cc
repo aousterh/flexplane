@@ -38,7 +38,7 @@ void RouterDriver::step() {
 #ifdef EMU_NO_BATCH_CALLS
 	n_pkts = 0;
 	for (uint32_t i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		m_router->pull(i, &pkt_ptrs[n_pkts]);
+		pkt_ptrs[n_pkts] = m_router->pull(i);
 
 		if (pkt_ptrs[n_pkts] != NULL)
 			n_pkts++;

@@ -83,7 +83,7 @@ public:
 	virtual ~CompositeRouter();
 
 	virtual void push(struct emu_packet *packet);
-	virtual void pull(uint16_t port, struct emu_packet **packet);
+	virtual struct emu_packet *pull(uint16_t port);
 
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
@@ -186,10 +186,9 @@ void CompositeRouter<CLA,QM,SCH>::push(struct emu_packet *packet)
 	{ composite_push<CLA,QM>(m_cla, m_qm, packet); }
 
 template < class CLA, class QM, class SCH >
-void CompositeRouter<CLA,QM,SCH>::pull(uint16_t port,
-		struct emu_packet **packet)
+struct emu_packet *CompositeRouter<CLA,QM,SCH>::pull(uint16_t port)
 {
-	*packet = m_sch->schedule(port);
+	return m_sch->schedule(port);
 }
 
 template < class CLA, class QM, class SCH >

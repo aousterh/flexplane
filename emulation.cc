@@ -21,7 +21,8 @@
 
 emu_state *g_state; /* global emulation state */
 
-static inline void free_packet_ring(struct fp_ring *packet_ring);
+static inline void free_packet_ring(struct emu_state *state,
+		struct fp_ring *packet_ring);
 
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
@@ -86,8 +87,8 @@ void emu_cleanup(struct emu_state *state) {
 		delete state->endpoint_groups[i];
 
 		/* free packet queues, return packets to mempool */
-		free_packet_ring(state->q_epg_new_pkts[i]);
-		free_packet_ring(state->q_epg_ingress[i]);
+		free_packet_ring(state, state->q_epg_new_pkts[i]);
+		free_packet_ring(state, state->q_epg_ingress[i]);
 	}
 
 	/* free all routers */
@@ -97,7 +98,7 @@ void emu_cleanup(struct emu_state *state) {
 		delete state->routers[i];
 
 		/* free ingress queue for this router, return packets to mempool */
-		free_packet_ring(state->q_router_ingress[i]);
+		free_packet_ring(state, state->q_router_ingress[i]);
 	}
 
 	delete state->out;
@@ -138,11 +139,13 @@ void emu_reset_sender(struct emu_state *state, uint16_t src) {
 }
 
 /* frees all the packets in an fp_ring, and frees the ring itself */
-static inline void free_packet_ring(struct fp_ring *packet_ring) {
+static inline void free_packet_ring(struct emu_state *state,
+		struct fp_ring *packet_ring)
+{
 	struct emu_packet *packet;
 
 	while (fp_ring_dequeue(packet_ring, (void **) &packet) == 0) {
-		free_packet(packet);
+		free_packet(state, packet);
 	}
 	fp_free(packet_ring);
 }

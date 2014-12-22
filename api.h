@@ -28,13 +28,14 @@ struct emu_admission_statistics;
  * Creates a packet, returns a pointer to the packet.
  */
 static inline
-struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow);
+struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
+		uint16_t dst, uint16_t flow);
 
 /**
  * Frees a packet when an emulation algorithm is done running.
  */
 static inline
-void free_packet(struct emu_packet *packet);
+void free_packet(struct emu_state *state, struct emu_packet *packet);
 
 /*
  * Logging functions that emulation algorithms may call.

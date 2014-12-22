@@ -20,11 +20,13 @@
 #include <assert.h>
 
 static inline
-struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow) {
+struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
+		uint16_t dst, uint16_t flow)
+{
 	struct emu_packet *packet;
 
 	/* allocate a packet */
-	while (fp_mempool_get(g_state->packet_mempool, (void **) &packet)
+	while (fp_mempool_get(state->packet_mempool, (void **) &packet)
 	       == -ENOENT) {
 		adm_log_emu_packet_alloc_failed(&g_state->stat);
 	}
@@ -34,9 +36,9 @@ struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow) {
 }
 
 static inline
-void free_packet(struct emu_packet *packet) {
+void free_packet(struct emu_state *state, struct emu_packet *packet) {
 	/* return the packet to the mempool */
-	fp_mempool_put(g_state->packet_mempool, packet);
+	fp_mempool_put(state->packet_mempool, packet);
 }
 
 static inline

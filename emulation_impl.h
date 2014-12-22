@@ -37,7 +37,7 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	while (amount > 0) {
 		n_pkts = 0;
 		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
-			pkt_ptrs[n_pkts] = create_packet(src, dst, flow);
+			pkt_ptrs[n_pkts] = create_packet(state, src, dst, flow);
 			n_pkts++;
 		}
 

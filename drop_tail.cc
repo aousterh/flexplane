@@ -41,16 +41,7 @@ DropTailRouter::DropTailRouter(uint16_t id, uint16_t port_capacity,
 	  DropTailRouterBase(&m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS, id)
 {}
 
-DropTailRouter::~DropTailRouter() {
-	uint16_t i;
-	struct emu_packet *packet;
-
-	/* free all queued packets */
-	for (i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		while (!m_bank.empty(i, 0))
-			free_packet(m_bank.dequeue(i, 0));
-	}
-}
+DropTailRouter::~DropTailRouter() {}
 
 DropTailEndpoint::DropTailEndpoint(uint16_t id, struct drop_tail_args *args,
 		EmulationOutput &emu_output)
@@ -76,7 +67,7 @@ void DropTailEndpoint::reset() {
 
 	/* dequeue all queued packets */
 	while (queue_dequeue(&output_queue, &packet) == 0)
-		free_packet(packet);
+		m_emu_output.free_packet(packet);
 }
 
 void DropTailEndpoint::new_packet(struct emu_packet *packet) {

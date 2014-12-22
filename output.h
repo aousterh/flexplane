@@ -58,10 +58,17 @@ public:
 	 */
 	inline void drop_raw(uint16_t src, uint16_t dst, uint16_t flow);
 
-private:
-	/** frees the given packet into packet_mempool */
+	/**
+	 * Frees the given packet into packet_mempool
+	 *
+	 * @important: don't free a packet that the emulation framework is expecting
+	 *    to either be admitted or dropped -- drop() or admit() it instead.
+	 * @note: this function aides resetting an endpoints' queues when the
+	 *    endpoint resets the connection to the emulation
+	 */
 	inline void free_packet(struct emu_packet *packet);
 
+private:
 	/** ring to enqueue admitted batches */
 	struct fp_ring					*q_admitted_out;
 

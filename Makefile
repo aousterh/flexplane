@@ -1,16 +1,21 @@
 # Macros
 CXX = g++
-CXXFLAGS = -g
+
+CXXDEFINES =
+CXXDEFINES += -DNO_DPDK
+CXXDEFINES += -DEMULATION_ALGO
+#CXXDEFINES += -DEMU_NO_BATCH_CALLS
+
+CXXFLAGS = $(CXXDEFINES)
+
+CXXFLAGS += -g
 CXXFLAGS += -DNDEBUG
 CXXFLAGS += -O3
 #CXXFLAGS += -O1
-CXXFLAGS += -DNO_DPDK
-#CXXFLAGS += -DEMU_NO_BATCH_CALLS
 #CXXFLAGS += -debug inline-debug-info
 CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
 CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
 CXXFLAGS += -I.
-CXXFLAGS += -DEMULATION_ALGO
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 
@@ -53,7 +58,7 @@ WRAP_HEADERS = \
 	
 
 %_wrap.cc: %.i $(WRAP_HEADERS) 
-	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
+	swig -c++ -python $(CXXDEFINES) -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
 
 
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \

@@ -21,6 +21,7 @@ SRCS-y := main.c \
           $(EMU_DIR)/drop_tail.cc \
           $(EMU_DIR)/emulation.cc \
           $(EMU_DIR)/endpoint_group.cc \
+          $(EMU_DIR)/router.cc \
 
 #          pim_admission_core.c \
 #          ../grant-accept/pim.c
@@ -42,7 +43,12 @@ CFLAGS += -march=core2
 #CFLAGS += -DPARALLEL_ALGO
 #CFLAGS += -DPIPELINED_ALGO
 CFLAGS += -DEMULATION_ALGO
+#CCFLAGS += -DEMU_NO_BATCH_CALLS
 CFLAGS += $(CMD_LINE_CFLAGS)
+
+# C++ flags
+CPPFLAGS += $(CFLAGS)
+CPPFLAGS += -D__STDC_LIMIT_MACROS
 
 # linker settings to work with C++
 LD = g++

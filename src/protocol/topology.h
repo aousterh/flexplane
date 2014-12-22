@@ -18,8 +18,8 @@
 #if (defined(PIPELINED_ALGO) | defined(PARALLEL_ALGO))
 #define FLOW_SHIFT 0
 #else
-#define	FLOW_SHIFT 6
-//#define FLOW_SHIFT 0
+//#define	FLOW_SHIFT 6
+#define FLOW_SHIFT 0
 #endif
 #define FLOWS_PER_NODE (1 << FLOW_SHIFT)
 #define FLOW_MASK ((1 << FLOW_SHIFT) - 1)

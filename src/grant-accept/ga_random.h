@@ -1,6 +1,8 @@
 #ifndef GRANT_ACCEPT_RANDOM_H_
 #define GRANT_ACCEPT_RANDOM_H_
 
+#include "../protocol/platform/generic.h"
+
 /**
  * Use Numerical Recipes
  * http://en.wikipedia.org/wiki/Linear_congruential_generator

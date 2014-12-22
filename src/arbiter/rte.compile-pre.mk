@@ -139,13 +139,13 @@ boolean = $(if $1,1,0)
 
 # command to compile a .cc file to generate an object
 ifeq ($(USE_HOST),1)
-CC_TO_O = $(HOSTCC) -Wp,-MD,$(call obj2dep,$(@)).tmp $(HOST_CFLAGS) \
-	$(CFLAGS_$(@)) $(HOST_EXTRA_CFLAGS) -o $@ -c $<
+CC_TO_O = $(HOSTCC) -Wp,-MD,$(call obj2dep,$(@)).tmp $(HOST_CPPFLAGS) \
+	$(CPPFLAGS_$(@)) $(HOST_EXTRA_CPPFLAGS) -o $@ -c $<
 CC_TO_O_STR = $(subst ','\'',$(CC_TO_O)) #'# fix syntax highlight
 CC_TO_O_DISP = $(if $(V),"$(CC_TO_O_STR)","  HOSTCC $(@)")
 else
-CC_TO_O = g++ -Wp,-MD,$(call obj2dep,$(@)).tmp $(CFLAGS) \
-	$(CFLAGS_$(@)) $(EXTRA_CFLAGS) -o $@ -c $<
+CC_TO_O = g++ -Wp,-MD,$(call obj2dep,$(@)).tmp $(CPPFLAGS) \
+	$(CPPFLAGS_$(@)) $(EXTRA_CPPFLAGS) -o $@ -c $<
 CC_TO_O_STR = $(subst ','\'',$(CC_TO_O)) #'# fix syntax highlight
 CC_TO_O_DISP = $(if $(V),"$(CC_TO_O_STR)","  CPP $(@)")
 endif

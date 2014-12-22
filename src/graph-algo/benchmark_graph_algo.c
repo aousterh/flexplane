@@ -184,8 +184,9 @@ struct admissible_state *setup_state(bool oversubscribed,
                                      q_spent, *bin_mempool,
                                      *admitted_traffic_mempool,
                                      q_bin, &q_new_demands[0],
-                                     &q_ready_partitions[0],
-                                     (void *) &emu_args);
+                                     &q_ready_partitions[0], R_DropTail,
+                                     (void *) &emu_args, E_DropTail,
+									 (void *) &emu_args);
     if (status == NULL) {
         printf("Error initializing admissible_status!\n");
         exit(-1);

@@ -32,11 +32,11 @@ int main() {
 
         uint16_t i;
         for (i = 0; i < N_PARTITIONS; i++) {
-                q_new_demands[i] = fp_ring_create(NEW_DEMANDS_Q_SIZE);
-                q_ready_partitions[i] = fp_ring_create(READY_PARTITIONS_Q_SIZE);
+                q_new_demands[i] = fp_ring_create("", 1 << NEW_DEMANDS_Q_SIZE, 0, 0);
+                q_ready_partitions[i] = fp_ring_create("", 1 << READY_PARTITIONS_Q_SIZE, 0, 0);
         }
         bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
-        q_admitted_out = fp_ring_create(ADMITTED_OUT_RING_LOG_SIZE);
+        q_admitted_out = fp_ring_create("", 1 << ADMITTED_OUT_RING_LOG_SIZE, 0, 0);
         admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
                                                      sizeof(struct admitted_traffic));
         struct pim_state *state = pim_create_state(&q_new_demands[0], q_admitted_out,

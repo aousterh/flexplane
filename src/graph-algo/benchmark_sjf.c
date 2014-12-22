@@ -106,10 +106,10 @@ int main(void)
     struct admitted_traffic **all_admitted;
 
     /* init queues */
-    q_bin = fp_ring_create(NUM_BINS_SHIFT);
-    q_urgent = fp_ring_create(2 * FP_NODES_SHIFT + 1);
-    q_head = fp_ring_create(2 * FP_NODES_SHIFT);
-    q_admitted_out = fp_ring_create(BATCH_SHIFT);
+    q_bin = fp_ring_create("", 1 << NUM_BINS_SHIFT, 0, 0);
+    q_urgent = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT + 1), 0, 0);
+    q_head = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
+    q_admitted_out = fp_ring_create("", 1 << BATCH_SHIFT, 0, 0);
     if (!q_bin) exit(-1);
     if (!q_urgent) exit(-1);
     if (!q_head) exit(-1);

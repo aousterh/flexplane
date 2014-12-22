@@ -33,8 +33,9 @@ struct fp_ring {
  * Creates a new backlog queue, with 2^{log_size} elements
  */
 static inline
-struct fp_ring *fp_ring_create(uint32_t log_size) {
-	uint32_t num_elems = (1 << log_size);
+struct fp_ring *fp_ring_create(const char *name, unsigned num_elems, int socket_id,
+		unsigned flags)
+{
 	uint32_t mem_size = sizeof(struct fp_ring)
 							+ num_elems * sizeof(void *);
     struct fp_ring *ring = (struct fp_ring *) malloc(mem_size);

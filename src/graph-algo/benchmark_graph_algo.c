@@ -162,17 +162,17 @@ struct admissible_state *setup_state(bool oversubscribed,
     struct fp_ring *q_ready_partitions[NUM_BIN_RINGS];
 
     /* init queues */
-    *q_bin = fp_ring_create(2 * FP_NODES_SHIFT);
-    q_head = fp_ring_create(2 * FP_NODES_SHIFT);
-    *q_admitted_out = fp_ring_create(ADMITTED_OUT_RING_LOG_SIZE);
-    q_spent = fp_ring_create(2 * FP_NODES_SHIFT);
+    *q_bin = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
+    q_head = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
+    *q_admitted_out = fp_ring_create("", 1 << ADMITTED_OUT_RING_LOG_SIZE, 0, 0);
+    q_spent = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
     *bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
     *admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
                                                  get_admitted_struct_size());
     for (i = 0; i < NUM_BIN_RINGS; i++) {
-            q_new_demands[i] = fp_ring_create(BIN_RING_SHIFT);
+            q_new_demands[i] = fp_ring_create("", 1 << BIN_RING_SHIFT, 0, 0);
             if (!q_new_demands[i]) exit(-1);
-            q_ready_partitions[i] = fp_ring_create(READY_PARTITIONS_Q_SIZE);
+            q_ready_partitions[i] = fp_ring_create("", 1 << READY_PARTITIONS_Q_SIZE, 0, 0);
             if (!q_ready_partitions[i]) exit(-1);
     }
     if (!*q_bin || !q_head || !*q_admitted_out || !q_spent || !*bin_mempool ||

@@ -30,7 +30,8 @@ clean:
 
 # Dependency rules for file targets
 emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o router.o \
-			drivers/RouterDriver.o drivers/EndpointDriver.o
+			drivers/RouterDriver.o drivers/EndpointDriver.o \
+			drivers/SingleRackNetworkDriver.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 ####################
@@ -57,6 +58,6 @@ WRAP_HEADERS = \
 
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \
 			drop_tail.pic.o	drivers/EndpointDriver.pic.o \
-			drivers/RouterDriver.pic.o
+			drivers/RouterDriver.pic.o drivers/SingleRackNetworkDriver.pic.o
 	$(CXX) $^ -o $@ $(LDFLAGS) -shared
 

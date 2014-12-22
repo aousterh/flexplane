@@ -13,8 +13,11 @@
 #include "router.h"
 #include "../protocol/topology.h"
 #include "output.h"
+#include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 
 #include <assert.h>
+#include <stdexcept>
 
 emu_state *g_state; /* global emulation state */
 
@@ -143,3 +146,38 @@ static inline void free_packet_ring(struct fp_ring *packet_ring) {
 	}
 	fp_free(packet_ring);
 }
+
+#ifdef NO_DPDK
+void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
+		uint32_t admitted_ring_size, uint32_t packet_mempool_size,
+		uint32_t packet_ring_size)
+{
+	struct fp_mempool *admitted_traffic_mempool =
+			fp_mempool_create(admitted_mempool_size,
+					sizeof(struct emu_admitted_traffic));
+	if (admitted_traffic_mempool == NULL)
+		throw std::runtime_error("couldn't allocate admitted_traffic_mempool");
+
+	struct fp_ring *q_admitted_out = fp_ring_create("q_admitted_out",
+			admitted_ring_size, 0, 0);
+	if (q_admitted_out == NULL)
+		throw std::runtime_error("couldn't allocate q_admitted_out");
+
+	struct fp_mempool *packet_mempool = fp_mempool_create(packet_mempool_size,
+			EMU_ALIGN(sizeof(struct emu_packet)));
+	if (packet_mempool == NULL)
+		throw std::runtime_error("couldn't allocate packet_mempool");
+
+	struct fp_ring *q_new_packets = fp_ring_create("q_new_packets",
+			packet_ring_size, 0, 0);
+	if (q_new_packets == NULL)
+		throw std::runtime_error("couldn't allocate q_new_packets");
+
+	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
+	packet_queues[1] = q_new_packets;
+
+	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
+			packet_mempool, packet_queues, R_DropTail, NULL,
+			E_DropTail, NULL);
+}
+#endif

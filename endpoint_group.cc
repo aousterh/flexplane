@@ -10,14 +10,14 @@
 #include "drop_tail.h"
 #include "packet.h"
 #include "../protocol/platform/generic.h"
-#include "../grant-accept/ga_random.h"
+#include "../graph-algo/random.h"
 #include <assert.h>
 #include <stddef.h>
 
 EndpointGroup::EndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output)
 	: num_endpoints(num_endpoints), m_emu_output(emu_output)
 {
-	ga_srand(&random_state, time(NULL));
+	seed_random(&random_state, time(NULL));
 }
 
 EndpointGroup::~EndpointGroup() {
@@ -73,7 +73,7 @@ uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 	 * use the Fisher-Yates/Knuth shuffle. */
 	for (i = 0; i < num_endpoints; i++) {
 		/* choose random index <= i to swap with */
-		j = ga_rand(&random_state, i + 1);
+		j = random_int(&random_state, i + 1);
 
 		/* swap the element at index j with i */
 		endpoint_order[i] = endpoint_order[j];

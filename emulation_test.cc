@@ -76,7 +76,7 @@ int main() {
     /* run a basic test of emulation framework */
     state = setup_state();
     printf("\nTEST 1: basic\n");
-    emu_add_backlog(state, 0, 1, 0, 1);
+    emu_add_backlog(state, 0, 1, 0, 1); // src, dst, id, amount
     emu_add_backlog(state, 0, 3, 0, 3);
     emu_add_backlog(state, 7, 3, 0, 2);
 

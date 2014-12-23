@@ -28,11 +28,9 @@ public:
 		  q_admitted_out(fp_ring_create("",1 << ADMITTED_Q_LOG_SIZE, 0, 0))
 	{
 		uint16_t i;
-		uint32_t packet_size;
 		struct drop_tail_args args;
 
 		/* initialize algo-specific state */
-		packet_size = EMU_ALIGN(sizeof(struct emu_packet)) + 0;
 		args.port_capacity = 5;
 
 		/* setup emulation state */

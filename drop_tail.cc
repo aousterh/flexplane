@@ -70,30 +70,35 @@ void DropTailEndpoint::reset() {
 		m_emu_output.free_packet(packet);
 }
 
-void DropTailEndpoint::new_packet(struct emu_packet *packet) {
-	/* try to enqueue the packet */
-	if (queue_enqueue(&output_queue, packet) != 0) {
-		/* no space to enqueue, drop this packet */
-		adm_log_emu_endpoint_dropped_packet(&g_state->stat);
-		m_emu_output.drop(packet);
-	}
-}
-
-void DropTailEndpoint::push(struct emu_packet *packet) {
-	assert(packet->dst == id);
-
-	/* pass the packet up the stack */
-	m_emu_output.admit(packet);
-}
-
-void DropTailEndpoint::pull(struct emu_packet **packet) {
-	/* dequeue one incoming packet if the queue is non-empty */
-	*packet = NULL;
-	queue_dequeue(&output_queue, packet);
-}
-
 DropTailEndpointGroup::DropTailEndpointGroup(uint16_t num_endpoints,
-		uint16_t start_id, struct drop_tail_args *args)
-	: EndpointGroup(num_endpoints) {
-	CONSTRUCT_ENDPOINTS(start_id, num_endpoints, DropTailEndpoint, args);
+		EmulationOutput &emu_output, uint16_t start_id,
+		struct drop_tail_args *args)
+	: EndpointGroup(num_endpoints, emu_output)  {
+	CONSTRUCT_ENDPOINTS(DropTailEndpoint, start_id, args, num_endpoints,
+		endpoints, emu_output);
+}
+
+DropTailEndpointGroup::~DropTailEndpointGroup() {
+	DESTRUCT_ENDPOINTS(num_endpoints, endpoints);
+}
+
+void DropTailEndpointGroup::reset(uint16_t endpoint_id) {
+	RESET_ENDPOINT(endpoints, endpoint_id);
+}
+
+void DropTailEndpointGroup::new_packets(struct emu_packet **pkts,
+		uint32_t n_pkts) {
+	ENDPOINTS_NEW_PACKETS(DropTailEndpoint, new_packet, pkts, n_pkts,
+			endpoints);
+}
+
+void DropTailEndpointGroup::push_batch(struct emu_packet **pkts,
+		uint32_t n_pkts) {
+	ENDPOINTS_PUSH_BATCH(DropTailEndpoint, push, pkts, n_pkts, endpoints);
+}
+
+uint32_t DropTailEndpointGroup::pull_batch(struct emu_packet **pkts,
+		uint32_t n_pkts) {
+	ENDPOINTS_PULL_BATCH(DropTailEndpoint, pull, pkts, n_pkts, random_state,
+			num_endpoints, endpoints);
 }

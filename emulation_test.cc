@@ -25,13 +25,7 @@ public:
 		  q_new_packets(fp_ring_create("", 1 << PACKET_Q_LOG_SIZE, 0, 0)),
 		  admitted_traffic_mempool(fp_mempool_create(ADMITTED_MEMPOOL_SIZE,
 								     sizeof(struct emu_admitted_traffic))),
-		  q_admitted_out(fp_ring_create("",1 << ADMITTED_Q_LOG_SIZE, 0, 0)),
-		  m_emu_output(q_admitted_out, admitted_traffic_mempool, packet_mempool,
-				  &state.stat),
-		  m_dropper(m_emu_output),
-		  m_epg(EMU_NUM_ENDPOINTS, m_emu_output),
-		  m_router(0, 5, m_dropper),
-		  m_driver(q_new_packets, &m_epg, &m_router, &state.stat, 1 << PACKET_Q_LOG_SIZE)
+		  q_admitted_out(fp_ring_create("",1 << ADMITTED_Q_LOG_SIZE, 0, 0))
 	{
 		uint16_t i;
 		uint32_t packet_size;
@@ -40,8 +34,6 @@ public:
 		/* initialize algo-specific state */
 		packet_size = EMU_ALIGN(sizeof(struct emu_packet)) + 0;
 		args.port_capacity = 5;
-
-		m_epg.init(0, &args);
 
 		/* setup emulation state */
 		struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
@@ -54,7 +46,6 @@ public:
 		emu_init_state(&state, admitted_traffic_mempool, q_admitted_out,
 				packet_mempool, packet_queues, R_DropTail, &args,
 				E_DropTail, &args);
-
 	}
 
 	/**
@@ -64,8 +55,7 @@ public:
 		struct emu_admitted_traffic *admitted;
 
 		/* emulate one timeslot */
-		m_driver.step();
-		m_emu_output.flush();
+		emu_emulate(&state);
 
 		/* print out admitted traffic */
 		while (fp_ring_dequeue(state.q_admitted_out, (void **) &admitted) != 0)
@@ -75,19 +65,13 @@ public:
 		fp_mempool_put(state.admitted_traffic_mempool, admitted);
 	}
 
+public:
+	struct emu_state state;
 private:
 	struct fp_mempool *packet_mempool;
 	struct fp_ring *q_new_packets;
 	struct fp_mempool *admitted_traffic_mempool;
 	struct fp_ring *q_admitted_out;
-public:
-	struct emu_state state;
-private:
-	EmulationOutput m_emu_output;
-	Dropper m_dropper;
-	DropTailEndpointGroup m_epg;
-	DropTailRouter m_router;
-	SingleRackNetworkDriver m_driver;
 };
 
 int main() {

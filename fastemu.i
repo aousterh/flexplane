@@ -23,17 +23,25 @@
 
 
 %{
+#include "util/make_ring.h"
 #include "packet.h"
 #include "api.h"
 #include "api_impl.h"
 #include "router.h"
 #include "composite.h"
+#include "emulation.h"
+#include "emulation_impl.h"
+#include "output.h"
 #include "queue_bank.h"
 #include "classifiers/TorClassifier.h"
 #include "classifiers/PyClassifier.h"
 #include "queue_managers/PyQueueManager.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "schedulers/PyScheduler.h"
+
+#include "endpoint.h"
+#include "endpoint_group.h"
+#include "drop_tail.h"
 %}
 
 #define __attribute__(x)
@@ -41,9 +49,13 @@
 %include "packet.h"
 %pointer_functions(struct emu_packet, pkt)
 
+%include "util/make_ring.h"
 %include "api.h"
 %include "router.h"
 %include "composite.h"
+
+%include "emulation.h"
+%include "output.h"
 %include "queue_bank.h"
 %template(PacketQueueBank) QueueBank<struct emu_packet>;
 
@@ -87,6 +99,10 @@
 %include "classifiers/PyClassifier.h"
 
 
-
 /** Composite Routers */
 %template(PyCompositeRouter) CompositeRouter<PyClassifier, PyQueueManager, PyScheduler>;
+
+%include "endpoint.h"
+%include "endpoint_group.h"
+%template(DropTailRouterBase) CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueScheduler>;
+%include "drop_tail.h"

@@ -12,15 +12,17 @@
 #include "endpoint_group.h"
 #include "router.h"
 #include "../protocol/topology.h"
+#include "output.h"
+#include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 
 #include <assert.h>
-
-#define ENDPOINT_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
-#define ROUTER_MAX_BURST	(EMU_ROUTER_NUM_PORTS * 2)
+#include <stdexcept>
 
 emu_state *g_state; /* global emulation state */
 
-static inline void free_packet_ring(struct fp_ring *packet_ring);
+static inline void free_packet_ring(struct emu_state *state,
+		struct fp_ring *packet_ring);
 
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
@@ -37,29 +39,42 @@ void emu_init_state(struct emu_state *state,
 	state->q_admitted_out = q_admitted_out;
 	state->packet_mempool = packet_mempool;
 
+	state->out = new EmulationOutput(state->q_admitted_out,
+			state->admitted_traffic_mempool, state->packet_mempool,
+			&state->stat);
+
 	/* construct topology: 1 router with 1 rack of endpoints */
+
+	/* initialize rings */
+	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		state->q_router_ingress[i] = packet_queues[pq++];
+	}
+	state->q_epg_new_pkts[0] = packet_queues[pq++];
+	state->q_epg_ingress[0] = packet_queues[pq++];
+
+	Dropper dropper(*state->out);
 
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		// TODO: use fp_malloc?
-		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i);
+		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i, dropper);
 		assert(state->routers[i] != NULL);
-		state->q_router_ingress[i] = packet_queues[pq++];
+		state->router_drivers[i] = new RouterDriver(state->routers[i],
+				state->q_router_ingress[0], state->q_epg_ingress[0],
+				&state->stat);
 	}
 
 	/* initialize all the endpoints in one endpoint group */
-	state->q_epg_new_pkts[0] = packet_queues[pq++];
-	state->q_epg_ingress[0] = packet_queues[pq++];
 	state->endpoint_groups[0] = EndpointGroupFactory::NewEndpointGroup(e_type,
-			EMU_NUM_ENDPOINTS);
+			EMU_NUM_ENDPOINTS, *state->out);
 	state->endpoint_groups[0]->init(0, (struct drop_tail_args *) e_args);
 	assert(state->endpoint_groups[0] != NULL);
-
-	/* get 1 admitted traffic for the core, init it */
-	while (fp_mempool_get(state->admitted_traffic_mempool,
-			(void **) &state->admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(&state->stat);
-	admitted_init(state->admitted);
+	state->endpoint_drivers[0] =
+			new EndpointDriver(state->q_epg_new_pkts[0],
+					state->q_router_ingress[0],
+					state->q_epg_ingress[0],
+					state->endpoint_groups[0],
+					&state->stat);
 }
 
 void emu_cleanup(struct emu_state *state) {
@@ -68,25 +83,25 @@ void emu_cleanup(struct emu_state *state) {
 
 	/* free all endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		delete state->endpoint_drivers[i];
 		delete state->endpoint_groups[i];
 
 		/* free packet queues, return packets to mempool */
-		free_packet_ring(state->q_epg_new_pkts[i]);
-		free_packet_ring(state->q_epg_ingress[i]);
+		free_packet_ring(state, state->q_epg_new_pkts[i]);
+		free_packet_ring(state, state->q_epg_ingress[i]);
 	}
 
 	/* free all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		delete state->router_drivers[i];
 		// TODO: call fp_free?
 		delete state->routers[i];
 
 		/* free ingress queue for this router, return packets to mempool */
-		free_packet_ring(state->q_router_ingress[i]);
+		free_packet_ring(state, state->q_router_ingress[i]);
 	}
 
-	/* return admitted struct to mempool */
-	if (state->admitted != NULL)
-		fp_mempool_put(state->admitted_traffic_mempool, state->admitted);
+	delete state->out;
 
 	/* empty queue of admitted traffic, return structs to the mempool */
 	while (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) == 0)
@@ -97,114 +112,7 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
-/**
- * Emulate push at a single endpoint group with index @index
- */
-static inline void emu_emulate_epg_push(struct emu_state *state,
-		uint32_t index) {
-	EndpointGroup *epg;
-	uint32_t n_pkts;
-	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
 
-	epg = state->endpoint_groups[index];
-
-	/* dequeue packets from network, pass to endpoint group */
-	n_pkts = fp_ring_dequeue_burst(state->q_epg_ingress[index],
-			(void **) &pkts[0], ENDPOINT_MAX_BURST);
-	epg->push_batch(&pkts[0], n_pkts);
-}
-
-/**
- * Emulate pull at a single endpoint group with index @index
- */
-static inline void emu_emulate_epg_pull(struct emu_state *state,
-		uint32_t index) {
-	EndpointGroup *epg;
-	uint32_t n_pkts, i;
-	struct emu_packet *pkts[MAX_ENDPOINTS_PER_GROUP];
-
-	epg = state->endpoint_groups[index];
-
-	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = epg->pull_batch(&pkts[0]);
-	assert(n_pkts <= MAX_ENDPOINTS_PER_GROUP);
-	if (fp_ring_enqueue_bulk(state->q_router_ingress[0],
-			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
-		/* enqueue failed, drop packets and log failure */
-		for (i = 0; i < n_pkts; i++)
-			drop_packet(pkts[i]);
-		adm_log_emu_send_packets_failed(&state->stat, n_pkts);
-	} else {
-		adm_log_emu_endpoint_sent_packets(&state->stat, n_pkts);
-	}
-}
-
-/**
- * Emulate new packets at a single endpoint group with index @index
- */
-static inline void emu_emulate_epg_new_pkts(struct emu_state *state,
-		uint32_t index) {
-	EndpointGroup *epg;
-	uint32_t n_pkts;
-	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
-
-	epg = state->endpoint_groups[index];
-
-	/* dequeue new packets, pass to endpoint group */
-	n_pkts = fp_ring_dequeue_burst(state->q_epg_new_pkts[index],
-			(void **) &pkts, ENDPOINT_MAX_BURST);
-	epg->new_packets(&pkts[0], n_pkts);
-}
-
-/**
- * Emulate a timeslot at a single router with index @index
- */
-static inline void emu_emulate_router(struct emu_state *state,
-		uint32_t index) {
-	Router *router;
-	uint32_t i, j, n_pkts;
-	struct emu_packet *pkt_ptrs[ROUTER_MAX_BURST];
-	assert(ROUTER_MAX_BURST >= EMU_ROUTER_NUM_PORTS);
-
-	/* get the corresponding router */
-	router = state->routers[index];
-
-	/* fetch packets to send from router to endpoints */
-#ifdef EMU_NO_BATCH_CALLS
-	n_pkts = 0;
-	for (uint32_t i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
-		router->pull(i, &pkt_ptrs[n_pkts]);
-
-		if (pkt_ptrs[n_pkts] != NULL)
-			n_pkts++;
-	}
-#else
-	n_pkts = router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
-#endif
-	assert(n_pkts <= EMU_ROUTER_NUM_PORTS);
-	/* send packets to endpoint groups */
-	if (fp_ring_enqueue_bulk(state->q_epg_ingress[0], (void **) &pkt_ptrs[0],
-			n_pkts) == -ENOBUFS) {
-		/* enqueue failed, drop packets and log failure */
-		for (j = 0; j < n_pkts; j++)
-			drop_packet(pkt_ptrs[j]);
-		adm_log_emu_send_packets_failed(&state->stat, n_pkts);
-	} else {
-		adm_log_emu_router_sent_packets(&state->stat, n_pkts);
-	}
-
-	/* fetch a batch of packets from the network */
-	n_pkts = fp_ring_dequeue_burst(state->q_router_ingress[index],
-			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
-	/* pass all incoming packets to the router */
-#ifdef EMU_NO_BATCH_CALLS
-	for (i = 0; i < n_pkts; i++) {
-		router->push(pkt_ptrs[i]);
-	}
-#else
-	router->push_batch(&pkt_ptrs[0], n_pkts);
-#endif
-}
 
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
@@ -215,30 +123,13 @@ void emu_emulate(struct emu_state *state) {
 
 	/* push new packets from the network to endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++)
-		emu_emulate_epg_push(state, i);
+		state->endpoint_drivers[i]->step();
 
 	/* emulate one timeslot at each router (push and pull) */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++)
-		emu_emulate_router(state, i);
+		state->router_drivers[i]->step();
 
-	/* handle pull/new packets at each endpoint group */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		/* pull packets from epg, send to next router */
-		emu_emulate_epg_pull(state, i);
-
-		/* deliver new packets from network stack (aka comm core) to epgs */
-		emu_emulate_epg_new_pkts(state, i);
-	}
-
-	/* send out the admitted traffic */
-	while (fp_ring_enqueue(state->q_admitted_out, state->admitted) != 0)
-		adm_log_emu_wait_for_admitted_enqueue(&state->stat);
-
-	/* get 1 new admitted traffic for the core, init it */
-	while (fp_mempool_get(state->admitted_traffic_mempool,
-				(void **) &state->admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(&state->stat);
-	admitted_init(state->admitted);
+	state->out->flush();
 }
 
 void emu_reset_sender(struct emu_state *state, uint16_t src) {
@@ -248,11 +139,48 @@ void emu_reset_sender(struct emu_state *state, uint16_t src) {
 }
 
 /* frees all the packets in an fp_ring, and frees the ring itself */
-static inline void free_packet_ring(struct fp_ring *packet_ring) {
+static inline void free_packet_ring(struct emu_state *state,
+		struct fp_ring *packet_ring)
+{
 	struct emu_packet *packet;
 
 	while (fp_ring_dequeue(packet_ring, (void **) &packet) == 0) {
-		free_packet(packet);
+		free_packet(state, packet);
 	}
 	fp_free(packet_ring);
 }
+
+#ifdef NO_DPDK
+void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
+		uint32_t admitted_ring_size, uint32_t packet_mempool_size,
+		uint32_t packet_ring_size)
+{
+	struct fp_mempool *admitted_traffic_mempool =
+			fp_mempool_create(admitted_mempool_size,
+					sizeof(struct emu_admitted_traffic));
+	if (admitted_traffic_mempool == NULL)
+		throw std::runtime_error("couldn't allocate admitted_traffic_mempool");
+
+	struct fp_ring *q_admitted_out = fp_ring_create("q_admitted_out",
+			admitted_ring_size, 0, 0);
+	if (q_admitted_out == NULL)
+		throw std::runtime_error("couldn't allocate q_admitted_out");
+
+	struct fp_mempool *packet_mempool = fp_mempool_create(packet_mempool_size,
+			EMU_ALIGN(sizeof(struct emu_packet)));
+	if (packet_mempool == NULL)
+		throw std::runtime_error("couldn't allocate packet_mempool");
+
+	struct fp_ring *q_new_packets = fp_ring_create("q_new_packets",
+			packet_ring_size, 0, 0);
+	if (q_new_packets == NULL)
+		throw std::runtime_error("couldn't allocate q_new_packets");
+
+	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
+	packet_queues[1] = q_new_packets;
+
+	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
+			packet_mempool, packet_queues, R_DropTail, NULL,
+			E_DropTail, NULL);
+}
+#endif

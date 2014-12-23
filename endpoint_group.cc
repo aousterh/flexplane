@@ -10,14 +10,14 @@
 #include "drop_tail.h"
 #include "packet.h"
 #include "../protocol/platform/generic.h"
-#include "../grant-accept/ga_random.h"
+#include "../graph-algo/random.h"
 #include <assert.h>
 #include <stddef.h>
 
-EndpointGroup::EndpointGroup(uint16_t num_endpoints)
-	: num_endpoints(num_endpoints)
+EndpointGroup::EndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output)
+	: num_endpoints(num_endpoints), m_emu_output(emu_output)
 {
-	ga_srand(&random_state, time(NULL));
+	seed_random(&random_state, time(NULL));
 }
 
 EndpointGroup::~EndpointGroup() {
@@ -33,7 +33,7 @@ void EndpointGroup::init(uint16_t start_id, struct drop_tail_args *args) {
 
 	/* initialize all the endpoints */
 	for (i = 0; i < num_endpoints; i++) {
-		endpoints[i] = make_endpoint(start_id + i, args);
+		endpoints[i] = make_endpoint(start_id + i, args, m_emu_output);
 		assert(endpoints[i] != NULL);
 	}
 }
@@ -63,16 +63,17 @@ void EndpointGroup::push_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 	}
 }
 
-uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
+uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts, uint32_t n_pkts) {
 	uint32_t i, j, count;
 	Endpoint *ep;
 	uint32_t endpoint_order[MAX_ENDPOINTS_PER_GROUP];
+	assert(n_pkts >= num_endpoints);
 
 	/* generate a random permutation of endpoint indices.
 	 * use the Fisher-Yates/Knuth shuffle. */
 	for (i = 0; i < num_endpoints; i++) {
 		/* choose random index <= i to swap with */
-		j = ga_rand(&random_state, i + 1);
+		j = random_int(&random_state, i + 1);
 
 		/* swap the element at index j with i */
 		endpoint_order[i] = endpoint_order[j];
@@ -94,10 +95,10 @@ uint32_t EndpointGroup::pull_batch(struct emu_packet **pkts) {
 }
 
 EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
-		uint16_t num_endpoints) {
+		uint16_t num_endpoints, EmulationOutput &emu_output) {
 	switch(type) {
 	case(E_DropTail):
-		return new DropTailEndpointGroup(num_endpoints);
+		return new DropTailEndpointGroup(num_endpoints, emu_output);
 	}
 	throw std::runtime_error("invalid endpoint type\n");
 }

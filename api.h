@@ -25,35 +25,17 @@ struct emu_admission_statistics;
  */
 
 /**
- * Notifies physical endpoint to drop packet and frees packet memory.
- */
-static inline
-void drop_packet(struct emu_packet *packet);
-
-/**
- * Enqueues a packet at an endpoint to pass up the network stack.
- */
-static inline
-void enqueue_packet_at_endpoint(struct emu_packet *packet);
-
-/**
  * Creates a packet, returns a pointer to the packet.
  */
 static inline
-struct emu_packet *create_packet(uint16_t src, uint16_t dst, uint16_t flow);
+struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
+		uint16_t dst, uint16_t flow);
 
 /**
  * Frees a packet when an emulation algorithm is done running.
  */
 static inline
-void free_packet(struct emu_packet *packet);
-
-/**
- * Add a dropped demand to the 'admitted' list to be passed to the comm cores.
- * Used as a helper function or when allocating memory for a packet fails.
- */
-static inline
-void drop_demand(uint16_t src, uint16_t dst, uint16_t flow);
+void free_packet(struct emu_state *state, struct emu_packet *packet);
 
 /*
  * Logging functions that emulation algorithms may call.

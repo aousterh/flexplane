@@ -15,6 +15,9 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include <inttypes.h>
+#include "drivers/EndpointDriver.h"
+#include "drivers/RouterDriver.h"
+
 
 #define ADMITTED_MEMPOOL_SIZE	10
 #define ADMITTED_Q_LOG_SIZE		4
@@ -29,6 +32,7 @@ extern struct emu_state *g_state;
 #ifdef __cplusplus
 class EndpointGroup;
 class Router;
+class EmulationOutput;
 #endif
 
 /**
@@ -56,10 +60,14 @@ struct emu_state {
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus
+	EmulationOutput	*out;
+
 	EndpointGroup	*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
+	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	Router			*routers[EMU_NUM_ROUTERS];
 	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
+	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
 #endif
 };
 
@@ -76,6 +84,15 @@ void emu_init_state(struct emu_state *state,
  * Cleanup state and memory. Called when emulation terminates.
  */
 void emu_cleanup(struct emu_state *state);
+
+/**
+ * Allocates rings and mempools, and initializes an emulation state
+ */
+#ifdef NO_DPDK
+void emu_alloc_init(struct emu_state *state,
+		uint32_t admitted_mempool_size, uint32_t admitted_ring_size,
+		uint32_t packet_mempool_size, uint32_t packet_ring_size);
+#endif
 
 /**
  * Add backlog from src to dst for flow.

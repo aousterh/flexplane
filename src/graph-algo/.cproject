@@ -22,6 +22,10 @@
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1265551277" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.2110946224" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1398706030" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1709826551" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="EMULATION_ALGO"/>
+									<listOptionValue builtIn="false" value="__cplusplus"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.996792770" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.657288539" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">

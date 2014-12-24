@@ -11,8 +11,10 @@
 #include "admitted.h"
 #include "endpoint_group.h"
 #include "router.h"
-#include "../protocol/topology.h"
+#include "drivers/EndpointDriver.h"
+#include "drivers/RouterDriver.h"
 #include "output.h"
+#include "../protocol/topology.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 

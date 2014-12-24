@@ -15,7 +15,6 @@
 #include "packet.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
-#include "output.h"
 
 #include <assert.h>
 

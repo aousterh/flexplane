@@ -51,7 +51,7 @@ void emu_init_state(struct emu_state *state,
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		state->q_router_ingress[i] = packet_queues[pq++];
 	}
-	state->q_epg_new_pkts[0] = packet_queues[pq++];
+	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->q_epg_ingress[0] = packet_queues[pq++];
 
 	Dropper dropper(*state->out);
@@ -71,7 +71,7 @@ void emu_init_state(struct emu_state *state,
 			EMU_NUM_ENDPOINTS, *state->out, 0, e_args);
 	assert(state->endpoint_groups[0] != NULL);
 	state->endpoint_drivers[0] =
-			new EndpointDriver(state->q_epg_new_pkts[0],
+			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
 					state->q_router_ingress[0],
 					state->q_epg_ingress[0],
 					state->endpoint_groups[0],
@@ -88,7 +88,7 @@ void emu_cleanup(struct emu_state *state) {
 		delete state->endpoint_groups[i];
 
 		/* free packet queues, return packets to mempool */
-		free_packet_ring(state, state->q_epg_new_pkts[i]);
+		free_packet_ring(state, state->comm_state.q_epg_new_pkts[i]);
 		free_packet_ring(state, state->q_epg_ingress[i]);
 	}
 

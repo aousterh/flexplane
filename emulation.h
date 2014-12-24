@@ -22,6 +22,9 @@
 #define PACKET_Q_LOG_SIZE		12
 #define EMU_NUM_PACKET_QS		(2 + EMU_NUM_ROUTERS)
 
+/* comm core state - 1 comm core right now */
+#define EPGS_PER_COMM			(EMU_NUM_ENDPOINT_GROUPS)
+
 struct emu_state;
 
 extern struct emu_state *g_state;
@@ -35,6 +38,14 @@ class RouterDriver;
 #endif
 
 /**
+ * Emu state allocated for each comm core
+ * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
+ */
+struct emu_comm_state {
+	struct fp_ring	*q_epg_new_pkts[EPGS_PER_COMM];
+};
+
+/**
  * Data structure to store the state of the emulation.
  * @admitted: the current admitted struct
  * @packet_mempool: pool of packet structs
@@ -42,7 +53,7 @@ class RouterDriver;
  * @q_admitted_out: queue of admitted structs to comm core
  * @stat: global emulation stats
  * @core_stats: stats per emulation core
- * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
+ * @comm_state: state allocated per comm core to manage new packets
  * @endpoint_groups: representations of groups of endpoints
  * @q_epg_ingress: queues of packets to endpoint groups from the network
  * @routers: representations of routers
@@ -55,7 +66,7 @@ struct emu_state {
 	struct fp_ring							*q_admitted_out;
 	struct emu_admission_statistics			stat;
 //	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
-	struct fp_ring							*q_epg_new_pkts[EMU_NUM_ENDPOINT_GROUPS];
+	struct emu_comm_state					comm_state;
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus

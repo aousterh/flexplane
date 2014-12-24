@@ -26,7 +26,7 @@
 struct packet_queue;
 
 struct drop_tail_args {
-	uint16_t port_capacity;
+    uint16_t q_capacity;
 };
 
 
@@ -56,14 +56,14 @@ typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueSchedule
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-	DropTailRouter(uint16_t id, uint16_t port_capacity, Dropper &dropper);
-	virtual ~DropTailRouter();
+    DropTailRouter(uint16_t id, uint16_t q_capacity, Dropper &dropper);
+    virtual ~DropTailRouter();
 
 private:
-	PacketQueueBank m_bank;
-	TorClassifier m_cla;
-	DropTailQueueManager m_qm;
-	SingleQueueScheduler m_sch;
+    PacketQueueBank m_bank;
+    TorClassifier m_cla;
+    DropTailQueueManager m_qm;
+    SingleQueueScheduler m_sch;
 };
 
 /**

@@ -14,7 +14,7 @@ struct emu_packet;
 class Dropper;
 
 enum RouterType {
-	R_DropTail
+    R_DropTail, R_RED
 };
 
 #ifdef __cplusplus
@@ -28,14 +28,14 @@ enum RouterType {
  */
 class Router {
 public:
-	Router(uint16_t id) : id(id) {};
-	virtual ~Router() {};
-	virtual void push(struct emu_packet *packet) = 0;
-	virtual struct emu_packet *pull(uint16_t output) = 0;
-	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
-	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
+    Router(uint16_t id) : id(id) {};
+    virtual ~Router() {};
+    virtual void push(struct emu_packet *packet) = 0;
+    virtual struct emu_packet *pull(uint16_t output) = 0;
+    virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
+    virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 private:
-	uint16_t id;
+    uint16_t id;
 };
 
 /**
@@ -44,8 +44,8 @@ private:
  */
 class RouterFactory {
 public:
-	static Router *NewRouter(enum RouterType type, void *args, uint16_t id,
-			Dropper &dropper);
+    static Router *NewRouter(enum RouterType type, void *args, uint16_t id,
+                             Dropper &dropper);
 };
 #endif
 

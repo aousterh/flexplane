@@ -79,14 +79,14 @@ public:
 template < class CLA, class QM, class SCH >
 class CompositeRouter : public Router {
 public:
-	CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id);
-	virtual ~CompositeRouter();
+    CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id);
+    virtual ~CompositeRouter();
 
-	virtual void push(struct emu_packet *packet);
-	virtual struct emu_packet *pull(uint16_t port);
+    virtual void push(struct emu_packet *packet);
+    virtual struct emu_packet *pull(uint16_t port);
 
-	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
-	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
+    virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
+    virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 
 private:
 	CLA *m_cla;

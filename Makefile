@@ -34,7 +34,7 @@ clean:
 	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o router.o \
+emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o red.o router.o \
 			drivers/RouterDriver.o drivers/EndpointDriver.o \
 			drivers/SingleRackNetworkDriver.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
@@ -62,7 +62,7 @@ WRAP_HEADERS = \
 
 
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \
-			drop_tail.pic.o	drivers/EndpointDriver.pic.o \
+			drop_tail.pic.o	red.pic.o drivers/EndpointDriver.pic.o \
 			drivers/RouterDriver.pic.o drivers/SingleRackNetworkDriver.pic.o
-	$(CXX) $^ -o $@ $(LDFLAGS) -shared
+	$(CXX) $^ -o $@ $(LDFLAGS) -shared -lpython -dynamiclib
 

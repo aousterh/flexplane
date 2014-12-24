@@ -12,8 +12,9 @@
 
 #include <inttypes.h>
 
-struct emu_packet;
 struct emu_admission_statistics;
+struct emu_packet;
+struct emu_state;
 
 /* alignment macros based on /net/pkt_sched.h */
 #define EMU_ALIGNTO				64

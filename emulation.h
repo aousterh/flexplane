@@ -15,9 +15,6 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include <inttypes.h>
-#include "drivers/EndpointDriver.h"
-#include "drivers/RouterDriver.h"
-
 
 #define ADMITTED_MEMPOOL_SIZE	10
 #define ADMITTED_Q_LOG_SIZE		4
@@ -33,6 +30,8 @@ extern struct emu_state *g_state;
 class EndpointGroup;
 class Router;
 class EmulationOutput;
+class EndpointDriver;
+class RouterDriver;
 #endif
 
 /**

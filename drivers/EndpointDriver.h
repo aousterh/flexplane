@@ -8,7 +8,8 @@
 #ifndef DRIVERS_ENDPOINTDRIVER_H_
 #define DRIVERS_ENDPOINTDRIVER_H_
 
-struct fp_ring;
+#include "../graph-algo/fp_ring.h"
+
 class EndpointGroup;
 struct emu_admission_statistics;
 

@@ -8,8 +8,9 @@
 #ifndef DRIVERS_ROUTERDRIVER_H_
 #define DRIVERS_ROUTERDRIVER_H_
 
+#include "../graph-algo/fp_ring.h"
+
 class Router;
-struct fp_ring;
 struct emu_admission_statistics;
 
 class RouterDriver {

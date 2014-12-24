@@ -11,13 +11,13 @@
 #include <inttypes.h>
 
 struct emu_packet;
-class Dropper;
 
 enum RouterType {
     R_DropTail, R_RED
 };
 
 #ifdef __cplusplus
+class Dropper;
 /**
  * A representation of a router in the emulated network.
  * @push: enqueue a single packet to this router

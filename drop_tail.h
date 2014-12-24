@@ -17,6 +17,7 @@
 #include "composite.h"
 #include "queue_bank.h"
 #include "../graph-algo/fp_ring.h"
+#include "../graph-algo/random.h"
 #include "classifiers/TorClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "output.h"
@@ -76,9 +77,25 @@ public:
 			EmulationOutput &emu_output);
 	~DropTailEndpoint();
 	virtual void reset();
-	virtual void new_packet(struct emu_packet *packet);
-	virtual void push(struct emu_packet *packet);
-	virtual void pull(struct emu_packet **packet);
+	void inline new_packet(struct emu_packet *packet) {
+		/* try to enqueue the packet */
+		if (queue_enqueue(&output_queue, packet) != 0) {
+			/* no space to enqueue, drop this packet */
+			adm_log_emu_endpoint_dropped_packet(&g_state->stat);
+			m_emu_output.drop(packet);
+		}
+	}
+	void inline push(struct emu_packet *packet) {
+		assert(packet->dst == id);
+
+		/* pass the packet up the stack */
+		m_emu_output.admit(packet);
+	}
+	void inline pull(struct emu_packet **packet) {
+		/* dequeue one incoming packet if the queue is non-empty */
+		*packet = NULL;
+		queue_dequeue(&output_queue, packet);
+	}
 private:
 	struct packet_queue	output_queue;
 	EmulationOutput &m_emu_output;
@@ -89,15 +106,15 @@ private:
  */
 class DropTailEndpointGroup : public EndpointGroup {
 public:
-	DropTailEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output)
-	: EndpointGroup(num_endpoints, emu_output) {};
-	~DropTailEndpointGroup() {};
-	virtual Endpoint *make_endpoint(uint16_t id, struct drop_tail_args *args,
-			EmulationOutput &emu_output) {
-		return new DropTailEndpoint(id, args, emu_output);
-	}
-	/* TODO: replace new_packets/push/pull functions with more efficient batch
-	 * versions */
+	DropTailEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output,
+			uint16_t start_id, struct drop_tail_args *args);
+	~DropTailEndpointGroup();
+	virtual void reset(uint16_t endpoint_id);
+	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts);
+	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
+	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
+private:
+	DropTailEndpoint	*endpoints[MAX_ENDPOINTS_PER_GROUP];
 };
 
 #endif /* DROP_TAIL_H_ */

@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define MAX_PACKET_QUEUE_LEN	128
+#define MAX_PACKET_QUEUE_LEN	10000
 
 struct emu_packet;
 

@@ -9,7 +9,7 @@ CXXDEFINES += -DEMULATION_ALGO
 CXXFLAGS = $(CXXDEFINES)
 
 CXXFLAGS += -g
-CXXFLAGS += -DNDEBUG
+#CXXFLAGS += -DNDEBUG
 CXXFLAGS += -O3
 #CXXFLAGS += -O1
 #CXXFLAGS += -debug inline-debug-info
@@ -54,8 +54,7 @@ WRAP_HEADERS = \
 	classifiers/PyClassifier.h \
 	queue_managers/PyQueueManager.h \
 	schedulers/SingleQueueScheduler.h \
-	schedulers/PyScheduler.h
-	
+	schedulers/PyScheduler.h	
 
 %_wrap.cc: %.i $(WRAP_HEADERS) 
 	swig -c++ -python $(CXXDEFINES) -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
@@ -64,5 +63,6 @@ WRAP_HEADERS = \
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \
 			drop_tail.pic.o	red.pic.o drivers/EndpointDriver.pic.o \
 			drivers/RouterDriver.pic.o drivers/SingleRackNetworkDriver.pic.o
-	$(CXX) $^ -o $@ $(LDFLAGS) -shared -lpython -dynamiclib
+	$(CXX) $^ -o $@ $(LDFLAGS) -shared
+
 

@@ -22,6 +22,8 @@ SRCS-y := main.c \
           $(EMU_DIR)/emulation.cc \
           $(EMU_DIR)/endpoint_group.cc \
           $(EMU_DIR)/router.cc \
+          $(EMU_DIR)/drivers/EndpointDriver.cc \
+          $(EMU_DIR)/drivers/RouterDriver.cc \
 
 #          pim_admission_core.c \
 #          ../grant-accept/pim.c

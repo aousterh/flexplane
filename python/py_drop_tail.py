@@ -74,10 +74,10 @@ sch = PyPrioScheduler(bank, NUM_QUEUES_PER_PORT)
 rtr = PyCompositeRouter(cla,qm,sch,NUM_ENDPOINTS,0)
 
 #make endpoint group
-epg = DropTailEndpointGroup(NUM_ENDPOINTS, emu_output)
-epg.init(0, None)
+# epg = SimpleEndpointGroup(NUM_ENDPOINTS, emu_output, 0, NULL)
+# epg.init(0, None)
 
-b = create_packet(state, 1,2,3)
+b = create_packet(state, 1,2,3,0) # state,src,dst,flow,id
 
 print "sending packet", b
 rtr.push(b)
@@ -86,5 +86,5 @@ c = rtr.pull(0)
 print "null packet", c
 
 c = rtr.pull(2)
-print "the packet we sent (src,dst,flow) = ", c.src, c.dst, c.flow
+print "the packet we sent (src,dst,flow,id) = ", c.src, c.dst, c.flow, c.id
 

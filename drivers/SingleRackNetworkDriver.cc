@@ -12,13 +12,13 @@
 SingleRackNetworkDriver::SingleRackNetworkDriver(struct fp_ring* q_new_packets,
 		EndpointGroup* epg, Router* router,
 		struct emu_admission_statistics* stat, uint32_t ring_size)
-	: m_q_epg_to_router(make_ring("epg_to_router_ring", ring_size, 0,
-			RING_F_SP_ENQ | RING_F_SC_DEQ)),
-	  m_q_router_to_epg(make_ring("router_to_epg_ring", ring_size, 0,
-				RING_F_SP_ENQ | RING_F_SC_DEQ)),
-	  m_endpoint_driver(q_new_packets, m_q_epg_to_router, m_q_router_to_epg,
-			  epg, stat),
-	  m_router_driver(router, m_q_epg_to_router, m_q_router_to_epg, stat)
+    : m_q_epg_to_router(make_ring("epg_to_router_ring", ring_size, 0,
+                                  RING_F_SP_ENQ | RING_F_SC_DEQ)),
+      m_q_router_to_epg(make_ring("router_to_epg_ring", ring_size, 0,
+                                  RING_F_SP_ENQ | RING_F_SC_DEQ)),
+      m_endpoint_driver(q_new_packets, m_q_epg_to_router, m_q_router_to_epg,
+                        epg, stat),
+      m_router_driver(router, m_q_epg_to_router, m_q_router_to_epg, stat)
 {}
 
 void SingleRackNetworkDriver::step() {

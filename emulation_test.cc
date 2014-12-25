@@ -63,7 +63,7 @@ public:
             packet_queues[1] = q_new_packets;
 
             emu_init_state(&state, admitted_traffic_mempool, q_admitted_out,
-                           packet_mempool, packet_queues, rtype, &rtr_args,
+                           packet_mempool, packet_queues, rtype, rtr_args,
                            E_DropTail, &args);
 	}
 

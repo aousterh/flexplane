@@ -36,6 +36,7 @@
 #include "classifiers/TorClassifier.h"
 #include "classifiers/PyClassifier.h"
 #include "queue_managers/PyQueueManager.h"
+#include "red.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "schedulers/PyScheduler.h"
 
@@ -101,8 +102,10 @@
 
 /** Composite Routers */
 %template(PyCompositeRouter) CompositeRouter<PyClassifier, PyQueueManager, PyScheduler>;
+%template(REDRouterBase) CompositeRouter<TorClassifier, REDQueueManager, SingleQueueScheduler>;
 
 %include "endpoint.h"
 %include "endpoint_group.h"
 %template(DropTailRouterBase) CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueScheduler>;
 %include "drop_tail.h"
+%include "red.h"

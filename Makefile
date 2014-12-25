@@ -63,6 +63,7 @@ WRAP_HEADERS = \
 
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \
 			drop_tail.pic.o	red.pic.o simple_endpoint.pic.o \
+			red.pic.o \
 			drivers/EndpointDriver.pic.o \
 			drivers/RouterDriver.pic.o drivers/SingleRackNetworkDriver.pic.o
 	$(CXX) $^ -o $@ $(LDFLAGS) -shared

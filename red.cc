@@ -26,7 +26,7 @@ REDQueueManager::REDQueueManager(PacketQueueBank *bank,
 
 #define FORCE_DROP true
 
-inline void REDQueueManager::enqueue(struct emu_packet *pkt,
+void REDQueueManager::enqueue(struct emu_packet *pkt,
                                      uint32_t port, uint32_t queue)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
@@ -41,7 +41,7 @@ inline void REDQueueManager::enqueue(struct emu_packet *pkt,
 }
 
 #define RAND_RANGE (1<<16)-1
-inline void REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen) 
+void REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
 {
     // note that the EWMA weight is specified as a bit shift factor
     uint32_t q_avg = (qlen >> m_red_params.wq_shift) + (((q_avg << m_red_params.wq_shift) - 1 ) >> m_red_params.wq_shift);
@@ -67,7 +67,7 @@ inline void REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
     // in all other cases, q_avg <= q_min, so just return
 }
 
-inline void REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop) {
+void REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop) {
     if (force_drop || !(m_red_params.ecn)) {
         adm_log_emu_router_dropped_packet(&g_state->stat);
         m_dropper.drop(pkt);

@@ -35,9 +35,9 @@ struct red_args {
 class REDQueueManager : public QueueManager {
 public:
     REDQueueManager(PacketQueueBank *bank, struct red_args *red_params, Dropper &dropper);
-    inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
-    inline void red_rules(struct emu_packet *pkt, uint32_t qlen);
-    inline void mark_or_drop(struct emu_packet *pkt, bool force);
+    void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+    void red_rules(struct emu_packet *pkt, uint32_t qlen);
+    void mark_or_drop(struct emu_packet *pkt, bool force);
 
 private:
     /** the QueueBank where packets are stored */

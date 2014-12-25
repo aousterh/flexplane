@@ -61,7 +61,7 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		while (fp_ring_enqueue_bulk(comm_state->q_epg_new_pkts[0],
 				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
-			adm_log_emu_endpoint_enqueue_backlog_failed(&state->stat, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&state->stat, n_pkts);
 		}
 
 		amount -= n_pkts;

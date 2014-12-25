@@ -10,7 +10,7 @@ CXXFLAGS = $(CXXDEFINES)
 
 CXXFLAGS += -g
 #CXXFLAGS += -DNDEBUG
-CXXFLAGS += -O3
+#CXXFLAGS += -O3
 #CXXFLAGS += -O1
 #CXXFLAGS += -debug inline-debug-info
 CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo

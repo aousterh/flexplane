@@ -15,7 +15,6 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		uint16_t id, Dropper &dropper) {
 	switch (type) {
 	case (R_DropTail):
-            assert(args != NULL);
             return new DropTailRouter(id,
                                       (args == NULL ? 128 : ((struct drop_tail_args *)args)->q_capacity),
                                       dropper);

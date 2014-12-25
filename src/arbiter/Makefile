@@ -19,6 +19,7 @@ SRCS-y := main.c \
           ../graph-algo/euler_split.c \
           emu_admission_core.cc \
           $(EMU_DIR)/drop_tail.cc \
+          $(EMU_DIR)/simple_endpoint.cc \
           $(EMU_DIR)/red.cc \
           $(EMU_DIR)/emulation.cc \
           $(EMU_DIR)/endpoint_group.cc \

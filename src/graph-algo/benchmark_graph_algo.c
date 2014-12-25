@@ -18,6 +18,7 @@
 #include "rdtsc.h"  // For timing
 #include "../protocol/topology.h"
 #include "../emulation/drop_tail.h"
+#include "../emulation/simple_endpoint.h"
 
 #define NUM_FRACTIONS_A 11
 #define NUM_SIZES_A 1

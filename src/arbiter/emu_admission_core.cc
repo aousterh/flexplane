@@ -28,7 +28,7 @@ struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
 struct drop_tail_args args = {
-		.port_capacity	= 128,
+		.q_capacity	= 128,
 };
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out)

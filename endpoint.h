@@ -13,7 +13,7 @@
 struct emu_packet;
 
 enum EndpointType {
-	E_DropTail
+	E_Simple
 };
 
 #ifdef __cplusplus

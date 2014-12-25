@@ -67,15 +67,19 @@ private:
     SingleQueueScheduler m_sch;
 };
 
+struct simple_ep_args {
+    uint16_t q_capacity;
+};
+
 /**
  * A drop tail endpoint.
  * @output_queue: a queue of packets to be sent out
  */
-class DropTailEndpoint : public Endpoint {
+class SimpleEndpoint : public Endpoint {
 public:
-	DropTailEndpoint(uint16_t id, struct drop_tail_args *args,
+	SimpleEndpoint(uint16_t id, struct simple_ep_args *args,
 			EmulationOutput &emu_output);
-	~DropTailEndpoint();
+	~SimpleEndpoint();
 	virtual void reset();
 	void inline new_packet(struct emu_packet *packet) {
 		/* try to enqueue the packet */
@@ -104,17 +108,17 @@ private:
 /**
  * A drop tail endpoint group.
  */
-class DropTailEndpointGroup : public EndpointGroup {
+class SimpleEndpointGroup : public EndpointGroup {
 public:
-	DropTailEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output,
-			uint16_t start_id, struct drop_tail_args *args);
-	~DropTailEndpointGroup();
+	SimpleEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output,
+			uint16_t start_id, struct simple_ep_args *args);
+	~SimpleEndpointGroup();
 	virtual void reset(uint16_t endpoint_id);
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 private:
-	DropTailEndpoint	*endpoints[MAX_ENDPOINTS_PER_GROUP];
+	SimpleEndpoint	*endpoints[MAX_ENDPOINTS_PER_GROUP];
 };
 
 #endif /* DROP_TAIL_H_ */

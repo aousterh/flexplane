@@ -42,7 +42,7 @@ DropTailRouter::DropTailRouter(uint16_t id, uint16_t q_capacity,
 
 DropTailRouter::~DropTailRouter() {}
 
-DropTailEndpoint::DropTailEndpoint(uint16_t id, struct drop_tail_args *args,
+SimpleEndpoint::SimpleEndpoint(uint16_t id, struct simple_ep_args *args,
 		EmulationOutput &emu_output)
 	: Endpoint(id), m_emu_output(emu_output)
 {
@@ -57,11 +57,11 @@ DropTailEndpoint::DropTailEndpoint(uint16_t id, struct drop_tail_args *args,
     queue_create(&output_queue, qmax);
 }
 
-DropTailEndpoint::~DropTailEndpoint() {
+SimpleEndpoint::~SimpleEndpoint() {
 	reset();
 }
 
-void DropTailEndpoint::reset() {
+void SimpleEndpoint::reset() {
 	struct emu_packet *packet;
 
 	/* dequeue all queued packets */
@@ -69,35 +69,35 @@ void DropTailEndpoint::reset() {
 		m_emu_output.free_packet(packet);
 }
 
-DropTailEndpointGroup::DropTailEndpointGroup(uint16_t num_endpoints,
+SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
 		EmulationOutput &emu_output, uint16_t start_id,
-		struct drop_tail_args *args)
+		struct simple_ep_args *args)
 	: EndpointGroup(num_endpoints, emu_output)  {
-	CONSTRUCT_ENDPOINTS(DropTailEndpoint, start_id, args, num_endpoints,
+	CONSTRUCT_ENDPOINTS(SimpleEndpoint, start_id, args, num_endpoints,
 		endpoints, emu_output);
 }
 
-DropTailEndpointGroup::~DropTailEndpointGroup() {
+SimpleEndpointGroup::~SimpleEndpointGroup() {
 	DESTRUCT_ENDPOINTS(num_endpoints, endpoints);
 }
 
-void DropTailEndpointGroup::reset(uint16_t endpoint_id) {
+void SimpleEndpointGroup::reset(uint16_t endpoint_id) {
 	RESET_ENDPOINT(endpoints, endpoint_id);
 }
 
-void DropTailEndpointGroup::new_packets(struct emu_packet **pkts,
+void SimpleEndpointGroup::new_packets(struct emu_packet **pkts,
 		uint32_t n_pkts) {
-	ENDPOINTS_NEW_PACKETS(DropTailEndpoint, new_packet, pkts, n_pkts,
+	ENDPOINTS_NEW_PACKETS(SimpleEndpoint, new_packet, pkts, n_pkts,
 			endpoints);
 }
 
-void DropTailEndpointGroup::push_batch(struct emu_packet **pkts,
+void SimpleEndpointGroup::push_batch(struct emu_packet **pkts,
 		uint32_t n_pkts) {
-	ENDPOINTS_PUSH_BATCH(DropTailEndpoint, push, pkts, n_pkts, endpoints);
+	ENDPOINTS_PUSH_BATCH(SimpleEndpoint, push, pkts, n_pkts, endpoints);
 }
 
-uint32_t DropTailEndpointGroup::pull_batch(struct emu_packet **pkts,
+uint32_t SimpleEndpointGroup::pull_batch(struct emu_packet **pkts,
 		uint32_t n_pkts) {
-	ENDPOINTS_PULL_BATCH(DropTailEndpoint, pull, pkts, n_pkts, random_state,
+	ENDPOINTS_PULL_BATCH(SimpleEndpoint, pull, pkts, n_pkts, random_state,
 			num_endpoints, endpoints);
 }

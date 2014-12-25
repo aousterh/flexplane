@@ -64,7 +64,7 @@ public:
 
             emu_init_state(&state, admitted_traffic_mempool, q_admitted_out,
                            packet_mempool, packet_queues, rtype, rtr_args,
-                           E_DropTail, &args);
+                           E_Simple, NULL); /* use default endpoint args */
 	}
 
     /**

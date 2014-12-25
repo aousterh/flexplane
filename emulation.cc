@@ -185,6 +185,6 @@ void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
 			packet_mempool, packet_queues, R_DropTail, NULL,
-			E_DropTail, NULL);
+			E_Simple, NULL);
 }
 #endif

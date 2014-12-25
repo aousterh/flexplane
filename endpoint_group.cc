@@ -24,9 +24,9 @@ EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
 		uint16_t num_endpoints, EmulationOutput &emu_output, uint16_t start_id,
 		void *args) {
 	switch(type) {
-	case(E_DropTail):
-		return new DropTailEndpointGroup(num_endpoints, emu_output, start_id,
-				(struct drop_tail_args *) args);
+	case(E_Simple):
+		return new SimpleEndpointGroup(num_endpoints, emu_output, start_id,
+				(struct simple_ep_args *) args);
 	}
 	throw std::runtime_error("invalid endpoint type\n");
 }

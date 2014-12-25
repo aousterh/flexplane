@@ -25,6 +25,7 @@ private:
 	struct fp_ring *m_q_to_router;
 	struct fp_ring *m_q_from_router;
 	struct emu_admission_statistics	*m_stat;
+	uint32_t m_random;
 };
 
 #endif /* DRIVERS_ROUTERDRIVER_H_ */

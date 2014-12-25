@@ -8,12 +8,14 @@
 #include "RouterDriver.h"
 #include <assert.h>
 #include <stdint.h>
+#include <time.h> /* for seeding the random number generator */
 #include "../config.h"
 #include "../router.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include "../api.h"
 #include "../api_impl.h"
+#include "../graph-algo/random.h"
 
 #define ROUTER_MAX_BURST	(EMU_ROUTER_NUM_PORTS * 2)
 
@@ -24,7 +26,9 @@ RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
 	  m_q_to_router(q_to_router),
 	  m_q_from_router(q_from_router),
 	  m_stat(stat)
-{}
+{
+	seed_random(&m_random, time(NULL));
+}
 
 /**
  * Emulate a timeslot at a single router
@@ -55,9 +59,21 @@ void RouterDriver::step() {
 	}
 	adm_log_emu_router_sent_packets(m_stat, n_pkts);
 
+
 	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(m_q_to_router,
 			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
+	/* shuffle packets to ensure router doesn't discriminate against some
+	 * endpoints */
+	for (uint32_t i = n_pkts - 1; i > 0; i--) {
+		/* decide which packet should be in pkts_ptrs[i] between 0..i*/
+		uint32_t j = random_int(&m_random, i + 1);
+		/* swap i and j, works okay even when i == j */
+		struct emu_packet *tmp = pkt_ptrs[i];
+		pkt_ptrs[i] = pkt_ptrs[j];
+		pkt_ptrs[j] = tmp;
+	}
+
 	/* pass all incoming packets to the router */
 #ifdef EMU_NO_BATCH_CALLS
 	for (i = 0; i < n_pkts; i++) {

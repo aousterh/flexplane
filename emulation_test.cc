@@ -33,14 +33,14 @@ public:
             void *rtr_args;
 
             /* initialize algo-specific state */
-            args.q_capacity = 40000; // 4 milliseconds at 1 Gbit/s
-
             switch (rtype) {
             case R_DropTail:
+                args.q_capacity = 5; // small capacity for testing
                 rtr_args = (void *) &args;
                 break;
                 
             case R_RED:
+                args.q_capacity = 40000; // 4 milliseconds at 1 Gbit/s
                 struct red_args red_params;
                 red_params.q_capacity = 400;
                 red_params.ecn = false;
@@ -111,11 +111,11 @@ int main() {
     /* test drop-tail behavior at routers */
     printf("\nTEST 2: drop-tail\n");
     test = new EmulationTest(R_DropTail);
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < 10; i++) {
         emu_add_backlog(&test->state, i, 13, 0, 3);
         test->emulate_and_print_admitted();
     }
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < 10; i++) {
         test->emulate_and_print_admitted();
     }
 

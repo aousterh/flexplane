@@ -9,6 +9,7 @@
 #include "endpoint.h"
 #include "drop_tail.h"
 #include "packet.h"
+#include "simple_endpoint.h"
 #include "../protocol/platform/generic.h"
 #include "../graph-algo/random.h"
 #include <assert.h>

@@ -54,6 +54,9 @@ void emu_init_state(struct emu_state *state,
 	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->q_epg_ingress[0] = packet_queues[pq++];
 
+	for (i = 0; i < TOTAL_FLOWS_PER_COMM; i++)
+		state->comm_state.next_packet_id[i] = 0;
+
 	Dropper dropper(*state->out);
 
 	/* initialize all the routers */

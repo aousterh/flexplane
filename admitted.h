@@ -19,9 +19,10 @@
 #include <stdio.h>
 
 struct emu_admitted_edge {
-	uint16_t src;
-	uint16_t dst;
-	uint8_t flags; /* only 4 lowest bits are used */
+	uint16_t	src;
+	uint16_t	dst;
+	uint8_t		flags; /* only 4 lowest bits are used */
+	uint16_t	id; /* sequential id within this flow */
 };
 
 /**
@@ -52,7 +53,7 @@ void admitted_init(struct emu_admitted_traffic *admitted) {
  */
 static inline __attribute__((always_inline))
 void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
-			  uint16_t dst, uint16_t flow, uint16_t flags) {
+			  uint16_t dst, uint16_t flow, uint16_t id, uint16_t flags) {
 	assert(admitted != NULL);
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
@@ -66,6 +67,7 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
 	/* indicate dst as combination of dst_node and flow */
 	edge->dst = (dst << FLOW_SHIFT) | (flow & FLOW_MASK);
 	edge->flags = flags & FLAGS_MASK;
+	edge->id = id;
 }
 
 /**
@@ -73,10 +75,10 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
-				   uint16_t src, uint16_t dst, uint16_t flow) {
+				   uint16_t src, uint16_t dst, uint16_t flow, uint16_t id) {
 	assert(admitted->admitted < EMU_NUM_ENDPOINTS);
 
-	admitted_insert_edge(admitted, src, dst, flow, EMU_FLAGS_NONE);
+	admitted_insert_edge(admitted, src, dst, flow, id, EMU_FLAGS_NONE);
 	admitted->admitted++;
 }
 
@@ -85,10 +87,10 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
-				  uint16_t src, uint16_t dst, uint16_t flow) {
+				  uint16_t src, uint16_t dst, uint16_t flow, uint16_t id) {
 	assert(admitted->dropped < EMU_MAX_DROPS);
 
-	admitted_insert_edge(admitted, src, dst, flow, EMU_FLAGS_DROP);
+	admitted_insert_edge(admitted, src, dst, flow, id, EMU_FLAGS_DROP);
 	admitted->dropped++;
 }
 
@@ -102,9 +104,11 @@ void admitted_edge_print(struct emu_admitted_edge *edge) {
 	dst = edge->dst >> FLOW_SHIFT;
 	flow = edge->dst & FLOW_MASK;
 	if (edge->flags == EMU_FLAGS_DROP) {
-		printf("\tDROP src %d to dst %d (flow %d)\n", edge->src, dst, flow);
+		printf("\tDROP src %d to dst %d (flow %d, id %d)\n", edge->src, dst,
+				flow, edge->id);
 	} else {
-		printf("\tsrc %d to dst %d (flow %d)\n", edge->src, dst, flow);
+		printf("\tsrc %d to dst %d (flow %d, id %d)\n", edge->src, dst, flow,
+				edge->id);
 	}
 }
 

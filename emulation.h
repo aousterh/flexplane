@@ -14,6 +14,7 @@
 #include "router.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
+#include "../protocol/topology.h"
 #include <inttypes.h>
 
 #define ADMITTED_MEMPOOL_SIZE	10
@@ -24,6 +25,8 @@
 
 /* comm core state - 1 comm core right now */
 #define EPGS_PER_COMM			(EMU_NUM_ENDPOINT_GROUPS)
+#define ENDPOINTS_PER_COMM		(NUM_NODES)
+#define TOTAL_FLOWS_PER_COMM	(ENDPOINTS_PER_COMM * NUM_NODES * FLOWS_PER_NODE)
 
 struct emu_state;
 
@@ -40,9 +43,11 @@ class RouterDriver;
 /**
  * Emu state allocated for each comm core
  * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
+ * @next_packet_id: the next id to assign to created packets
  */
 struct emu_comm_state {
 	struct fp_ring	*q_epg_new_pkts[EPGS_PER_COMM];
+	uint16_t		next_packet_id[TOTAL_FLOWS_PER_COMM];
 };
 
 /**

@@ -20,7 +20,7 @@
 
 static inline
 struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
-		uint16_t dst, uint16_t flow)
+		uint16_t dst, uint16_t flow, uint16_t id)
 {
 	struct emu_packet *packet;
 
@@ -29,7 +29,7 @@ struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
 	       == -ENOENT) {
 		adm_log_emu_packet_alloc_failed(&g_state->stat);
 	}
-	packet_init(packet, src, dst, flow);
+	packet_init(packet, src, dst, flow, id);
 
 	return packet;
 }

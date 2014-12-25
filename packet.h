@@ -16,11 +16,13 @@
  * @src: the id of the source endpoint in the emulation
  * @dst: the id of the destination endpoint in the emulation
  * @flow: id to disambiguate between flows with the same src and dst ips
+ * @id: sequential id within this flow, to enforce ordering of packets
  */
 struct emu_packet {
 	uint16_t	src;
 	uint16_t	dst;
 	uint16_t	flow;
+	uint16_t	id;
 };
 
 /**
@@ -28,10 +30,11 @@ struct emu_packet {
  */
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
-		uint16_t flow) {
+		uint16_t flow, uint16_t id) {
 	packet->src = src;
 	packet->dst = dst;
 	packet->flow = flow;
+	packet->id = id;
 }
 
 #endif /* PACKET_H_ */

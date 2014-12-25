@@ -54,7 +54,11 @@ enum benchmark_type {
     PATH_SELECTION_RACKS
 };
 
-struct drop_tail_args emu_args = {
+struct drop_tail_args r_args = {
+		.q_capacity = 128,
+};
+
+struct simple_ep_args e_args = {
 		.q_capacity = 128,
 };
 
@@ -185,8 +189,8 @@ struct admissible_state *setup_state(bool oversubscribed,
                                      *admitted_traffic_mempool,
                                      q_bin, &q_new_demands[0],
                                      &q_ready_partitions[0], R_DropTail,
-                                     (void *) &emu_args, E_DropTail,
-									 (void *) &emu_args);
+                                     (void *) &r_args, E_Simple,
+									 (void *) &e_args);
     if (status == NULL) {
         printf("Error initializing admissible_status!\n");
         exit(-1);

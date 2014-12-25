@@ -99,7 +99,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 	/* init emu_state */
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
-            (fp_ring **) packet_queues, R_DropTail, &args, E_DropTail, &args);
+            (fp_ring **) packet_queues, R_DropTail, &args, E_Simple, NULL);
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

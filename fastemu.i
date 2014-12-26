@@ -45,6 +45,7 @@
 #include "classifiers/PyClassifier.h"
 #include "queue_managers/PyQueueManager.h"
 #include "schedulers/SingleQueueScheduler.h"
+#include "schedulers/PriorityScheduler.h"
 #include "schedulers/PyScheduler.h"
 #include "drivers/SingleRackNetworkDriver.h"
 
@@ -92,6 +93,7 @@
 
 /** Schedulers */
 %include "schedulers/SingleQueueScheduler.h"
+%include "schedulers/PriorityScheduler.h"
 %feature("director") PyScheduler;
 %include "schedulers/PyScheduler.h"
 

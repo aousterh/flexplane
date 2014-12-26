@@ -77,11 +77,10 @@ public:
         emu_emulate(&state);
 
         /* print out admitted traffic */
-        while (fp_ring_dequeue(state.q_admitted_out, (void **) &admitted) != 0)
-            printf("error: cannot dequeue admitted traffic\n");
-
-        admitted_print(admitted);
-        fp_mempool_put(state.admitted_traffic_mempool, admitted);
+        while (fp_ring_dequeue(state.q_admitted_out, (void **) &admitted) == 0) {
+        	admitted_print(admitted);
+        	fp_mempool_put(state.admitted_traffic_mempool, admitted);
+        }
     }
 
 public:

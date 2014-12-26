@@ -88,8 +88,6 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
 				  uint16_t src, uint16_t dst, uint16_t flow, uint16_t id) {
-	assert(admitted->dropped < EMU_MAX_DROPS);
-
 	admitted_insert_edge(admitted, src, dst, flow, id, EMU_FLAGS_DROP);
 	admitted->dropped++;
 }

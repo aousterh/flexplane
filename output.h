@@ -143,6 +143,10 @@ EmulationOutput::admit(struct emu_packet* packet)
 			packet->flow, packet->id);
 	adm_log_emu_admitted_packet(stat);
 
+	/* if admitted struct is full, flush now */
+	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
+		flush();
+
 	free_packet(packet);
 }
 
@@ -151,6 +155,10 @@ inline void EmulationOutput::drop_raw(uint16_t src, uint16_t dst,
 {
 	admitted_insert_dropped_edge(admitted, src, dst, flow, id);
 	adm_log_emu_dropped_demand(stat);
+
+	/* if admitted struct is full, flush now */
+	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
+		flush();
 }
 
 inline void __attribute__((always_inline))

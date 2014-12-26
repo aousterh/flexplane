@@ -23,15 +23,20 @@
 
 
 %{
+#include "config.h"
+#include "../protocol/flags.h"
+//#include "../protocol/topology.h"
 #include "util/make_ring.h"
 #include "packet.h"
 #include "api.h"
 #include "api_impl.h"
 #include "router.h"
+#include "endpoint_group.h"
 #include "composite.h"
 #include "emulation.h"
 #include "emulation_impl.h"
 #include "output.h"
+#include "admitted.h"
 #include "queue_bank.h"
 #include "routing_tables/TorRoutingTable.h"
 #include "routing_tables/PyRoutingTable.h"
@@ -39,16 +44,20 @@
 #include "classifiers/FlowIDClassifier.h"
 #include "classifiers/PyClassifier.h"
 #include "queue_managers/PyQueueManager.h"
-#include "red.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "schedulers/PyScheduler.h"
+#include "drivers/SingleRackNetworkDriver.h"
 
-#include "endpoint.h"
-#include "endpoint_group.h"
 #include "drop_tail.h"
+#include "red.h"
+#include "simple_endpoint.h"
 %}
 
 #define __attribute__(x)
+
+%include "config.h"
+%include "../protocol/flags.h"
+//%include "../protocol/topology.h"
 
 %include "packet.h"
 %pointer_functions(struct emu_packet, pkt)
@@ -56,10 +65,12 @@
 %include "util/make_ring.h"
 %include "api.h"
 %include "router.h"
+%include "endpoint_group.h"
 %include "composite.h"
 
 %include "emulation.h"
 %include "output.h"
+%include "admitted.h"
 %include "queue_bank.h"
 %template(PacketQueueBank) QueueBank<struct emu_packet>;
 
@@ -84,13 +95,40 @@
 %feature("director") PyScheduler;
 %include "schedulers/PyScheduler.h"
 
+/** Drivers */
+%include "drivers/SingleRackNetworkDriver.h"
+
 
 /** Composite Routers */
 %template(PyCompositeRouter) CompositeRouter<PyRoutingTable, PyClassifier, PyQueueManager, PyScheduler>;
-%template(REDRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>;
 
-%include "endpoint.h"
-%include "endpoint_group.h"
 %template(DropTailRouterBase) CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>;
 %include "drop_tail.h"
+
+%template(REDRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>;
 %include "red.h"
+
+
+/** Composite Endpoint Groups */
+%template(SimpleEndpointGroupBase) CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager, SingleQueueScheduler, SimpleSink>;
+%include "simple_endpoint.h"
+
+/** accessors */
+%inline %{
+struct fp_ring *get_new_pkts_ring(struct emu_state *state) {
+	return state->comm_state.q_epg_new_pkts[0];
+}
+
+struct emu_admitted_traffic *get_admitted(struct emu_state *state) {
+	struct emu_admitted_traffic *admitted;
+	if (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) != 0)
+		return NULL; /* empty */
+	else
+		return admitted;
+}
+
+struct emu_admitted_edge admitted_get_edge(struct emu_admitted_traffic *admitted,
+			uint32_t index) {
+	return admitted->edges[index];
+}
+%}

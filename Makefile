@@ -6,7 +6,12 @@ CXXDEFINES += -DNO_DPDK
 CXXDEFINES += -DEMULATION_ALGO
 #CXXDEFINES += -DEMU_NO_BATCH_CALLS
 
-CXXFLAGS = $(CXXDEFINES)
+CXXINCLUDES = 
+CXXINCLUDES += -I$(PWD)/../../../fastpass-public/src/graph-algo
+CXXINCLUDES += -I$(PWD)/../../../fastpass-public/src/arbiter
+CXXINCLUDES += -I.
+
+CXXFLAGS = $(CXXDEFINES) $(CXXINCLUDES)
 
 CXXFLAGS += -g
 #CXXFLAGS += -DNDEBUG
@@ -14,9 +19,6 @@ CXXFLAGS += -g
 #CXXFLAGS += -O1
 #CXXFLAGS += -O0
 #CXXFLAGS += -debug inline-debug-info
-CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
-CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
-CXXFLAGS += -I.
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 
@@ -59,7 +61,7 @@ WRAP_HEADERS = \
 	schedulers/PyScheduler.h
 
 %_wrap.cc: %.i $(WRAP_HEADERS) 
-	swig -c++ -python $(CXXDEFINES) -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
+	swig -c++ -python $(CXXDEFINES) $(CXXINCLUDES) -o $@ $< 
 
 
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \

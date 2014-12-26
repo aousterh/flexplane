@@ -30,15 +30,32 @@ red_params.wq_shift = 8;
 
 rtr = REDRouter(0, red_params, dropper)
 
+#make endpoint group
+ENDPOINT_MAX_QUEUE_SIZE = 1 << 10 # should be power of two
+epg = SimpleEndpointGroup(EMU_NUM_ENDPOINTS, emu_output, 0, ENDPOINT_MAX_QUEUE_SIZE)
 
-b = create_packet(state, 1,2,3,0) # state,src,dst,flow,id
+# network driver
+driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
+                                 state.stat, PACKET_MEMPOOL_SIZE)
 
-print "sending packet", b
-rtr.push(b)
+emu_add_backlog(state,0,1,0,3)
 
-c = rtr.pull(0)
-print "null packet", c
+emu_add_backlog(state,5,6,0,4)
 
-c = rtr.pull(2)
-print "the packet we sent (src,dst,flow,id) = ", c.src, c.dst, c.flow, c.id
-
+for i in xrange(10):
+    driver.step()
+    emu_output.flush()
+    
+    admitted = get_admitted(state)
+    if admitted is None:
+        raise RuntimeError("expected to have admitted traffic after emu_output.flush()")
+    
+    print "finished traffic:"
+    for i in xrange(admitted.size):
+        edge = admitted_get_edge(admitted,i)
+        if (edge.flags == EMU_FLAGS_DROP):
+            print("\tDROP src %d to dst %d (id %d)" % 
+                    (edge.src, edge.dst, edge.id))
+        else:
+            print("\tsrc %d to dst %d (id %d)" % 
+                    (edge.src, edge.dst, edge.id))

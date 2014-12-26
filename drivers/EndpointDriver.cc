@@ -16,7 +16,8 @@
 #include "../api.h"
 #include "../api_impl.h"
 
-#define ENDPOINT_MAX_BURST	(EMU_NUM_ENDPOINTS * 2)
+#define MAX_PUSH_BURST			(EMU_NUM_ENDPOINTS * 2)
+#define MAX_NEW_PACKET_BURST	(EMU_NUM_ENDPOINTS * 4)
 
 EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 		struct fp_ring* q_to_router, struct fp_ring* q_from_router,
@@ -40,11 +41,11 @@ void EndpointDriver::step() {
 
 inline void EndpointDriver::push() {
 	uint32_t n_pkts;
-	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
+	struct emu_packet *pkts[MAX_PUSH_BURST];
 
 	/* dequeue packets from network, pass to endpoint group */
 	n_pkts = fp_ring_dequeue_burst(m_q_from_router,
-			(void **) &pkts[0], ENDPOINT_MAX_BURST);
+			(void **) &pkts[0], MAX_PUSH_BURST);
 	m_epg->push_batch(&pkts[0], n_pkts);
 }
 
@@ -72,11 +73,11 @@ inline void EndpointDriver::pull() {
 inline void EndpointDriver::process_new()
 {
 	uint32_t n_pkts;
-	struct emu_packet *pkts[ENDPOINT_MAX_BURST];
+	struct emu_packet *pkts[MAX_NEW_PACKET_BURST];
 
 	/* dequeue new packets, pass to endpoint group */
 	n_pkts = fp_ring_dequeue_burst(m_q_new_packets,
-			(void **) &pkts, ENDPOINT_MAX_BURST);
+			(void **) &pkts, MAX_NEW_PACKET_BURST);
 	m_epg->new_packets(&pkts[0], n_pkts);
 }
 

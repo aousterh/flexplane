@@ -33,7 +33,10 @@
 #include "emulation_impl.h"
 #include "output.h"
 #include "queue_bank.h"
-#include "classifiers/TorClassifier.h"
+#include "routing_tables/TorRoutingTable.h"
+#include "routing_tables/PyRoutingTable.h"
+#include "classifiers/SingleQueueClassifier.h"
+#include "classifiers/FlowIDClassifier.h"
 #include "classifiers/PyClassifier.h"
 #include "queue_managers/PyQueueManager.h"
 #include "red.h"
@@ -60,11 +63,17 @@
 %include "queue_bank.h"
 %template(PacketQueueBank) QueueBank<struct emu_packet>;
 
+/** Routing Tables */
+%include "routing_tables/TorRoutingTable.h"
+%feature("director") PyRoutingTable;
+%include "routing_tables/PyRoutingTable.h"
+
+
 /** Classifiers */
-%apply uint32_t *OUTPUT {uint32_t *port, uint32_t *queue};
-%include "classifiers/TorClassifier.h"
-%clear uint32_t *port;	
-%clear uint32_t *queue;
+%include "classifiers/SingleQueueClassifier.h"
+%include "classifiers/FlowIDClassifier.h"
+%feature("director") PyClassifier;
+%include "classifiers/PyClassifier.h"
 
 /** Queue Managers */
 %feature("director") PyQueueManager;
@@ -76,36 +85,12 @@
 %include "schedulers/PyScheduler.h"
 
 
-/*********************
- * PyClassifier
- *********************/
-%feature("director") PyClassifier;
-
-%feature("shadow") PyClassifier::classify(struct emu_packet *pkt, 
-		uint32_t *port,	uint32_t *queue)
- %{
-	def classify(self, pkt):
-		raise RuntimeError("implement classify method (returns (port, queue))")
-%}
-
-%feature("shadow") PyClassifier::py_classify(struct emu_packet *pkt, 
-		uint32_t *port,	uint32_t *queue)
- %{
-	def py_classify(self, pkt, port_ptr, queue_ptr):
-		port, queue = self.classify(pkt)
-		u32_assign(port_ptr, port)
-		u32_assign(queue_ptr, queue)
-%}
-
-%include "classifiers/PyClassifier.h"
-
-
 /** Composite Routers */
-%template(PyCompositeRouter) CompositeRouter<PyClassifier, PyQueueManager, PyScheduler>;
-%template(REDRouterBase) CompositeRouter<TorClassifier, REDQueueManager, SingleQueueScheduler>;
+%template(PyCompositeRouter) CompositeRouter<PyRoutingTable, PyClassifier, PyQueueManager, PyScheduler>;
+%template(REDRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>;
 
 %include "endpoint.h"
 %include "endpoint_group.h"
-%template(DropTailRouterBase) CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueScheduler>;
+%template(DropTailRouterBase) CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>;
 %include "drop_tail.h"
 %include "red.h"

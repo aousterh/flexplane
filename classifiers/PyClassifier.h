@@ -14,26 +14,16 @@
 /**
  * A classifier that implements classify as a virtual function, to enable
  *   run-time polymorphism.
- *
- * Envisioned for Python wrapper support
  */
 class PyClassifier : public Classifier {
 public:
 	PyClassifier() {};
 	virtual ~PyClassifier() {};
 
-	virtual void py_classify(struct emu_packet *pkt, uint32_t *port,
-			uint32_t *queue)
+	virtual uint32_t classify(struct emu_packet *pkt, uint32_t port)
 		{
 			throw std::runtime_error("not implemented");
 		}
-
-	void classify(struct emu_packet *pkt, uint32_t *port,
-			uint32_t *queue)
-		{
-			py_classify(pkt,port,queue);
-		}
-
 
 };
 

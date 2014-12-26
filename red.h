@@ -17,7 +17,8 @@
 #include "composite.h"
 #include "queue_bank.h"
 #include "../graph-algo/fp_ring.h"
-#include "classifiers/TorClassifier.h"
+#include "routing_tables/TorRoutingTable.h"
+#include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 
 struct packet_queue;
@@ -56,7 +57,7 @@ private:
 
 };
 
-typedef CompositeRouter<TorClassifier, REDQueueManager, SingleQueueScheduler>
+typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>
 	REDRouterBase;
 
 /**
@@ -70,7 +71,8 @@ public:
 
 private:
     PacketQueueBank m_bank;
-    TorClassifier m_cla;
+    TorRoutingTable m_rt;
+    SingleQueueClassifier m_cla;
     REDQueueManager m_qm;
     SingleQueueScheduler m_sch;
 };

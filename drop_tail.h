@@ -14,7 +14,8 @@
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
-#include "classifiers/TorClassifier.h"
+#include "routing_tables/TorRoutingTable.h"
+#include "classifiers/FlowIDClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "output.h"
 
@@ -43,7 +44,7 @@ private:
 	Dropper m_dropper;
 };
 
-typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueScheduler>
+typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>
 	DropTailRouterBase;
 
 /**
@@ -52,12 +53,13 @@ typedef CompositeRouter<TorClassifier, DropTailQueueManager, SingleQueueSchedule
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-    DropTailRouter(uint16_t id, uint16_t q_capacity, Dropper &dropper);
+    DropTailRouter(uint16_t q_capacity, Dropper &dropper);
     virtual ~DropTailRouter();
 
 private:
     PacketQueueBank m_bank;
-    TorClassifier m_cla;
+    TorRoutingTable m_rt;
+    FlowIDClassifier m_cla;
     DropTailQueueManager m_qm;
     SingleQueueScheduler m_sch;
 };

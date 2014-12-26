@@ -13,20 +13,34 @@
 #include "packet.h"
 #include "endpoint_group.h"
 #include "../graph-algo/platform.h"
+#include "../graph-algo/random.h"
 
 #define THROW 	throw std::runtime_error("not implemented")
+
 /**
- * Classifier classes decide for a given packet, which queue they should
- *   go into.
+ * Routing tables choose the outgoing port for a given packet
+ */
+class RoutingTable {
+public:
+	/**
+	 * @param pkt: the packet to route
+	 * @returns the port out of which packet should be transmitted
+	 */
+	uint32_t route(struct emu_packet *pkt) {THROW;}
+};
+
+/**
+ * Classifiers decide for a given packet and its output port, which queue the
+ *   packet should go into.
  */
 class Classifier {
 public:
 	/**
 	 * @param pkt: packet to classify
-	 * @param port: [out] port where packet should leave
-	 * @param queue: [out] index of per-port queue to enqueue packet
+	 * @param port: port where packet will be output
+	 * @returns the index of the per-port queue to enqueue packet
 	 */
-	void classify(struct emu_packet *pkt, uint32_t *port, uint32_t *queue) {THROW;}
+	uint32_t classify(struct emu_packet *pkt, uint32_t port) {THROW;}
 };
 
 /**
@@ -61,7 +75,7 @@ public:
 };
 
 /**
- * Sinks handle received packets
+ * Sinks handle received packets at endpoints
  */
 class Sink {
 public:
@@ -74,12 +88,13 @@ public:
 #undef THROW
 
 /**
- * A CompositeRouter is made of a Classifier, a QueueManager and a Scheduler.
+ * A CompositeRouter is made of a Routing Table, a Classifier, a QueueManager,
+ * 		and a Scheduler.
  */
-template < class CLA, class QM, class SCH >
+template < class RT, class CLA, class QM, class SCH >
 class CompositeRouter : public Router {
 public:
-    CompositeRouter(CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id);
+    CompositeRouter(RT *rt, CLA *cla, QM *qm, SCH *sch, uint32_t n_ports);
     virtual ~CompositeRouter();
 
     virtual void push(struct emu_packet *packet);
@@ -89,6 +104,7 @@ public:
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 
 private:
+    RT *m_rt;
 	CLA *m_cla;
 	QM *m_qm;
 	SCH *m_sch;
@@ -103,10 +119,11 @@ template < class CLA, class QM, class SCH, class SINK >
 class CompositeEndpointGroup : public EndpointGroup {
 public:
 	CompositeEndpointGroup(CLA *cla, QM *qm, SCH *sch, SINK *sink,
-			uint32_t n_endpoints);
+			uint32_t first_endpoint_id, uint32_t n_endpoints);
 	virtual ~CompositeEndpointGroup();
 
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts);
+	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 
 private:
@@ -114,28 +131,11 @@ private:
 	QM *m_qm;
 	SCH *m_sch;
 	SINK *m_sink;
+	uint32_t m_first_endpoint_id;
 	uint32_t m_n_endpoints;
 };
 
 /** shared functionality between CompositeEndpointGroup and CompositeRouter */
-template <class CLA, class QM>
-inline  __attribute__((always_inline))
-void composite_push(CLA *cla, QM *qm, struct emu_packet *packet)
-{
-	uint32_t port, queue;
-	cla->classify(packet, &port, &queue);
-	qm->enqueue(packet, port, queue);
-}
-
-template < class CLA, class QM>
-inline  __attribute__((always_inline))
-void composite_push_batch(CLA *cla, QM *qm,
-		struct emu_packet **pkts, uint32_t n_pkts)
-{
-	for (uint32_t i = 0; i < n_pkts; i++)
-		composite_push<CLA,QM>(cla, qm, pkts[i]);
-}
-
 template < class SCH >
 inline  __attribute__((always_inline))
 uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
@@ -164,47 +164,70 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 	return res;
 }
 
-/** implementation: CompositeRouter */
-template < class CLA, class QM, class SCH >
-CompositeRouter<CLA,QM,SCH>::CompositeRouter(
-		CLA *cla, QM *qm, SCH *sch, uint32_t n_ports, uint16_t id)
-	: Router(id),
-	  m_cla(cla), m_qm(qm), m_sch(sch),
+/***
+ * CompositeRouter
+ */
+
+template < class RT, class CLA, class QM, class SCH >
+CompositeRouter<RT,CLA,QM,SCH>::CompositeRouter(
+		RT *rt, CLA *cla, QM *qm, SCH *sch, uint32_t n_ports)
+	: m_rt(rt), m_cla(cla), m_qm(qm), m_sch(sch),
 	  m_n_ports(n_ports)
 {
 	/* static check: make sure template parameters are of the correct classes */
+	(void)static_cast<RoutingTable*>((RT*)0);
 	(void)static_cast<Classifier*>((CLA*)0);
 	(void)static_cast<QueueManager*>((QM*)0);
 	(void)static_cast<Scheduler*>((SCH*)0);
 }
 
-template < class CLA, class QM, class SCH >
-CompositeRouter<CLA,QM,SCH>::~CompositeRouter() {}
+template < class RT, class CLA, class QM, class SCH >
+CompositeRouter<RT,CLA,QM,SCH>::~CompositeRouter() {}
 
-template < class CLA, class QM, class SCH >
-void CompositeRouter<CLA,QM,SCH>::push(struct emu_packet *packet)
-	{ composite_push<CLA,QM>(m_cla, m_qm, packet); }
+/** helper for common functionality in push and push_batch */
+template <class RT, class CLA, class QM>
+inline  __attribute__((always_inline))
+void composite_push(RT *rt, CLA *cla, QM *qm, struct emu_packet *packet)
+{
+	uint32_t port = rt->route(packet);
+	uint32_t queue = cla->classify(packet, port);
+	qm->enqueue(packet, port, queue);
+}
 
-template < class CLA, class QM, class SCH >
-struct emu_packet *CompositeRouter<CLA,QM,SCH>::pull(uint16_t port)
+template < class RT, class CLA, class QM, class SCH >
+void CompositeRouter<RT,CLA,QM,SCH>::push(struct emu_packet *packet)
+	{ composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, packet); }
+
+template < class RT, class CLA, class QM, class SCH >
+struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port)
 {
 	return m_sch->schedule(port);
 }
 
-template < class CLA, class QM, class SCH >
-void CompositeRouter<CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
+template < class RT, class CLA, class QM, class SCH >
+void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
 		uint32_t n_pkts)
-{ composite_push_batch<CLA,QM>(m_cla, m_qm, pkts, n_pkts); }
+{
+	for (uint32_t i = 0; i < n_pkts; i++)
+		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i]);
+}
 
-template < class CLA, class QM, class SCH >
-uint32_t CompositeRouter<CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
+template < class RT, class CLA, class QM, class SCH >
+uint32_t CompositeRouter<RT,CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
 		uint32_t n_pkts)
 { return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts); }
 
+
+/***
+ * CompositeEndpointGroup
+ */
+
 template<class CLA, class QM, class SCH, class SINK>
 inline CompositeEndpointGroup<CLA, QM, SCH, SINK>::CompositeEndpointGroup(
-		CLA* cla, QM* qm, SCH* sch, SINK* sink, uint32_t n_endpoints)
-	: m_cla(cla), m_qm(qm), m_sch(sch), m_sink(sink), m_n_endpoints(n_endpoints)
+		CLA* cla, QM* qm, SCH* sch, SINK* sink, uint32_t first_endpoint_id,
+		uint32_t n_endpoints)
+	: m_cla(cla), m_qm(qm), m_sch(sch), m_sink(sink),
+	  m_first_endpoint_id(first_endpoint_id), m_n_endpoints(n_endpoints)
 {
 	/* static check: make sure template parameters are of the correct classes */
 	(void)static_cast<Classifier*>((CLA*)0);
@@ -219,11 +242,26 @@ inline CompositeEndpointGroup<CLA, QM, SCH, SINK>::~CompositeEndpointGroup() {}
 template<class CLA, class QM, class SCH, class SINK>
 inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::new_packets(
 		struct emu_packet** pkts, uint32_t n_pkts)
-{ composite_push_batch<CLA,QM>(m_cla, m_qm, pkts, n_pkts); }
+{
+	for (uint32_t i = 0; i < n_pkts; i++) {
+		uint32_t port = pkts[i]->src - m_first_endpoint_id;
+		uint32_t queue = m_cla->classify(pkts[i], port);
+		m_qm->enqueue(pkts[i], port, queue);
+	}
+}
+
+template<class CLA, class QM, class SCH, class SINK>
+inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::push_batch(
+		struct emu_packet** pkts, uint32_t n_pkts)
+{
+	for (uint32_t i = 0; i < n_pkts; i++) {
+		m_sink->handle(pkts[i]);
+	}
+}
 
 template<class CLA, class QM, class SCH, class SINK>
 inline uint32_t CompositeEndpointGroup<CLA, QM, SCH, SINK>::pull_batch(
-		struct emu_packet** pkts, uint32_t n_pkts) {
-}
+		struct emu_packet** pkts, uint32_t n_pkts)
+{ return composite_pull_batch<SCH>(m_sch, m_n_endpoints, pkts, n_pkts); }
 
 #endif /* COMPOSITE_H_ */

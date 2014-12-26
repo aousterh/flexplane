@@ -12,6 +12,7 @@ CXXFLAGS += -g
 #CXXFLAGS += -DNDEBUG
 #CXXFLAGS += -O3
 #CXXFLAGS += -O1
+#CXXFLAGS += -O0
 #CXXFLAGS += -debug inline-debug-info
 CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/graph-algo
 CXXFLAGS += -I$(PWD)/../../../fastpass-public/src/arbiter
@@ -51,11 +52,11 @@ WRAP_HEADERS = \
 	api_impl.h \
 	router.h \
 	composite.h \
-	classifiers/TorClassifier.h \
+	classifiers/SingleQueueClassifier.h \
 	classifiers/PyClassifier.h \
 	queue_managers/PyQueueManager.h \
 	schedulers/SingleQueueScheduler.h \
-	schedulers/PyScheduler.h	
+	schedulers/PyScheduler.h
 
 %_wrap.cc: %.i $(WRAP_HEADERS) 
 	swig -c++ -python $(CXXDEFINES) -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 

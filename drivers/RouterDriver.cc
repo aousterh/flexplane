@@ -65,12 +65,12 @@ void RouterDriver::step() {
 			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
 	/* shuffle packets to ensure router doesn't discriminate against some
 	 * endpoints */
-	for (uint32_t i = n_pkts - 1; i > 0; i--) {
-		/* decide which packet should be in pkts_ptrs[i] between 0..i*/
-		uint32_t j = random_int(&m_random, i + 1);
+	for (uint32_t i = n_pkts; i > 1; i--) {
+		/* decide which packet should be in pkts_ptrs[i] between 0..i-1*/
+		uint32_t j = random_int(&m_random, i);
 		/* swap i and j, works okay even when i == j */
-		struct emu_packet *tmp = pkt_ptrs[i];
-		pkt_ptrs[i] = pkt_ptrs[j];
+		struct emu_packet *tmp = pkt_ptrs[i-1];
+		pkt_ptrs[i-1] = pkt_ptrs[j];
 		pkt_ptrs[j] = tmp;
 	}
 

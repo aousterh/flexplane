@@ -11,62 +11,21 @@
 
 #define SIMPLE_ENDPOINT_QUEUE_CAPACITY 4096
 
-SimpleEndpoint::SimpleEndpoint(uint16_t id, struct simple_ep_args *args,
-		EmulationOutput &emu_output)
-	: Endpoint(id), m_emu_output(emu_output)
-{
-    uint32_t qmax;
-
-    /* use args if supplied, otherwise use defaults */
-    if (args != NULL)
-        qmax = args->q_capacity;
-    else
-        qmax = SIMPLE_ENDPOINT_QUEUE_CAPACITY;
-    
-    queue_create(&output_queue, qmax);
-}
-
-SimpleEndpoint::~SimpleEndpoint() {
-	reset();
-}
-
-void SimpleEndpoint::reset() {
-	struct emu_packet *packet;
-
-	/* dequeue all queued packets */
-	while (queue_dequeue(&output_queue, &packet) == 0)
-		m_emu_output.free_packet(packet);
-}
-
 SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
-		EmulationOutput &emu_output, uint16_t start_id,
-		struct simple_ep_args *args)
-	: EndpointGroup(num_endpoints, emu_output)  {
-	CONSTRUCT_ENDPOINTS(SimpleEndpoint, start_id, args, num_endpoints,
-		endpoints, emu_output);
-}
+		EmulationOutput& emu_output, uint16_t start_id, uint16_t q_capacity)
+: m_bank(num_endpoints, 1, SIMPLE_ENDPOINT_QUEUE_CAPACITY),
+  m_emu_output(emu_output),
+  m_dropper(m_emu_output),
+  m_cla(),
+  m_qm(&m_bank, q_capacity, m_dropper),
+  m_sch(&m_bank),
+  m_sink(m_emu_output),
+  SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id, num_endpoints)
+{}
 
-SimpleEndpointGroup::~SimpleEndpointGroup() {
-	DESTRUCT_ENDPOINTS(num_endpoints, endpoints);
-}
-
-void SimpleEndpointGroup::reset(uint16_t endpoint_id) {
-	RESET_ENDPOINT(endpoints, endpoint_id);
-}
-
-void SimpleEndpointGroup::new_packets(struct emu_packet **pkts,
-		uint32_t n_pkts) {
-	ENDPOINTS_NEW_PACKETS(SimpleEndpoint, new_packet, pkts, n_pkts,
-			endpoints);
-}
-
-void SimpleEndpointGroup::push_batch(struct emu_packet **pkts,
-		uint32_t n_pkts) {
-	ENDPOINTS_PUSH_BATCH(SimpleEndpoint, push, pkts, n_pkts, endpoints);
-}
-
-uint32_t SimpleEndpointGroup::pull_batch(struct emu_packet **pkts,
-		uint32_t n_pkts) {
-	ENDPOINTS_PULL_BATCH(SimpleEndpoint, pull, pkts, n_pkts, random_state,
-			num_endpoints, endpoints);
+void SimpleEndpointGroup::reset(uint16_t endpoint_id)
+{
+	/* dequeue all queued packets */
+	while (!m_bank.empty(endpoint_id, 0))
+		m_emu_output.free_packet(m_bank.dequeue(endpoint_id, 0));
 }

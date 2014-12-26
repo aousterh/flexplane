@@ -12,13 +12,12 @@
 #include "../composite.h"
 
 /**
- * Classifies packets flowing to endpoints in the rack to the corresponding
- * 		port, and packets to other rack to one of n_core core routers using
- * 		an ECMP-like scheme.
- *
- * The queue within the port is determined by the packet's flow ID.
+ * Packets flowing:
+ *   - to endpoints in the rack are routed to the corresponding port
+ *   - to other racks are routed to one of n_core routers using	an ECMP-like
+ *   		scheme.
  */
-class TorClassifier : public Classifier {
+class TorRoutingTable : public RoutingTable {
 public:
 	/**
 	 * c'tor
@@ -33,15 +32,15 @@ public:
 	 * @assumes endpoints are connected to ports 0..n_endpoints-1, and core
 	 *     routers to ports n_endpoints..n_endpoints+n_core-1
 	 */
-	TorClassifier(uint32_t rack_shift, uint32_t rack_index,
+	TorRoutingTable(uint32_t rack_shift, uint32_t rack_index,
 			uint32_t n_endpoints, uint32_t n_core);
 
 	/**
 	 * d'tor
 	 */
-	virtual ~TorClassifier();
+	virtual ~TorRoutingTable();
 
-	inline void classify(struct emu_packet *pkt, uint32_t *port, uint32_t *queue);
+	inline uint32_t route(struct emu_packet *pkt);
 
 private:
 	/** number of bits to shift endpoint IDs to get the rack */
@@ -60,8 +59,8 @@ private:
 	uint32_t m_n_core;
 };
 
-inline TorClassifier::TorClassifier(uint32_t rack_shift, uint32_t rack_index,
-		uint32_t n_endpoints, uint32_t n_core)
+inline TorRoutingTable::TorRoutingTable(uint32_t rack_shift,
+		uint32_t rack_index, uint32_t n_endpoints, uint32_t n_core)
 	: m_rack_shift(rack_shift),
 	  m_endpoint_mask( (1 << rack_shift) - 1 ),
 	  m_rack_index(rack_index),
@@ -69,23 +68,19 @@ inline TorClassifier::TorClassifier(uint32_t rack_shift, uint32_t rack_index,
 	  m_n_core(n_core)
 {}
 
-inline TorClassifier::~TorClassifier() {}
+inline TorRoutingTable::~TorRoutingTable() {}
 
-inline void TorClassifier::classify(struct emu_packet* pkt, uint32_t* port,
-		uint32_t* queue)
+inline uint32_t TorRoutingTable::route(struct emu_packet *pkt)
 {
 	uint16_t rack_id = (pkt->dst >> m_rack_shift);
 
-	if (rack_id == m_rack_index) {
-		/* route within the rack */
-		*port = pkt->dst & m_endpoint_mask;
-	} else {
-		/* go to core switch */
-		uint32_t hash =  7 * pkt->src + 9 * pkt->dst + pkt->flow;
-		*port = hash % m_n_core;
-	}
+	/* route within the rack? */
+	if (rack_id == m_rack_index)
+		return (pkt->dst & m_endpoint_mask);
 
-	*queue = pkt->flow;
+	/* go to core switch */
+	uint32_t hash =  7 * pkt->src + 9 * pkt->dst + pkt->flow;
+	return (hash % m_n_core);
 }
 
 #endif /* CLASSIFIERS_TORCLASSIFIER_H_ */

@@ -2,17 +2,17 @@
 
 from fastemu import *
 
-class PyTorClassifier(PyClassifier):
-    def classify(self, pkt_p):
-        """
-        classify returns a pair (port, queue): the packet's egress port, and
-          the per-port queue in which the packet should be queued.
-        """
+class PyTorRoutingTable(PyRoutingTable):
+    def route(self, pkt_p):
         # need to convert from (struct emu_packet *) to (struct emu_packet)
         pkt = pkt_value(pkt_p)
-        port = pkt.dst
-        queue = pkt.flow
-        return port, queue 
+        return pkt.dst
+
+class PyFlowIDClassifier(PyClassifier):
+    def classify(self, pkt_p, port):
+        # need to convert from (struct emu_packet *) to (struct emu_packet)
+        pkt = pkt_value(pkt_p)
+        return pkt.flow 
 
 class PyDropQueueManager(PyQueueManager):
     def __init__(self, queue_bank, queue_capacity, dropper):
@@ -43,6 +43,14 @@ class PyPrioScheduler(PyScheduler):
     def non_empty_port_mask(self):
         return self.bank.non_empty_port_mask()
 
+class PySimpleSink(PySink):
+    def __init__(self, emu_output):
+        super(PySimpleSink, self).__init__()
+        self.emu_output = emu_output
+        
+    def handle(self, pkt_p):
+        self.emu_output.admit(pkt_p)
+
 # allocate router state
 state = emu_state()
 ADMITTED_MEMPOOL_SIZE = 1 << 10
@@ -67,24 +75,45 @@ MAX_QUEUE_CAPACITY_POW_2 = 256
 DROP_TAIL_QUEUE_CAPCITY = 5 
 
 bank = PacketQueueBank(NUM_ENDPOINTS, NUM_QUEUES_PER_PORT, MAX_QUEUE_CAPACITY_POW_2)
-cla = PyTorClassifier()
+rt = PyTorRoutingTable()
+cla = PyFlowIDClassifier()
 qm = PyDropQueueManager(bank, DROP_TAIL_QUEUE_CAPCITY, dropper)
 sch = PyPrioScheduler(bank, NUM_QUEUES_PER_PORT)
 
-rtr = PyCompositeRouter(cla,qm,sch,NUM_ENDPOINTS,0)
+rtr = PyRouter(rt,cla,qm,sch,NUM_ENDPOINTS)
 
 #make endpoint group
-# epg = SimpleEndpointGroup(NUM_ENDPOINTS, emu_output, 0, NULL)
-# epg.init(0, None)
+epg_bank = PacketQueueBank(NUM_ENDPOINTS, NUM_QUEUES_PER_PORT, MAX_QUEUE_CAPACITY_POW_2)
+epg_cla = PyFlowIDClassifier()
+epg_qm = PyDropQueueManager(epg_bank, DROP_TAIL_QUEUE_CAPCITY, dropper)
+epg_sch = PyPrioScheduler(epg_bank, NUM_QUEUES_PER_PORT)
+epg_sink = PySimpleSink(emu_output)
 
-b = create_packet(state, 1,2,3,0) # state,src,dst,flow,id
+epg = PyEndpointGroup(epg_cla, epg_qm, epg_sch, epg_sink, 0, NUM_ENDPOINTS)
 
-print "sending packet", b
-rtr.push(b)
 
-c = rtr.pull(0)
-print "null packet", c
+# network driver
+driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
+                                 state.stat, PACKET_MEMPOOL_SIZE)
 
-c = rtr.pull(2)
-print "the packet we sent (src,dst,flow,id) = ", c.src, c.dst, c.flow, c.id
+emu_add_backlog(state,0,1,0,3)
 
+emu_add_backlog(state,5,6,0,4)
+
+for i in xrange(10):
+    driver.step()
+    emu_output.flush()
+    
+    admitted = get_admitted(state)
+    if admitted is None:
+        raise RuntimeError("expected to have admitted traffic after emu_output.flush()")
+    
+    print "finished traffic:"
+    for i in xrange(admitted.size):
+        edge = admitted_get_edge(admitted,i)
+        if (edge.flags == EMU_FLAGS_DROP):
+            print("\tDROP src %d to dst %d (id %d)" % 
+                    (edge.src, edge.dst, edge.id))
+        else:
+            print("\tsrc %d to dst %d (id %d)" % 
+                    (edge.src, edge.dst, edge.id))

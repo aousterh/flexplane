@@ -17,18 +17,6 @@ DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 		throw std::runtime_error("bank should be non-NULL");
 }
 
-void DropTailQueueManager::enqueue(struct emu_packet *pkt,
-		uint32_t port, uint32_t queue)
-{
-	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
-		/* no space to enqueue, drop this packet */
-		adm_log_emu_router_dropped_packet(&g_state->stat);
-		m_dropper.drop(pkt);
-	} else {
-		m_bank->enqueue(port, queue, pkt);
-	}
-}
-
 DropTailRouter::DropTailRouter(uint16_t q_capacity, Dropper &dropper)
 	: m_bank(EMU_ROUTER_NUM_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),

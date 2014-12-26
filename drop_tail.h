@@ -31,7 +31,7 @@ class DropTailQueueManager : public QueueManager {
 public:
 	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity,
 			Dropper &dropper);
-	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
 	/** the QueueBank where packets are stored */
@@ -63,5 +63,17 @@ private:
     DropTailQueueManager m_qm;
     SingleQueueScheduler m_sch;
 };
+
+inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
+		uint32_t port, uint32_t queue)
+{
+	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
+		/* no space to enqueue, drop this packet */
+		adm_log_emu_router_dropped_packet(&g_state->stat);
+		m_dropper.drop(pkt);
+	} else {
+		m_bank->enqueue(port, queue, pkt);
+	}
+}
 
 #endif /* DROP_TAIL_H_ */

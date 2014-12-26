@@ -99,11 +99,12 @@ uint32_t run_experiment(struct request_info *requests, uint32_t start_time,
 
         for (i = 0; i < ADMITTED_PER_BATCH; i++) {
         	/* get admitted traffic */
-                fp_ring_dequeue(q_admitted_out, (void **)&admitted);
-        	/* update statistics */
-                num_admitted += get_num_admitted(admitted);
-        	/* return admitted traffic to core */
-                fp_mempool_put(admitted_traffic_mempool, admitted);
+            if (fp_ring_dequeue(q_admitted_out, (void **)&admitted) == 0) {
+            	/* update statistics */
+            	num_admitted += get_num_admitted(admitted);
+            	/* return admitted traffic to core */
+            	fp_mempool_put(admitted_traffic_mempool, admitted);
+            }
         }
 
         // Record per-batch time

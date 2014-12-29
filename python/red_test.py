@@ -26,7 +26,7 @@ red_params.ecn = False;
 red_params.min_th = 20; # 200 microseconds
 red_params.max_th = 200; # 2 milliseconds
 red_params.max_p = 0.05;
-red_params.wq_shift = 8;
+red_params.wq_shift = 3;
 
 rtr = REDRouter(0, red_params, dropper)
 
@@ -38,11 +38,11 @@ epg = SimpleEndpointGroup(EMU_NUM_ENDPOINTS, emu_output, 0, ENDPOINT_MAX_QUEUE_S
 driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
                                  state.stat, PACKET_MEMPOOL_SIZE)
 
-emu_add_backlog(state,0,1,0,300)
+emu_add_backlog(state,0,1,0,100)
+emu_add_backlog(state,2,1,0,200)
+emu_add_backlog(state,3,1,0,100)
 
-emu_add_backlog(state,5,6,0,400)
-
-for i in xrange(1000):
+for i in xrange(400):
     driver.step()
     emu_output.flush()
     

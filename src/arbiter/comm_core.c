@@ -361,14 +361,8 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 	struct end_node_state *en = (struct end_node_state *)param;
 	struct comm_core_state *core = &ccore_state[rte_lcore_id()];
 	uint16_t node_id = en - end_nodes;
-	uint32_t total_timeslots = 0;
 	int i;
 	uint32_t num_triggered = 0;
-
-	/* count number of timeslots nacked */
-	for (i = 0; i < pd->n_dsts; i++) {
-		total_timeslots += pd->dst_counts[i];
-	}
 
 	/* if the alloc report was not fully acked, trigger another report */
 	for (i = 0; i < pd->n_areq; i++) {
@@ -380,7 +374,7 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 		}
 	}
 
-	comm_log_neg_ack(node_id, pd->n_areq, total_timeslots, pd->seqno,
+	comm_log_neg_ack(node_id, pd->n_areq, pd->used_alloc_tslot, pd->seqno,
 			num_triggered);
 }
 
@@ -822,7 +816,6 @@ next_alloc:
 		} else {
 			/* get the next slot in the pd->dsts array */
 			pd->dsts[n_dsts] = dst;
-			pd->dst_counts[n_dsts] = 0;
 			core->alloc_enc_space[dst] = n_dsts + 1;
 			n_dsts++;
 		}
@@ -832,7 +825,6 @@ next_alloc:
 	 * upper 4 bits for destination index, lower 4 bits for flags */
 	pd->tslot_desc[n_tslot++] =
                 (core->alloc_enc_space[dst] << 4) | (cur_alloc->flags & 0xF);
-	pd->dst_counts[core->alloc_enc_space[dst] - 1]++;
 
 	/* remove the timeslot from the queue */
 	pending_q->head++;
@@ -849,11 +841,13 @@ cleanup:
 		core->alloc_enc_space[dst] = 0;
 	}
 
+out:
+	pd->used_alloc_tslot = n_tslot;
+
 	/* pad to even n_tslot */
 	if (n_tslot & 1)
 		pd->tslot_desc[n_tslot++] = 0;
 
-out:
 	pd->n_dsts = n_dsts;
 	pd->alloc_tslot = n_tslot;
 	assert((pd->alloc_tslot & 1) == 0);

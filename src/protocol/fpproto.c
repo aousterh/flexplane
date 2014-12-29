@@ -865,7 +865,7 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 		/* ALLOC type short */
 		*(__be16 *)curp = htons((FASTPASS_PTYPE_ALLOC << 12)
 								| (pd->n_dsts << 8)
-								|  ((pd->alloc_tslot + 1) / 2));
+								|  (pd->alloc_tslot / 2));
 		curp += 2;
 		*(__be16 *)curp = htons(pd->base_tslot);
 		curp += 2;

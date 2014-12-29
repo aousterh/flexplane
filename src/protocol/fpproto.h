@@ -97,11 +97,12 @@ struct fpproto_areq_desc {
  * @reset_timestamp: timestamp of a reset, if applicable
  * @n_areq: number of filled in destinations for A-REQ
  * @areq: an array of allocation requests
- * @alloc_tslot: number of allocs in this packet
+ * @alloc_tslot: number of allocs in this packet (always even)
+ * @used_alloc_tslot: number of used allocs (equal to or one less than
+ * 	alloc_tslot)
  * @base_tslot: timeslot of the first alloc (to avoid using very old allocs)
  * @n_dsts: number of destinations with allocs in this packet
  * @dsts: the destinations that have allocs
- * @dst_counts: number of ALLOCs per dst in dsts
  * @tslot_desc: description of each allocation
  */
 struct fpproto_pktdesc {
@@ -124,10 +125,10 @@ struct fpproto_pktdesc {
 	/* payload - allocations */
 #ifdef FASTPASS_CONTROLLER
 	u16							alloc_tslot;
+	u16							used_alloc_tslot;
 	u16							base_tslot;
 	u16							n_dsts;
 	u16							dsts[15];
-	u16							dst_counts[15];
 	u8							tslot_desc[FASTPASS_PKT_MAX_ALLOC_TSLOTS];
 #endif
 };

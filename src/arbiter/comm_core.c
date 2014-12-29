@@ -44,11 +44,15 @@
  * @timeslot: 16 least significant bits of the timeslot allocated
  * @flags: additional information about this alloc (path, drop, mark, etc.),
  * 			only the 4 least significant bits are used
+ * @id: sequential id of the packet the allocation is for (used only in emu)
  */
 struct pending_alloc {
 	uint16_t	dst;
 	uint16_t	timeslot;
 	uint8_t		flags;
+#if defined(EMULATION_ALGO)
+	uint16_t	id;
+#endif
 };
 
 /**
@@ -686,6 +690,20 @@ void get_admitted_fields(struct admitted_traffic *admitted, uint16_t index,
 }
 
 /**
+ * Fill in parts of @alloc that depend on the algorithm used, from the
+ * specified edge in @admitted.
+ */
+static inline
+void fill_algo_fields_in_alloc(struct pending_alloc *alloc,
+		struct admitted_traffic *admitted, uint16_t index) {
+#if defined(EMULATION_ALGO)
+	struct emu_admitted_edge *edge;
+	edge = get_admitted_edge(admitted, index);
+	alloc->id = edge->id;
+#endif
+}
+
+/**
  * Record the allocations received in @q_admitted and trigger a report to each
  * source endpoint that got a new allocation.
  */
@@ -716,7 +734,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	}
 
 	for (i = 0; i < rc; i++) {
-                partition = get_admitted_partition(admitted[i]);
+		partition = get_admitted_partition(admitted[i]);
 		current_timeslot = ++core->latest_timeslot[partition];
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 					    current_timeslot, partition);
@@ -745,8 +763,8 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			alloc = &pending_q->allocs[wnd_pos(pending_q->tail++)];
 			alloc->dst = dst;
 			alloc->flags = flags & FLAGS_MASK;
-			/* TODO: convey tslot rather than tslot >> 4 */
 			alloc->timeslot = (current_timeslot >> 4) & 0xFFFF;
+			fill_algo_fields_in_alloc(alloc, admitted[i], j);
 			en->alloc_to_dst[dst]++;
 
 			/* trigger_report will make sure a TX is triggered */

@@ -5,7 +5,7 @@
  *     Author: hari
  */
 
-#include "red.h"
+#include "queue_managers/red.h"
 #include "api_impl.h"
 #include "../graph-algo/random.h"
 
@@ -42,7 +42,7 @@ void REDQueueManager::enqueue(struct emu_packet *pkt,
 }
 
 #define RAND_RANGE (1<<16)-1
-inline uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
+uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
 {
     // note that the EWMA weight is specified as a bit shift factor
     if (qlen >= q_avg) {
@@ -77,7 +77,7 @@ inline uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
     return accept;
 }
 
-inline uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop) { 
+uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop) { 
     count_since_last = -1;
     if (force_drop || !(m_red_params.ecn)) {
       //        printf("RED dropping pkt\n");

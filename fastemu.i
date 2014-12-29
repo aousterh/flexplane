@@ -49,8 +49,8 @@
 #include "schedulers/PyScheduler.h"
 #include "drivers/SingleRackNetworkDriver.h"
 
-#include "drop_tail.h"
-#include "red.h"
+#include "queue_managers/drop_tail.h"
+#include "queue_managers/red.h"
 #include "simple_endpoint.h"
 %}
 
@@ -105,10 +105,10 @@
 %template(PyRouter) CompositeRouter<PyRoutingTable, PyClassifier, PyQueueManager, PyScheduler>;
 
 %template(DropTailRouterBase) CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>;
-%include "drop_tail.h"
+%include "queue_managers/drop_tail.h"
 
 %template(REDRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>;
-%include "red.h"
+%include "queue_managers/red.h"
 
 
 /** Composite Endpoint Groups */

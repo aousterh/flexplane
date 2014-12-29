@@ -6,8 +6,8 @@
  */
 
 #include "router.h"
-#include "drop_tail.h"
-#include "red.h"
+#include "queue_managers/drop_tail.h"
+#include "queue_managers/red.h"
 #include <assert.h>
 #include "output.h"
 

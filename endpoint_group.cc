@@ -7,7 +7,7 @@
 
 #include "endpoint_group.h"
 #include "endpoint.h"
-#include "drop_tail.h"
+#include "queue_managers/drop_tail.h"
 #include "packet.h"
 #include "simple_endpoint.h"
 #include "../protocol/platform/generic.h"

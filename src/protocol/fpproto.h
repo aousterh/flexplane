@@ -87,6 +87,15 @@ struct fpproto_areq_desc {
 };
 
 /**
+ * Additional information about each alloc used in emulation.
+ * @id: the sequential id of the MTU the allocation is for (because allocs can
+ * 	be generated out of order)
+ */
+struct fpproto_emu_desc {
+	u16	id;
+};
+
+/**
  * The state encoded in a full packet sent to or from the arbiter. Stored
  * 	temporarily to help with ACKs and timeouts.
  * @sent_timestamp: a timestamp when the request was sent
@@ -104,6 +113,7 @@ struct fpproto_areq_desc {
  * @n_dsts: number of destinations with allocs in this packet
  * @dsts: the destinations that have allocs
  * @tslot_desc: description of each allocation
+ * @emu_tslot_desc: additional emu information about each allocation
  */
 struct fpproto_pktdesc {
 	/* state for tracking timeouts */
@@ -130,6 +140,9 @@ struct fpproto_pktdesc {
 	u16							n_dsts;
 	u16							dsts[15];
 	u8							tslot_desc[FASTPASS_PKT_MAX_ALLOC_TSLOTS];
+#if defined(EMULATION_ALGO)
+	struct fpproto_emu_desc		emu_tslot_desc[FASTPASS_PKT_MAX_ALLOC_TSLOTS];
+#endif
 #endif
 };
 

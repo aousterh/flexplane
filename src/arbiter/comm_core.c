@@ -841,8 +841,12 @@ next_alloc:
 
 	/* encode the allocation byte
 	 * upper 4 bits for destination index, lower 4 bits for flags */
-	pd->tslot_desc[n_tslot++] =
+	pd->tslot_desc[n_tslot] =
                 (core->alloc_enc_space[dst] << 4) | (cur_alloc->flags & 0xF);
+#if defined(EMULATION_ALGO)
+	pd->emu_tslot_desc[n_tslot].id = cur_alloc->id;
+#endif
+	n_tslot++;
 
 	/* remove the timeslot from the queue */
 	pending_q->head++;

@@ -2,7 +2,7 @@
 
 from fastemu import *
 
-# allocate router state
+# allocate emulation state
 state = emu_state()
 ADMITTED_MEMPOOL_SIZE = 1 << 10
 ADMITTED_RING_SIZE = 1 << 10

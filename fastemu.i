@@ -45,6 +45,7 @@
 #include "classifiers/PyClassifier.h"
 #include "queue_managers/PyQueueManager.h"
 #include "schedulers/SingleQueueScheduler.h"
+#include "schedulers/PriorityScheduler.h"
 #include "schedulers/PyScheduler.h"
 #include "drivers/SingleRackNetworkDriver.h"
 
@@ -92,6 +93,7 @@
 
 /** Schedulers */
 %include "schedulers/SingleQueueScheduler.h"
+%include "schedulers/PriorityScheduler.h"
 %feature("director") PyScheduler;
 %include "schedulers/PyScheduler.h"
 
@@ -100,7 +102,7 @@
 
 
 /** Composite Routers */
-%template(PyCompositeRouter) CompositeRouter<PyRoutingTable, PyClassifier, PyQueueManager, PyScheduler>;
+%template(PyRouter) CompositeRouter<PyRoutingTable, PyClassifier, PyQueueManager, PyScheduler>;
 
 %template(DropTailRouterBase) CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>;
 %include "drop_tail.h"
@@ -132,3 +134,27 @@ struct emu_admitted_edge admitted_get_edge(struct emu_admitted_traffic *admitted
 	return admitted->edges[index];
 }
 %}
+
+
+/** PySink */
+%feature("director") PySink;
+%inline %{
+class PySink : public Sink {
+public:
+	virtual ~PySink() {}
+	virtual void handle(struct emu_packet *pkt) {throw std::runtime_error("not implemented");}
+};
+%}
+
+%template(PyEndpointGroupBase) CompositeEndpointGroup<PyClassifier, PyQueueManager, PyScheduler, PySink>;
+%inline %{
+class PyEndpointGroup : public CompositeEndpointGroup<PyClassifier, PyQueueManager, PyScheduler, PySink> {
+public:
+	PyEndpointGroup(PyClassifier *cla, PyQueueManager *qm, PyScheduler *sch, PySink *sink,
+			uint32_t first_endpoint_id, uint32_t n_endpoints)
+		: CompositeEndpointGroup<PyClassifier, PyQueueManager, PyScheduler, PySink>(cla,qm,sch,sink,first_endpoint_id, n_endpoints)
+	{} 
+	virtual void reset(uint16_t id) { throw std::runtime_error("not implemented");}
+};
+%}
+

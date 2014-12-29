@@ -7,6 +7,7 @@
 
 #include "admitted.h"
 #include "api_impl.h"
+#include "config.h"
 #include "emulation.h"
 #include "emulation_impl.h"
 #include "endpoint.h"
@@ -122,7 +123,7 @@ int main() {
     printf("\nTEST 3: RED\n");
     test = new EmulationTest(R_RED);
     for (i = 0; i < 1000; i++) {
-        emu_add_backlog(&test->state, i, 13, 0, 3);
+        emu_add_backlog(&test->state, i % EMU_NUM_ENDPOINTS, 13, 0, 3);
         test->emulate_and_print_admitted();
     }
     for (i = 0; i < 100; i++) {

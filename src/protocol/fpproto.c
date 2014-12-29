@@ -700,6 +700,7 @@ handle_payload:
 		break;
 
 	case FASTPASS_PTYPE_ALLOC:
+	case FASTPASS_PTYPE_EMU_ALLOC:
 		payload_length = process_alloc(conn, curp, data_end);
 
 		fp_debug("process_alloc returned %d\n", payload_length);
@@ -865,7 +866,11 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 #ifdef FASTPASS_CONTROLLER
 	if (pd->alloc_tslot > 0) {
 		/* ALLOC type short */
-		*(__be16 *)curp = htons((FASTPASS_PTYPE_ALLOC << 12)
+		u16 alloc_type = FASTPASS_PTYPE_ALLOC;
+#if defined(EMULATION_ALGO)
+		alloc_type = FASTPASS_PTYPE_EMU_ALLOC;
+#endif
+		*(__be16 *)curp = htons((alloc_type << 12)
 								| (pd->n_dsts << 8)
 								|  (pd->alloc_tslot / 2));
 		curp += 2;

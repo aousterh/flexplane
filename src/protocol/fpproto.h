@@ -79,6 +79,7 @@ extern bool fastpass_debug;
 #define FASTPASS_PTYPE_AREQ			0x2
 #define FASTPASS_PTYPE_ALLOC		0x3
 #define FASTPASS_PTYPE_ACK			0x4
+#define	FASTPASS_PTYPE_EMU_ALLOC	0x5
 
 /**
  * An allocation request (to the arbiter) or report (from the arbiter) for a

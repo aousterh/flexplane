@@ -460,7 +460,8 @@ static int process_alloc(struct fpproto_conn *conn, u8 *data, u8 *data_end)
 	alloc_n_tslots = 2 * (payload_type & 0x3F);
 	curp += 2;
 
-	if (curp + 2 + 2 * alloc_n_dst + alloc_n_tslots > data_end)
+	if (curp + 2 + 2 * alloc_n_dst + alloc_n_tslots * ALLOC_BYTES_PER_TSLOT
+			> data_end)
 		goto incomplete_alloc_payload;
 
 	/* get base timeslot */
@@ -477,7 +478,7 @@ static int process_alloc(struct fpproto_conn *conn, u8 *data, u8 *data_end)
 		conn->ops->handle_alloc(conn->ops_param, alloc_base_tslot, alloc_dst, alloc_n_dst,
 			curp, alloc_n_tslots);
 
-	return 4 + 2 * alloc_n_dst + alloc_n_tslots;
+	return 4 + 2 * alloc_n_dst + alloc_n_tslots * ALLOC_BYTES_PER_TSLOT;
 
 incomplete_alloc_payload_one_byte:
 	conn->stat.rx_incomplete_alloc++;
@@ -487,7 +488,8 @@ incomplete_alloc_payload_one_byte:
 incomplete_alloc_payload:
 	conn->stat.rx_incomplete_alloc++;
 	fp_debug("ALLOC payload incomplete: expected %d bytes, got %d\n",
-			2 + 2 * alloc_n_dst + alloc_n_tslots, (int)(data_end - curp));
+			2 + 2 * alloc_n_dst + alloc_n_tslots * ALLOC_BYTES_PER_TSLOT,
+			(int)(data_end - curp));
 	return -1;
 }
 
@@ -874,7 +876,7 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 			curp += 2;
 		}
 		memcpy(curp, pd->tslot_desc, pd->alloc_tslot);
-		curp += pd->alloc_tslot;
+		curp += pd->alloc_tslot * ALLOC_BYTES_PER_TSLOT;
 	}
 	(void) i; (void) areq; (void)max_len; /* TODO, fix this better */
 #endif

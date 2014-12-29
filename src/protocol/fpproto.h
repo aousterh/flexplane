@@ -133,6 +133,9 @@ struct fpproto_pktdesc {
 #endif
 };
 
+/* number of bytes used for each timeslot in an alloc payload */
+#define ALLOC_BYTES_PER_TSLOT	1
+
 /**
  * Operations executed by the protocol
  */

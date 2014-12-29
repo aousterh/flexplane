@@ -87,34 +87,49 @@ struct fpproto_areq_desc {
 };
 
 /**
- * A full packet sent to or from the arbiter
+ * The state encoded in a full packet sent to or from the arbiter. Stored
+ * 	temporarily to help with ACKs and timeouts.
+ * @sent_timestamp: a timestamp when the request was sent
+ * @seqno: sequence number (allocated by the protocol)
+ * @ack_seq: sequence number of ACK
+ * @ack_vec: ACK vector
+ * @send_reset: whether or not a reset needs to be sent
+ * @reset_timestamp: timestamp of a reset, if applicable
  * @n_areq: number of filled in destinations for A-REQ
  * @areq: an array of allocation requests
- * @n_dsts: number of destinations that have allocs
+ * @alloc_tslot: number of allocs in this packet
+ * @base_tslot: timeslot of the first alloc (to avoid using very old allocs)
+ * @n_dsts: number of destinations with allocs in this packet
  * @dsts: the destinations that have allocs
  * @dst_counts: number of ALLOCs per dst in dsts
- * @alloc_tslot: number of allocs in this packet
- * @sent_timestamp: a timestamp when the request was sent
+ * @tslot_desc: description of each allocation
  */
 struct fpproto_pktdesc {
-	u16							n_areq;
-	struct fpproto_areq_desc	areq[FASTPASS_PKT_MAX_AREQ];
-
-#ifdef FASTPASS_CONTROLLER
-	u16							n_dsts;
-	u16							dsts[15];
-	u16							dst_counts[15];
-	u16							alloc_tslot;
-	u8							tslot_desc[FASTPASS_PKT_MAX_ALLOC_TSLOTS];
-	u16							base_tslot;
-#endif
-
+	/* state for tracking timeouts */
 	u64							sent_timestamp;
+
+	/* protocol header */
 	u64							seqno;
 	u64							ack_seq;
 	u16							ack_vec;
+
+	/* payload - reset */
 	bool						send_reset;
 	u64							reset_timestamp;
+
+	/* payload - allocation request totals (areq) */
+	u16							n_areq;
+	struct fpproto_areq_desc	areq[FASTPASS_PKT_MAX_AREQ];
+
+	/* payload - allocations */
+#ifdef FASTPASS_CONTROLLER
+	u16							alloc_tslot;
+	u16							base_tslot;
+	u16							n_dsts;
+	u16							dsts[15];
+	u16							dst_counts[15];
+	u8							tslot_desc[FASTPASS_PKT_MAX_ALLOC_TSLOTS];
+#endif
 };
 
 /**

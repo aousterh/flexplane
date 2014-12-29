@@ -21,6 +21,11 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 
+#define RED_FORCEDROP true	/* used when queue has overflowed, for the caller to force a drop in mark_or_drop */
+#define RED_DROPPKT 0		/* red_rules() tells caller that it dropped the packet in RED */
+#define RED_ACCEPTMARKED 1      /* red_rules() tells caller that it did not drop pkt, but ECN-marked it */
+#define RED_ACCEPTPKT 2		/* red_rules() tells caller that it accepted the pkt without marking */
+
 struct packet_queue;
 
 struct red_args {
@@ -37,8 +42,8 @@ class REDQueueManager : public QueueManager {
 public:
     REDQueueManager(PacketQueueBank *bank, struct red_args *red_params, Dropper &dropper);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
-    void red_rules(struct emu_packet *pkt, uint32_t qlen);
-    void mark_or_drop(struct emu_packet *pkt, bool force);
+    inline uint8_t red_rules(struct emu_packet *pkt, uint32_t qlen);
+    inline uint8_t mark_or_drop(struct emu_packet *pkt, bool force);
 
 private:
     /** the QueueBank where packets are stored */

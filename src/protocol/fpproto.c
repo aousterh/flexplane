@@ -871,12 +871,15 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 		curp += 2;
 		*(__be16 *)curp = htons(pd->base_tslot);
 		curp += 2;
+		remaining_len -= 4;
 		for (i = 0; i < pd->n_dsts; i++) {
 			*(__be16 *)curp = htons(pd->dsts[i]);
 			curp += 2;
+			remaining_len -= 2;
 		}
 		memcpy(curp, pd->tslot_desc, pd->alloc_tslot);
 		curp += pd->alloc_tslot * ALLOC_BYTES_PER_TSLOT;
+		remaining_len -= pd->alloc_tslot * ALLOC_BYTES_PER_TSLOT;
 	}
 	(void) i; (void) areq; (void)max_len; /* TODO, fix this better */
 #endif

@@ -50,10 +50,15 @@ extern bool fastpass_debug;
 #define FASTPASS_PKT_HDR_LEN			8
 #define FASTPASS_PKT_RESET_LEN			8
 
+/* number of bytes used for each timeslot in an alloc payload */
+#define ALLOC_BYTES_PER_TSLOT	1
+
 #ifdef FASTPASS_CONTROLLER
 /* CONTROLLER */
 #define FASTPASS_PKT_MAX_ALLOC_TSLOTS	64
-#define FASTPASS_PKT_ALLOC_LEN			(2 + 2 * 15 + FASTPASS_PKT_MAX_ALLOC_TSLOTS)
+#define FASTPASS_PKT_ALLOC_LEN			(2 + 2 + 2 * 15 + \
+										FASTPASS_PKT_MAX_ALLOC_TSLOTS * \
+										ALLOC_BYTES_PER_TSLOT)
 #else
 /* END NODE */
 #define FASTPASS_PKT_MAX_ALLOC_TSLOTS	0
@@ -145,9 +150,6 @@ struct fpproto_pktdesc {
 #endif
 #endif
 };
-
-/* number of bytes used for each timeslot in an alloc payload */
-#define ALLOC_BYTES_PER_TSLOT	1
 
 /**
  * Operations executed by the protocol

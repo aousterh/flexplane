@@ -38,11 +38,11 @@ epg = SimpleEndpointGroup(EMU_NUM_ENDPOINTS, emu_output, 0, ENDPOINT_MAX_QUEUE_S
 driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
                                  state.stat, PACKET_MEMPOOL_SIZE)
 
-emu_add_backlog(state,0,1,0,3)
+emu_add_backlog(state,0,1,0,300)
 
-emu_add_backlog(state,5,6,0,4)
+emu_add_backlog(state,5,6,0,400)
 
-for i in xrange(10):
+for i in xrange(1000):
     driver.step()
     emu_output.flush()
     

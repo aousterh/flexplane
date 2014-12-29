@@ -51,6 +51,7 @@
 
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
+#include "queue_managers/dctcp.h"
 #include "simple_endpoint.h"
 %}
 
@@ -109,6 +110,9 @@
 
 %template(REDRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>;
 %include "queue_managers/red.h"
+
+%template(DCTCPRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManager, SingleQueueScheduler>;
+%include "queue_managers/dctcp.h"
 
 
 /** Composite Endpoint Groups */

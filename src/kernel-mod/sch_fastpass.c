@@ -383,6 +383,11 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	u64 now_real = fp_get_time_ns();
 	u64 current_timeslot;
 
+#if defined(EMULATION_ALGO)
+	u16 *ids = (u16 *) (tslots + n_tslots);
+	u16 id;
+#endif
+
 	/* every alloc should be ACKed */
 	trigger_tx(q);
 
@@ -437,7 +442,14 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 
 		dst_id = dst_ids[dst_id_idx - 1];
 		flags = spec & FLAGS_MASK;
-		fp_debug("admitting timeslot to dst %d with flags %x\n", dst_id, flags);
+#if defined(EMULATION_ALGO)
+		id = ntohs(ids[i]);
+		fp_debug("admitting timeslot to dst %d with flags %x and id %d\n",
+				dst_id, flags, id);
+#else
+		fp_debug("admitting timeslot to dst %d with flags %x\n", dst_id,
+				flags);
+#endif
 
 		dst = get_dst(q, dst_id);
 		/* okay, allocate */

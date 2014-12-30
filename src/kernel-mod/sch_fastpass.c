@@ -344,22 +344,25 @@ release:
 }
 
 /**
- * Transmit or drop a single alloc to @dst_id, according to @flags.
- * Behavior depends on the algorithm used (emulation, etc.).
+ * Transmit or drop a single alloc to @dst_id, according to @flags and the
+ * algorithm used (emulation, etc.).
  */
-static void transmit_single_alloc(struct fp_sched_data *q, u16 dst_id,
+static void inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
 		u8 flags)
 {
 #if (defined(EMULATION_ALGO))
 	if (unlikely(flags == EMU_FLAGS_DROP)) {
-		tsq_drop_now(q, dst_id);
+		tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP);
 		q->stat.dropped_timeslots++;
-	}	else {
-		tsq_admit_now(q, dst_id);
+	} else if (flags == EMU_FLAGS_NONE) {
+		tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT);
 		q->stat.admitted_timeslots++;
+	} else {
+		/* unrecognized flags, don't take any action */
+		q->stat.unrecognized_action++;
 	}
 #else
-	tsq_admit_now(q, dst_id);
+	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT);
 	q->stat.admitted_timeslots++;
 #endif
 }
@@ -444,7 +447,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			transmit_single_alloc(q, dst_id, flags);
+			handle_single_alloc(q, dst_id, flags);
 
 			atomic_inc(&q->alloc_tslots);
 			if (full_tslot > current_timeslot) {
@@ -935,6 +938,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->unwanted_alloc)
 		seq_printf(seq, "\n  %llu timeslots allocated beyond the demand of the flow (could happen due to reset / controller timeouts)",
 				scs->unwanted_alloc);
+	if (scs->unrecognized_action)
+		seq_printf(seq, "\n  %llu timeslots with unrecognized actions (packet encoding error?)",
+				scs->unrecognized_action);
 	if (scs->alloc_too_late)
 		seq_printf(seq, "\n  %llu late allocations (something wrong with time-sync?)",
 				scs->alloc_too_late);

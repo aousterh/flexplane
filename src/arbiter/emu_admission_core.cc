@@ -15,7 +15,7 @@
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
 #include "../emulation/endpoint.h"
-#include "../emulation/drop_tail.h"
+#include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/packet.h"
 #include "../emulation/router.h"
 #include "../graph-algo/algo_config.h"

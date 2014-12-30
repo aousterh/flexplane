@@ -867,8 +867,13 @@ out:
 	pd->used_alloc_tslot = n_tslot;
 
 	/* pad to even n_tslot */
-	if (n_tslot & 1)
-		pd->tslot_desc[n_tslot++] = 0;
+	if (n_tslot & 1) {
+		pd->tslot_desc[n_tslot] = 0;
+#if defined(EMULATION_ALGO)
+		pd->emu_tslot_desc[n_tslot].id = 0;
+#endif
+		n_tslot++;
+	}
 
 	pd->n_dsts = n_dsts;
 	pd->alloc_tslot = n_tslot;

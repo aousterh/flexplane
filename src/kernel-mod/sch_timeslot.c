@@ -52,6 +52,7 @@ struct timeslot_skb_q {
 	struct list_head list;
 	struct sk_buff	*head;		/* list of skbs for this flow : first skb */
 	struct sk_buff *tail;		/* last skb in the list */
+	u16 id;						/* optional id for the packets in this queue */
 };
 
 /*
@@ -62,6 +63,7 @@ struct tsq_dst {
 	struct rb_node	fp_node; 	/* anchor in fp_root[] trees */
 	struct list_head skb_qs;	/* a queue for each timeslot */
 	s64		credit;				/* time remaining in the last scheduled timeslot */
+	u16		next_id;			/* sequential id to be assigned to the next timeslot */
 };
 
 struct rcu_hash_tbl_cleanup {
@@ -271,6 +273,7 @@ static struct tsq_dst *dst_lookup(struct tsq_sched_data *q, u64 src_dst_key,
 	rb_insert_color(&dst->fp_node, root);
 	INIT_LIST_HEAD(&dst->skb_qs);
 	dst->credit = 0;
+	dst->next_id = 0;
 
 	q->flows++;
 	q->inactive_flows++;
@@ -484,6 +487,7 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 			q->inactive_flows--;
 
 		skb_q_init(timeslot_q);
+		timeslot_q->id = dst->next_id++; /* assign this MTU the next id */
 		list_add_tail(&timeslot_q->list, &dst->skb_qs);
 		dst->credit = q->tslot_len_approx;
 		q->stat.added_tslots++;
@@ -692,7 +696,7 @@ done:
 }
 #endif
 
-void tsq_handle_now(void *priv, u64 src_dst_key, u8 action)
+void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 {
 	struct tsq_sched_data *q = priv_to_sched_data(priv);
 	struct tsq_dst *dst;
@@ -719,8 +723,23 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action)
 	}
 
 	/* get a timeslot's worth skb_q */
-	timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
-	list_del(dst->skb_qs.next);
+	if (action == TSLOT_ACTION_ADMIT_HEAD) {
+		/* get the first timeslot in the skb_q */
+		timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
+		list_del(dst->skb_qs.next);
+	} else if ((action == TSLOT_ACTION_ADMIT_BY_ID) ||
+			(action == TSLOT_ACTION_DROP_BY_ID)){
+		/* get the timeslot with the specified id */
+		timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
+		list_del(dst->skb_qs.next);
+		fp_debug("expected id %d, got id %d\n", id, timeslot_q->id);
+	} else {
+		FASTPASS_WARN("unrecognized action %d\n", action);
+		q->stat.unrecognized_action++;
+		spin_unlock(&q->hash_tbl_lock);
+		return;
+	}
+
 	/* if we dequeued the last skb, make sure it has no remaining credit */
 	if (unlikely(list_empty(&dst->skb_qs))) {
 		dst->credit = 0;
@@ -728,16 +747,20 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action)
 	}
 
 	/* log the action that will be performed on this tslot */
-	if (action == TSLOT_ACTION_ADMIT)
-		q->stat.used_timeslots++;
-	else if (action == TSLOT_ACTION_DROP)
+	if (action == TSLOT_ACTION_DROP_BY_ID)
 		q->stat.dropped_timeslots++;
 	else
-		q->stat.unrecognized_action++;
+		q->stat.used_timeslots++;
 
 	spin_unlock(&q->hash_tbl_lock);
 
-	if (action == TSLOT_ACTION_ADMIT) {
+	if (action == TSLOT_ACTION_DROP_BY_ID) {
+		/* drop the packets */
+		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
+			skb_next = skb->next;
+			qdisc_drop(skb, q->qdisc);
+		}
+	} else {
 		/* admit the packets now */
 
 		/* put in prequeue */
@@ -748,12 +771,6 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action)
 		/* unthrottle qdisc */
 		qdisc_unthrottled(q->qdisc);
 		__netif_schedule(qdisc_root(q->qdisc));
-	} else {
-		/* drop the packets */
-		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
-			skb_next = skb->next;
-			qdisc_drop(skb, q->qdisc);
-		}
 	}
 
 	/* free the timeslot_q */

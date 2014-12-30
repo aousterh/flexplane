@@ -4,8 +4,9 @@
 #include <linux/types.h>
 #include <net/sch_generic.h>
 
-#define	TSLOT_ACTION_ADMIT	0x0
-#define	TSLOT_ACTION_DROP	0x1
+#define	TSLOT_ACTION_ADMIT_HEAD		0x0
+#define TSLOT_ACTION_ADMIT_BY_ID	0x1
+#define	TSLOT_ACTION_DROP_BY_ID		0x2
 
 struct tsq_ops {
 	char			id[IFNAMSIZ];
@@ -50,7 +51,7 @@ void tsq_schedule(void *priv, u64 src_dst_key, u64 timeslot);
  * Handles a timeslot from a flow (specified by src_dst_key) right now. This
  * involves admitting, marking, or dropping, according to the action.
  */
-void tsq_handle_now(void *priv, u64 src_dst_key, u8 action);
+void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id);
 
 /**
  * Garbage-collects information for empty queues.

@@ -344,25 +344,25 @@ release:
 }
 
 /**
- * Transmit or drop a single alloc to @dst_id, according to @flags and the
- * algorithm used (emulation, etc.).
+ * Transmit or drop a single alloc to @dst_id with index @id, according to
+ * @flags and the algorithm used (emulation, etc.).
  */
 static void inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
-		u8 flags)
+		u8 flags, u16 id)
 {
 #if (defined(EMULATION_ALGO))
 	if (unlikely(flags == EMU_FLAGS_DROP)) {
-		tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP);
+		tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id);
 		q->stat.dropped_timeslots++;
 	} else if (flags == EMU_FLAGS_NONE) {
-		tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT);
+		tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_BY_ID, id);
 		q->stat.admitted_timeslots++;
 	} else {
-		/* unrecognized flags, don't take any action */
+		/* unrecognized action, don't take any action */
 		q->stat.unrecognized_action++;
 	}
 #else
-	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT);
+	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_HEAD, 0 /* ignored */);
 	q->stat.admitted_timeslots++;
 #endif
 }
@@ -382,10 +382,10 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	u64 full_tslot;
 	u64 now_real = fp_get_time_ns();
 	u64 current_timeslot;
+	u16 id = 0;
 
 #if defined(EMULATION_ALGO)
 	u16 *ids = (u16 *) (tslots + n_tslots);
-	u16 id;
 #endif
 
 	/* every alloc should be ACKed */
@@ -459,7 +459,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			handle_single_alloc(q, dst_id, flags);
+			handle_single_alloc(q, dst_id, flags, id);
 
 			atomic_inc(&q->alloc_tslots);
 			if (full_tslot > current_timeslot) {

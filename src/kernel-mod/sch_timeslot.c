@@ -93,6 +93,7 @@ struct tsq_sched_stat {
 	/* alloc-related */
 	u64		unwanted_alloc;
 	u64		dst_not_found_handle_now;
+	u64		unrecognized_id;
 	u64		unrecognized_action;
 };
 
@@ -730,9 +731,19 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 	} else if ((action == TSLOT_ACTION_ADMIT_BY_ID) ||
 			(action == TSLOT_ACTION_DROP_BY_ID)){
 		/* get the timeslot with the specified id */
-		timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
-		list_del(dst->skb_qs.next);
-		fp_debug("expected id %d, got id %d\n", id, timeslot_q->id);
+		list_for_each_entry(timeslot_q, &dst->skb_qs, list) {
+			if (timeslot_q->id == id)
+				goto found_entry;
+		}
+		FASTPASS_WARN("couldn't find MTU with id %d\n", id);
+		q->stat.unrecognized_id++;
+		spin_unlock(&q->hash_tbl_lock);
+		return;
+
+found_entry:
+		list_del(&timeslot_q->list);
+		fp_debug("expected MTU with id %d, dequeued MTU with id %d\n", id,
+				timeslot_q->id);
 	} else {
 		FASTPASS_WARN("unrecognized action %d\n", action);
 		q->stat.unrecognized_action++;
@@ -1276,6 +1287,9 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 	if (scs->dst_not_found_handle_now)
 		seq_printf(seq, "\n  %llu flow could not be found in timeslot_handle_now",
 				scs->dst_not_found_handle_now);
+	if (scs->unrecognized_id)
+		seq_printf(seq, "\n  %llu unrecognized timeslot id",
+				scs->unrecognized_id);
 	if (scs->unrecognized_action)
 		seq_printf(seq, "\n  %llu unrecognized timeslot action (not ADMIT or DROP)",
 				scs->unrecognized_action);

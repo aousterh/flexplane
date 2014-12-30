@@ -22,6 +22,13 @@ CXXFLAGS += -g
 LDFLAGS = -lm
 #LDFLAGS = -debug inline-debug-info
 
+# add more flags for swig if on Mac
+UNAME_S := $(shell uname -s)
+SWIG_FLAGS = -shared
+ifeq ($(UNAME_S), Darwin)
+	SWIG_FLAGS += -lpython -dynamiclib
+endif
+
 # Pattern rule
 %_wrap.o: %_wrap.cc
 	$(CXX) $(CXXFLAGS) -c $< -fPIC -I /usr/include/python2.7/ -o $@
@@ -37,7 +44,8 @@ clean:
 	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o endpoint_group.o drop_tail.o red.o \
+emulation: emulation_test.o emulation.o endpoint_group.o \
+			queue_managers/drop_tail.o queue_managers/red.o queue_managers/dctcp.o \
 			simple_endpoint.o router.o \
 			drivers/RouterDriver.o drivers/EndpointDriver.o \
 			drivers/SingleRackNetworkDriver.o
@@ -58,6 +66,8 @@ WRAP_HEADERS = \
 	classifiers/PyClassifier.h \
 	queue_managers/PyQueueManager.h \
 	schedulers/SingleQueueScheduler.h \
+	schedulers/RRScheduler.h \
+	schedulers/PriorityScheduler.h \
 	schedulers/PyScheduler.h
 
 %_wrap.cc: %.i $(WRAP_HEADERS) 
@@ -65,10 +75,9 @@ WRAP_HEADERS = \
 
 
 _fastemu.so: fastemu_wrap.o emulation.pic.o endpoint_group.pic.o router.pic.o \
-			drop_tail.pic.o	red.pic.o simple_endpoint.pic.o \
-			red.pic.o \
+			queue_managers/drop_tail.pic.o	queue_managers/red.pic.o queue_managers/dctcp.pic.o simple_endpoint.pic.o \
 			drivers/EndpointDriver.pic.o \
 			drivers/RouterDriver.pic.o drivers/SingleRackNetworkDriver.pic.o
-	$(CXX) $^ -o $@ $(LDFLAGS) -shared
+	$(CXX) $^ -o $@ $(LDFLAGS) $(SWIG_FLAGS)
 
 

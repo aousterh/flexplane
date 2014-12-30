@@ -18,7 +18,7 @@
 #include "output.h"
 #include "composite.h"
 #include "classifiers/SingleQueueClassifier.h"
-#include "drop_tail.h"
+#include "queue_managers/drop_tail.h"
 
 struct packet_queue;
 

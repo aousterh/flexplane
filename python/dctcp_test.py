@@ -20,15 +20,11 @@ emu_output = EmulationOutput(state.q_admitted_out,
 dropper = Dropper(emu_output)
 
 # make router
-red_params = red_args()
-red_params.q_capacity = 400;
-red_params.ecn = False;
-red_params.min_th = 20; # 200 microseconds
-red_params.max_th = 200; # 2 milliseconds
-red_params.max_p = 0.05;
-red_params.wq_shift = 3;
+dctcp_params = dctcp_args()
+dctcp_params.q_capacity = 4096
+dctcp_params.K_threshold = 65  # from Alizadeh et al. SIGCOMM 2010. this might not be correct in general
 
-rtr = REDRouter(0, red_params, dropper)
+rtr = DCTCPRouter(0, dctcp_params, dropper)
 
 #make endpoint group
 ENDPOINT_MAX_QUEUE_SIZE = 1 << 10 # should be power of two
@@ -42,7 +38,7 @@ emu_add_backlog(state,0,1,0,100)
 emu_add_backlog(state,2,1,0,200)
 emu_add_backlog(state,3,1,0,100)
 
-for i in xrange(400):
+for i in xrange(420):
     driver.step()
     emu_output.flush()
     

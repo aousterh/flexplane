@@ -5,7 +5,7 @@
  *      Author: aousterh
  */
 
-#include "drop_tail.h"
+#include "queue_managers/drop_tail.h"
 
 #define DROP_TAIL_QUEUE_CAPACITY 4096
 

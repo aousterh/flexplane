@@ -1,0 +1,64 @@
+/*
+ * dctcp.h
+ *
+ *  Created on: December 29, 2014
+ *      Author: hari
+ */
+
+#ifndef DCTCP_H_
+#define DCTCP_H_
+
+#include "api.h"
+#include "config.h"
+#include "packet_queue.h"
+#include "router.h"
+#include "composite.h"
+#include "queue_bank.h"
+#include "../graph-algo/fp_ring.h"
+#include "routing_tables/TorRoutingTable.h"
+#include "classifiers/SingleQueueClassifier.h"
+#include "schedulers/SingleQueueScheduler.h"
+
+struct packet_queue;
+
+struct dctcp_args {
+    uint16_t q_capacity;
+    uint32_t K_threshold;
+};
+
+
+class DCTCPQueueManager : public QueueManager {
+public:
+    DCTCPQueueManager(PacketQueueBank *bank, struct dctcp_args *dctcp_params, Dropper &dropper);
+    void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+
+private:
+    /** the QueueBank where packets are stodctcp */
+    PacketQueueBank *m_bank;
+    /** the means to drop packets */
+    Dropper m_dropper;
+
+    struct dctcp_args m_dctcp_params;    
+};
+
+typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManager, SingleQueueScheduler>
+	DCTCPRouterBase;
+
+/**
+ * A simple DCTCP router.
+ * @output_queue: a queue of packets for each output port
+ */
+class DCTCPRouter : public DCTCPRouterBase {
+public:
+    DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params, Dropper &dropper);
+    virtual ~DCTCPRouter();
+
+private:
+    PacketQueueBank m_bank;
+    TorRoutingTable m_rt;
+    SingleQueueClassifier m_cla;
+    DCTCPQueueManager m_qm;
+    SingleQueueScheduler m_sch;
+};
+
+#endif /* DCTCP_H_ */

@@ -7,12 +7,13 @@
 
 #include "admitted.h"
 #include "api_impl.h"
+#include "config.h"
 #include "emulation.h"
 #include "emulation_impl.h"
 #include "endpoint.h"
 #include "packet.h"
-#include "drop_tail.h"
-#include "red.h"
+#include "queue_managers/drop_tail.h"
+#include "queue_managers/red.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include "drivers/SingleRackNetworkDriver.h"
@@ -122,7 +123,7 @@ int main() {
     printf("\nTEST 3: RED\n");
     test = new EmulationTest(R_RED);
     for (i = 0; i < 1000; i++) {
-        emu_add_backlog(&test->state, i, 13, 0, 3);
+        emu_add_backlog(&test->state, i % EMU_NUM_ENDPOINTS, 13, 0, 3);
         test->emulate_and_print_admitted();
     }
     for (i = 0; i < 100; i++) {

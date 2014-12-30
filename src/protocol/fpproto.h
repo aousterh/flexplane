@@ -51,7 +51,11 @@ extern bool fastpass_debug;
 #define FASTPASS_PKT_RESET_LEN			8
 
 /* number of bytes used for each timeslot in an alloc payload */
+#if defined(EMULATION_ALGO)
+#define ALLOC_BYTES_PER_TSLOT	3
+#else
 #define ALLOC_BYTES_PER_TSLOT	1
+#endif
 
 #ifdef FASTPASS_CONTROLLER
 /* CONTROLLER */

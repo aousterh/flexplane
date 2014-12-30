@@ -883,8 +883,17 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 			remaining_len -= 2;
 		}
 		memcpy(curp, pd->tslot_desc, pd->alloc_tslot);
-		curp += pd->alloc_tslot * ALLOC_BYTES_PER_TSLOT;
-		remaining_len -= pd->alloc_tslot * ALLOC_BYTES_PER_TSLOT;
+		curp += pd->alloc_tslot;
+		remaining_len -= pd->alloc_tslot;
+
+#if defined(EMULATION_ALGO)
+		/* add additional alloc info for emulation */
+		for (i = 0; i < pd->alloc_tslot; i++) {
+			*(__be16 *) curp = htons(pd->emu_tslot_desc[i].id);
+			curp += 2;
+			remaining_len -= 2;
+		}
+#endif
 	}
 	(void) i; (void) areq; (void)max_len; /* TODO, fix this better */
 #endif

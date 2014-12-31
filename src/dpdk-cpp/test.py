@@ -15,9 +15,15 @@ print "core 2 is on socket %d" % rte_lcore_to_socket_id(2)
 
 
 pool = PacketPool("pktpool", 1024, 2048, 128, 0, 0, 0)
-print pool
 
-print pool.count()
-print pool.alloc()
-print dir(pool.alloc())
-print pool.count()
+print "pool count:", pool.count()
+print "allocated packet:", pool.alloc()
+print "pool count:", pool.count()
+
+print "pci probe", rte_eal_pci_probe()
+
+print "rte_eth_dev_count", rte_eth_dev_count()
+
+eth_config = eth_conf()
+print "rx.hw_ip_checksum =",eth_config.rx().hw_ip_checksum()
+

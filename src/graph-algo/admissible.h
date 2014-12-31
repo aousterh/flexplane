@@ -172,7 +172,7 @@ void handle_spent_demands(struct admissible_state *state)
 #define SMALL_BIN_SIZE				0
 #define BATCH_SIZE					1
 #define BATCH_SHIFT					0
-#define ADMITTED_PER_BATCH			1
+#define ADMITTED_PER_BATCH			4
 #define NUM_BIN_RINGS				EMU_NUM_PACKET_QS
 #define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
 #define MAX_ADMITTED_PER_TIMESLOT	(EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)

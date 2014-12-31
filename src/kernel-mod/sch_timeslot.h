@@ -4,6 +4,10 @@
 #include <linux/types.h>
 #include <net/sch_generic.h>
 
+#define	TSLOT_ACTION_ADMIT_HEAD		0x0
+#define TSLOT_ACTION_ADMIT_BY_ID	0x1
+#define	TSLOT_ACTION_DROP_BY_ID		0x2
+
 struct tsq_ops {
 	char			id[IFNAMSIZ];
 	int			priv_size;
@@ -44,14 +48,10 @@ void tsq_unregister_qdisc(struct tsq_qdisc_entry *reg);
 void tsq_schedule(void *priv, u64 src_dst_key, u64 timeslot);
 
 /**
- * Admits a timeslot from a flow (specified by src_dst_key) right now.
+ * Handles a timeslot from a flow (specified by src_dst_key) right now. This
+ * involves admitting, marking, or dropping, according to the action.
  */
-void tsq_admit_now(void *priv, u64 src_dst_key);
-
-/**
- * Drops a timeslot from a flow (specified by src_dst_key) right now.
- */
-void tsq_drop_now(void *priv, u64 src_dst_key);
+void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id);
 
 /**
  * Garbage-collects information for empty queues.

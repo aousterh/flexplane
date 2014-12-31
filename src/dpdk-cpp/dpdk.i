@@ -5,8 +5,6 @@
 %include "std_vector.i"
 
 namespace std {
-   %template(vectori) vector<int>;
-   %template(vectord) vector<double>;
    %template(vectorstr) vector<string>;
 };
 
@@ -15,6 +13,8 @@ namespace std {
 #include <rte_config.h>
 #include <rte_eal.h>
 #include <rte_lcore.h>
+#include <rte_pci.h>
+#include <rte_ethdev.h>
 #include <string.h>
 
 #include "EthernetDevice.h"
@@ -26,7 +26,7 @@ namespace std {
 
 %include <rte_config.h>
 
-%include <rte_eal.h>
+/** rte_eal.h */
 %inline %{
 int rte_eal_init(const std::vector<std::string> &args) {
 #define MAX_ARGS 128	
@@ -48,6 +48,13 @@ int rte_eal_init(const std::vector<std::string> &args) {
 %}
 
 %include <rte_lcore.h>
+
+/** rte_pci.h */
+int rte_eal_pci_probe(void);
+
+/** rte_ethdev.h */
+uint8_t rte_eth_dev_count(void);
+
 
 %include "util/getter_setter.h"
 %include "EthernetDevice.h"

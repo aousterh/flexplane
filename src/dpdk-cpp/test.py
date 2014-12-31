@@ -4,7 +4,7 @@
 from dpdk import *
 
 print "eal init:", rte_eal_init(["pytest", "-c", "6", "-n", "2", 
-                                      "--no-huge", "--no-pci"])
+                                      "--no-huge"]) #, "--no-pci"])
 
 enabled_cores = [i for i in xrange(RTE_MAX_LCORE) if rte_lcore_is_enabled(i)]
 print "enabled_lcores:", enabled_cores
@@ -20,11 +20,15 @@ print "pool count:", pool.count()
 print "allocated packet:", pool.alloc()
 print "pool count:", pool.count()
 
+print "rte_log debug"
+rte_set_log_level(RTE_LOG_DEBUG)
+print "cur log level", rte_log_cur_msg_loglevel()
+
 print "pci probe", rte_eal_pci_probe()
 print "pci driver list"
 dump_pci_drivers()
-print "pci dump"
-rte_eal_pci_dump()
+# print "pci dump"
+# rte_eal_pci_dump()
 
 print "rte_eth_dev_count", rte_eth_dev_count()
 

@@ -1,7 +1,13 @@
 #!/usr/bin/python
 
 
+import ctypes
+import sys
+saved_flags = sys.getdlopenflags()
+sys.setdlopenflags(saved_flags | ctypes.RTLD_GLOBAL)
+# import dpdk with RTLD_GLOBAL, so it would export its symbols to other PMDs
 from dpdk import *
+sys.setdlopenflags(saved_flags)
 
 print "eal init:", rte_eal_init(["pytest", "-c", "6", "-n", "2", 
                                       "--no-huge"]) #, "--no-pci"])

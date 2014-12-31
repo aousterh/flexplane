@@ -34,6 +34,10 @@ endif
 	$(CXX) $(CXXFLAGS) -c $< -fPIC -I /usr/include/python2.7/ -o $@
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+%.drv.o: drivers/%.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+%.qm.o: queue_managers/%.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 %.pic.o: %.cc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
@@ -44,11 +48,11 @@ clean:
 	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
-emulation: emulation_test.o emulation.o endpoint_group.o \
-			queue_managers/drop_tail.o queue_managers/red.o queue_managers/dctcp.o \
-			simple_endpoint.o router.o \
-			drivers/RouterDriver.o drivers/EndpointDriver.o \
-			drivers/SingleRackNetworkDriver.o
+emulation: emulation_test.o emulation.o endpoint_group.o simple_endpoint.o \
+			router.o \
+			drop_tail.qm.o red.qm.o dctcp.qm.o \
+			RouterDriver.drv.o EndpointDriver.drv.o \
+			SingleRackNetworkDriver.drv.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 ####################

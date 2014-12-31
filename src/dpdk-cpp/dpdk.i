@@ -15,6 +15,7 @@ namespace std {
 #include <rte_lcore.h>
 #include <rte_pci.h>
 #include <rte_ethdev.h>
+#include <rte_log.h>
 #include <string.h>
 
 #include "EthernetDevice.h"
@@ -65,6 +66,15 @@ void dump_pci_drivers() {
 
 /** rte_ethdev.h */
 uint8_t rte_eth_dev_count(void);
+
+/** rte_log.h */
+//void rte_set_log_level(uint32_t level);
+//int rte_log_cur_msg_loglevel(void);
+%ignore rte_logs;
+%ignore eal_default_log_stream;
+%ignore rte_log;
+%ignore rte_vlog;
+%include <rte_log.h>
 
 
 %include "util/getter_setter.h"

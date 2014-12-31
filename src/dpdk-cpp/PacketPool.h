@@ -23,7 +23,9 @@ public:
 			   unsigned cache_size, unsigned private_data_size,
 			   int socket_id, unsigned flags);
 
-	uint32_t count();
+	uint32_t count(); /* note, expensive operation, only use to debug */
+
+	inline struct rte_mempool* get();
 
 	inline struct rte_mbuf *alloc();
 	static inline void free(struct rte_mbuf *m);
@@ -35,6 +37,12 @@ private:
 } /* namespace dpdk */
 
 /* implementation */
+
+inline struct rte_mempool* __attribute__((always_inline))
+dpdk::PacketPool::get()
+{
+	return m_mempool;
+}
 
 inline struct rte_mbuf* __attribute__((always_inline))
 dpdk::PacketPool::alloc()

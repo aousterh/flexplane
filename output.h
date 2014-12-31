@@ -50,16 +50,6 @@ public:
 	inline void flush();
 
 	/**
-	 * Drops a raw demand
-	 *
-	 * This method is needed for the system to gracefully handle running out of
-	 *   memory in packet_mempool. In that case, packets are dropped without
-	 *   the need for a struct emu_packet
-	 */
-	inline void drop_raw(uint16_t src, uint16_t dst, uint16_t flow,
-			uint16_t id);
-
-	/**
 	 * Frees the given packet into packet_mempool
 	 *
 	 * @important: don't free a packet that the emulation framework is expecting
@@ -129,11 +119,16 @@ inline EmulationOutput::~EmulationOutput() {
 inline void __attribute__((always_inline))
 EmulationOutput::drop(struct emu_packet* packet)
 {
-	drop_raw(packet->src, packet->dst, packet->flow, packet->id);
+	/* add dropped packet to admitted struct */
+	admitted_insert_dropped_edge(admitted, packet->src, packet->dst,
+			packet->flow, packet->id);
+	adm_log_emu_dropped_packet(stat);
+
+	/* if admitted struct is full, flush now */
+	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
+		flush();
 
 	free_packet(packet);
-
-	adm_log_emu_dropped_packet(stat);
 }
 
 inline void __attribute__((always_inline))
@@ -148,17 +143,6 @@ EmulationOutput::admit(struct emu_packet* packet)
 		flush();
 
 	free_packet(packet);
-}
-
-inline void EmulationOutput::drop_raw(uint16_t src, uint16_t dst,
-		uint16_t flow, uint16_t id)
-{
-	admitted_insert_dropped_edge(admitted, src, dst, flow, id);
-	adm_log_emu_dropped_demand(stat);
-
-	/* if admitted struct is full, flush now */
-	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
-		flush();
 }
 
 inline void __attribute__((always_inline))

@@ -8,4 +8,6 @@ else
     MASK="$1"
 fi
 
+mkdir -p log/
+
 sudo build/fast -c $MASK -n 3 --no-hpet -- -p 1

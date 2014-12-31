@@ -252,6 +252,22 @@ void print_admission_core_log_parallel_or_pipelined(uint16_t lcore, uint16_t adm
 #endif
 }
 
+static struct admission_log saved_admission_logs[RTE_MAX_LCORE];
+
+void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index) {
+	struct admission_log *al = &admission_core_logs[lcore];
+	struct admission_log *sal = &saved_admission_logs[lcore];
+
+	printf("\nadmission lcore %d\n", lcore);
+#define D(X) (al->X - sal->X)
+	printf("  tslots core ahead: %lu (diff), %lu (total)\n", D(core_ahead),
+			al->core_ahead);
+#undef D
+
+	/* save the admission logs for this core */
+	memcpy(sal, al, sizeof(saved_admission_logs[lcore]));
+}
+
 void save_admission_core_stats(int i) {
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	memcpy(&saved_admission_core_statistics[i],
@@ -266,6 +282,8 @@ void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	print_admission_core_log_parallel_or_pipelined(lcore, adm_core_index);
+#else
+	print_admission_core_log_emulation(lcore, adm_core_index);
 #endif
 
 }
@@ -305,7 +323,8 @@ int exec_log_core(void *void_cmd_p)
 		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
 		print_global_admission_log();
 
-		for (i = 0; i < 2; i++)
+        /* just print one admission core log for now */
+		for (i = 0; i < 1; i++)
 			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
 		fflush(stdout);
 

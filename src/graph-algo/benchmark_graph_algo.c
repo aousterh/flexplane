@@ -17,7 +17,7 @@
 #include "platform.h"
 #include "rdtsc.h"  // For timing
 #include "../protocol/topology.h"
-#include "../emulation/drop_tail.h"
+#include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/simple_endpoint.h"
 
 #define NUM_FRACTIONS_A 11

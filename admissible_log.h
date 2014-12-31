@@ -32,7 +32,6 @@ struct emu_admission_statistics {
 
 	/* packets */
 	uint64_t admitted_packet;
-	uint64_t dropped_demand;
 	uint64_t dropped_packet;
 
 	/* framework failures */
@@ -80,13 +79,6 @@ void adm_log_emu_admitted_packet(
 		struct emu_admission_statistics *st) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->admitted_packet++;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_dropped_demand(
-		struct emu_admission_statistics *st) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->dropped_demand++;
 }
 
 static inline __attribute__((always_inline))

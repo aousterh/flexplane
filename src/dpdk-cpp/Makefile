@@ -41,6 +41,8 @@ LD = g++
 LDFLAGS += -lstdc++
 CC = g++
 
-LDLIBS = -lintel_dpdk
-
+# whole-archive needed for correct linking of __attribute__((constructor)), used
+#  by DPDK to register PMDs.
+LDLIBS = --whole-archive -lintel_dpdk --no-whole-archive
+#LDLIBS = --whole-archive -lrte_mbuf -lethdev -lrte_malloc -lrte_mempool -lrte_ring -lrte_eal -lrte_pmd_ixgbe --no-whole-archive
 include $(RTE_SDK)/mk/rte.extshared.mk

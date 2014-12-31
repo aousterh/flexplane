@@ -51,6 +51,17 @@ int rte_eal_init(const std::vector<std::string> &args) {
 
 /** rte_pci.h */
 int rte_eal_pci_probe(void);
+%inline %{
+void rte_eal_pci_dump() {
+	rte_eal_pci_dump(stdout);
+}
+void dump_pci_drivers() {
+	struct rte_pci_driver *drv = NULL;
+	TAILQ_FOREACH(drv, &pci_driver_list, next) {
+		printf("driver name: %s\n", drv->name);
+	}
+}
+%}
 
 /** rte_ethdev.h */
 uint8_t rte_eth_dev_count(void);

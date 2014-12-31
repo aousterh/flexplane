@@ -21,6 +21,10 @@ print "allocated packet:", pool.alloc()
 print "pool count:", pool.count()
 
 print "pci probe", rte_eal_pci_probe()
+print "pci driver list"
+dump_pci_drivers()
+print "pci dump"
+rte_eal_pci_dump()
 
 print "rte_eth_dev_count", rte_eth_dev_count()
 

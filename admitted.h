@@ -11,6 +11,7 @@
 #include "config.h"
 #include "admissible_log.h"
 #include "emulation.h"
+#include "packet.h"
 #include "../protocol/flags.h"
 #include "../protocol/topology.h"
 
@@ -52,22 +53,22 @@ void admitted_init(struct emu_admitted_traffic *admitted) {
  * Add an edge to the admitted struct
  */
 static inline __attribute__((always_inline))
-void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
-			  uint16_t dst, uint16_t flow, uint16_t id, uint16_t flags) {
+void admitted_insert_edge(struct emu_admitted_traffic *admitted,
+		struct emu_packet *packet, uint16_t flags) {
 	assert(admitted != NULL);
-	assert(src < EMU_NUM_ENDPOINTS);
-	assert(dst < EMU_NUM_ENDPOINTS);
+	assert(packet->src < EMU_NUM_ENDPOINTS);
+	assert(packet->dst < EMU_NUM_ENDPOINTS);
 
 	assert(admitted->size < EMU_NUM_ENDPOINTS + EMU_MAX_DROPS);
 	if (admitted->size >= EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
 		adm_log_emu_admitted_struct_overflow(&g_state->stat);
 
 	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
-	edge->src = src;
+	edge->src = packet->src;
 	/* indicate dst as combination of dst_node and flow */
-	edge->dst = (dst << FLOW_SHIFT) | (flow & FLOW_MASK);
+	edge->dst = (packet->dst << FLOW_SHIFT) | (packet->flow & FLOW_MASK);
 	edge->flags = flags & FLAGS_MASK;
-	edge->id = id;
+	edge->id = packet->id;
 }
 
 /**
@@ -75,10 +76,11 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted, uint16_t src,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
-				   uint16_t src, uint16_t dst, uint16_t flow, uint16_t id) {
+		struct emu_packet *packet) {
 	assert(admitted->admitted < EMU_NUM_ENDPOINTS);
 
-	admitted_insert_edge(admitted, src, dst, flow, id, EMU_FLAGS_NONE);
+	/* pass flags to admitted struct */
+	admitted_insert_edge(admitted, packet, packet->flags);
 	admitted->admitted++;
 }
 
@@ -87,8 +89,9 @@ void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
  */
 static inline __attribute__((always_inline))
 void admitted_insert_dropped_edge(struct emu_admitted_traffic *admitted,
-				  uint16_t src, uint16_t dst, uint16_t flow, uint16_t id) {
-	admitted_insert_edge(admitted, src, dst, flow, id, EMU_FLAGS_DROP);
+		struct emu_packet *packet) {
+	/* ignore any flags the packet has - mark as a DROP */
+	admitted_insert_edge(admitted, packet, EMU_FLAGS_DROP);
 	admitted->dropped++;
 }
 
@@ -103,6 +106,9 @@ void admitted_edge_print(struct emu_admitted_edge *edge) {
 	flow = edge->dst & FLOW_MASK;
 	if (edge->flags == EMU_FLAGS_DROP) {
 		printf("\tDROP src %d to dst %d (flow %d, id %d)\n", edge->src, dst,
+				flow, edge->id);
+	} else if (edge->flags == EMU_FLAGS_ECN_MARK) {
+		printf("\tMARK src %d to dst %d (flow %d, id %d)\n", edge->src, dst,
 				flow, edge->id);
 	} else {
 		printf("\tsrc %d to dst %d (flow %d, id %d)\n", edge->src, dst, flow,

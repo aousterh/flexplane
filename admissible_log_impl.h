@@ -24,8 +24,7 @@ void print_global_admission_log_emulation() {
 #define D(X) (st->X - sv->X)
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
-	printf("\n  demands: %lu admitted, %lu dropped",
-			D(admitted_packet), D(dropped_demand));
+	printf("\n  demands: %lu admitted", D(admitted_packet));
 	printf("\n  algo sent %lu from endpoints, %lu from routers",
 			D(endpoint_sent_packet), D(router_sent_packet));
 	printf("\n  algo dropped %lu from endpoints, %lu from routers",
@@ -35,8 +34,7 @@ void print_global_admission_log_emulation() {
 
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
-	printf("\n  demands: %lu admitted, %lu dropped",
-			st->admitted_packet, st->dropped_demand);
+	printf("\n  demands: %lu admitted", st->admitted_packet);
 	printf("\n  algo sent %lu from endpoints, %lu from routers",
 			st->endpoint_sent_packet, st->router_sent_packet);
 	printf("\n  algo dropped %lu from endpoints, %lu from routers",

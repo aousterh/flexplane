@@ -39,13 +39,13 @@ public:
 	inline void drop(struct emu_packet *packet);
 
 	/**
-	 * Admites the given packet
+	 * Admits the given packet
 	 * @param packet: packet to be admitted
 	 */
 	inline void admit(struct emu_packet *packet);
 
 	/**
-	 * flushes a batch of admitted and dropped packets to q_admitted
+	 * Flushes a batch of admitted and dropped packets to q_admitted
 	 */
 	inline void flush();
 
@@ -120,8 +120,7 @@ inline void __attribute__((always_inline))
 EmulationOutput::drop(struct emu_packet* packet)
 {
 	/* add dropped packet to admitted struct */
-	admitted_insert_dropped_edge(admitted, packet->src, packet->dst,
-			packet->flow, packet->id);
+	admitted_insert_dropped_edge(admitted, packet);
 	adm_log_emu_dropped_packet(stat);
 
 	/* if admitted struct is full, flush now */
@@ -134,8 +133,7 @@ EmulationOutput::drop(struct emu_packet* packet)
 inline void __attribute__((always_inline))
 EmulationOutput::admit(struct emu_packet* packet)
 {
-	admitted_insert_admitted_edge(admitted, packet->src, packet->dst,
-			packet->flow, packet->id);
+	admitted_insert_admitted_edge(admitted, packet);
 	adm_log_emu_admitted_packet(stat);
 
 	/* if admitted struct is full, flush now */

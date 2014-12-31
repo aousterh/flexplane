@@ -7,7 +7,7 @@ SHARED = _dpdk.so
 
 %_wrap.cc: %.i EthernetDevice.h
 	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
-CFLAGS_dpdk_wrap_cc.o = -I /usr/include/python2.7/
+CPPFLAGS_dpdk_wrap_cc.o = -I /usr/include/python2.7/
 
 
 SRCS-y := EthernetDevice.cc 	\
@@ -35,6 +35,8 @@ CFLAGS += -march=core2
 CFLAGS += -DEMULATION_ALGO
 CFLAGS += $(CMD_LINE_CFLAGS)
 CFLAGS += -fvisibility=hidden
+
+CPPFLAGS = $(CFLAGS)
 
 # linker settings to work with C++
 LD = g++

@@ -96,24 +96,31 @@ epg = PyEndpointGroup(epg_cla, epg_qm, epg_sch, epg_sink, 0, NUM_ENDPOINTS)
 driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
                                  state.stat, PACKET_MEMPOOL_SIZE)
 
-emu_add_backlog(state,0,1,0,300)
+emu_add_backlog(state,0,1,0,30)
 
-emu_add_backlog(state,5,6,0,400)
+emu_add_backlog(state,5,6,0,40)
 
 for i in xrange(1000):
     driver.step()
     emu_output.flush()
     
-    admitted = get_admitted(state)
-    if admitted is None:
-        raise RuntimeError("expected to have admitted traffic after emu_output.flush()")
-    
     print "finished traffic:"
-    for i in xrange(admitted.size):
-        edge = admitted_get_edge(admitted,i)
-        if (edge.flags == EMU_FLAGS_DROP):
-            print("\tDROP src %d to dst %d (id %d)" % 
-                    (edge.src, edge.dst, edge.id))
-        else:
-            print("\tsrc %d to dst %d (id %d)" % 
-                    (edge.src, edge.dst, edge.id))
+    while (1):
+        admitted = get_admitted(state)
+        if admitted is None:
+            raise RuntimeError("expected to have admitted traffic after emu_output.flush()")
+        
+        for i in xrange(admitted.size):
+            edge = admitted_get_edge(admitted,i)
+            if (edge.flags == EMU_FLAGS_DROP):
+                print("\tDROP src %d to dst %d (id %d)" % 
+                        (edge.src, edge.dst, edge.id))
+            else:
+                print("\tsrc %d to dst %d (id %d)" % 
+                        (edge.src, edge.dst, edge.id))
+        
+        if admitted.size != EMU_NUM_ENDPOINTS + EMU_MAX_DROPS:
+            break # break from the while loop, done with this timeslot
+        
+        # else, the admitted struct was full, so another will be coming from
+        # the same timeslot

@@ -725,32 +725,38 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 	}
 
 	/* get a timeslot's worth skb_q */
-	if (action == TSLOT_ACTION_ADMIT_HEAD) {
-		/* get the first timeslot in the skb_q */
-		timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
-		list_del(dst->skb_qs.next);
-	} else if ((action == TSLOT_ACTION_ADMIT_BY_ID) ||
-			(action == TSLOT_ACTION_DROP_BY_ID)){
-		/* get the timeslot with the specified id */
+	switch(action) {
+	case TSLOT_ACTION_ADMIT_HEAD:
+		/* find the first timeslot in the skb_q */
+		timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q,
+				list);
+		goto found_entry;
+	case TSLOT_ACTION_ADMIT_BY_ID:
+	case TSLOT_ACTION_DROP_BY_ID:
+		/* find the timeslot with the specified id */
 		list_for_each_entry(timeslot_q, &dst->skb_qs, list) {
 			if (timeslot_q->id == id)
 				goto found_entry;
 		}
 		FASTPASS_WARN("couldn't find MTU with id %d\n", id);
 		q->stat.unrecognized_id++;
-		spin_unlock(&q->hash_tbl_lock);
-		return;
-
-found_entry:
-		list_del(&timeslot_q->list);
-		fp_debug("expected MTU with id %d, dequeued MTU with id %d\n", id,
-				timeslot_q->id);
-	} else {
+		goto no_match;
+	default:
 		FASTPASS_WARN("unrecognized action %d\n", action);
 		q->stat.unrecognized_action++;
-		spin_unlock(&q->hash_tbl_lock);
-		return;
+		goto no_match;
 	}
+no_match:
+	spin_unlock(&q->hash_tbl_lock);
+	return;
+
+found_entry:
+	/* remove timeslot_q from the list */
+	list_del(&timeslot_q->list);
+#if defined(EMULATION_ALGO)
+	fp_debug("expected MTU with id %d, dequeued MTU with id %d\n", id,
+		timeslot_q->id);
+#endif
 
 	/* if we dequeued the last skb, make sure it has no remaining credit */
 	if (unlikely(list_empty(&dst->skb_qs))) {

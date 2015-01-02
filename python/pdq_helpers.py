@@ -79,5 +79,14 @@ class EndpointInfo():
         self.timer_heap = timer_heap
         self.time = time
 
+class FlowState():
+    def __init__(self, src_id, dest_id, R_max, expected_trans_time, deadline):
+        self.src_id = src_id
+        self.dest_id = dest_id
+        self.R_s = 0
+        self.R_max = R_max
+        self.expected_trans_time = expected_trans_time
+        self.deadline = deadline
+
 
 

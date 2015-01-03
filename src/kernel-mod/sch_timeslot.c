@@ -27,6 +27,7 @@
 #include <linux/version.h>
 #include <linux/ip.h>
 #include <linux/list.h>
+#include <linux/version.h>
 #include <net/netlink.h>
 #include <net/pkt_sched.h>
 #include <net/sock.h>
@@ -1057,7 +1058,11 @@ static int tsq_tc_change(struct Qdisc *sch, struct nlattr *opt) {
 		if (data_rate_spec.rate == 0)
 			err = -EINVAL;
 		else
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+			psched_ratecfg_precompute(&q->data_rate, &data_rate_spec);
+#else
 			psched_ratecfg_precompute(&q->data_rate, &data_rate_spec, 0);
+#endif
 	}
 	if (tb[TCA_FASTPASS_TIMESLOT_NSEC]) {
 		FASTPASS_WARN("got deprecated timeslot length paramter\n");
@@ -1160,7 +1165,11 @@ static int tsq_tc_init(struct Qdisc *sch, struct nlattr *opt)
 	q->tslot_shift		= 20;
 
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+	psched_ratecfg_precompute(&q->data_rate, &data_rate_spec);
+#else
 	psched_ratecfg_precompute(&q->data_rate, &data_rate_spec, 0);
+#endif
 	q->dst_hash_tbl	= NULL;
 	skb_q_init(&q->enqueue_skb_q);
 	skb_q_init(&q->reg_prio);
@@ -1226,7 +1235,11 @@ static int tsq_tc_dump(struct Qdisc *sch, struct sk_buff *skb)
 
 	if (nla_put_u32(skb, TCA_FASTPASS_PLIMIT, sch->limit) ||
 	    nla_put_u32(skb, TCA_FASTPASS_BUCKETS_LOG, q->hash_tbl_log) ||
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+	    nla_put_u32(skb, TCA_FASTPASS_DATA_RATE, (u32) q->data_rate.rate_bps) ||
+#else
 	    nla_put_u32(skb, TCA_FASTPASS_DATA_RATE, (u32) q->data_rate.rate_bytes_ps) ||
+#endif
 	    nla_put_u32(skb, TCA_FASTPASS_TIMESLOT_NSEC, q->tslot_len_approx) ||
 	    nla_put_u32(skb, TCA_FASTPASS_TIMESLOT_MUL, q->tslot_mul) ||
 	    nla_put_u32(skb, TCA_FASTPASS_TIMESLOT_SHIFT, q->tslot_shift))
@@ -1252,7 +1265,11 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 
 	/* configuration */
 	seq_printf(seq, "\n  buckets_log %u", q->hash_tbl_log);
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+	seq_printf(seq, ", rate %u", (u32) q->data_rate.rate_bps);
+#else
 	seq_printf(seq, ", rate %u", (u32) q->data_rate.rate_bytes_ps);
+#endif
 	seq_printf(seq, ", timeslot_ns %u", q->tslot_len_approx);
 	seq_printf(seq, ", timeslot_mul %u", q->tslot_mul);
 	seq_printf(seq, ", timeslot_shift %u", q->tslot_shift);

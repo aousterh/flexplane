@@ -9,3 +9,4 @@ make install T=x86_64-native-linuxapp-gcc CONFIG_RTE_BUILD_COMBINE_LIBS=y EXTRA_
 
 (thanks to libtrace for figuring out flags for PIC, https://github.com/wanduow/libtrace/wiki/DPDK-Notes---Experimental)
 
+for pcap support compile DPDK with CONFIG_RTE_LIBRTE_PMD_PCAP=y

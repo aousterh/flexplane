@@ -26,6 +26,7 @@ CFLAGS += -DPRINT_CONN_LOG_TO_STDOUT
 #CFLAGS += -DNO_ATOMIC
 CFLAGS += -I${PWD} 
 CFLAGS += -I$(PWD)/$(EMU_DIR)
+CFLAGS += -I/usr/include/python2.7
 #CFLAGS += -g -O1
 CFLAGS += -g 
 CFLAGS += -DNDEBUG
@@ -45,6 +46,6 @@ CC = g++
 
 # whole-archive needed for correct linking of __attribute__((constructor)), used
 #  by DPDK to register PMDs.
-LDLIBS = --whole-archive -lintel_dpdk --no-whole-archive
+LDLIBS = --whole-archive -lintel_dpdk --no-whole-archive -lpcap
 #LDLIBS = --whole-archive -lrte_mbuf -lethdev -lrte_malloc -lrte_mempool -lrte_ring -lrte_eal -lrte_pmd_ixgbe --no-whole-archive
 include $(RTE_SDK)/mk/rte.extshared.mk

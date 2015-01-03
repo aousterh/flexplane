@@ -10,7 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 
-dpdk::eth_dev::eth_dev(uint8_t port_id, uint16_t nb_rx_q,
+dpdk::EthernetDevice::EthernetDevice(uint8_t port_id, uint16_t nb_rx_q,
 		uint16_t nb_tx_q, const eth_conf& dev_conf)
 	: m_port_id(port_id)
 {
@@ -20,23 +20,21 @@ dpdk::eth_dev::eth_dev(uint8_t port_id, uint16_t nb_rx_q,
 
 	if (ret != 0) {
 		std::stringstream msg;
-		msg << "Could not configure port " << port_id << ", ret=" << ret;
+		msg << "Could not configure port " << int(port_id) << ", ret=" << ret;
 		throw std::runtime_error(msg.str());
-
 	}
 }
 
-dpdk::eth_dev::~eth_dev() {
-}
+dpdk::EthernetDevice::~EthernetDevice() {}
 
-struct ether_addr dpdk::eth_dev::get_macaddr()
+struct ether_addr dpdk::EthernetDevice::get_macaddr()
 {
 	struct ether_addr ret;
 	rte_eth_macaddr_get(m_port_id, &ret);
 	return ret;
 }
 
-void dpdk::eth_dev::tx_queue_setup(uint16_t tx_queue_id,
+void dpdk::EthernetDevice::tx_queue_setup(uint16_t tx_queue_id,
 		uint16_t nb_tx_desc, unsigned int socket_id,
 		eth_txconf &tx_conf)
 {
@@ -52,7 +50,7 @@ void dpdk::eth_dev::tx_queue_setup(uint16_t tx_queue_id,
 	}
 }
 
-void dpdk::eth_dev::rx_queue_setup(uint16_t rx_queue_id, uint16_t nb_rx_desc,
+void dpdk::EthernetDevice::rx_queue_setup(uint16_t rx_queue_id, uint16_t nb_rx_desc,
 		unsigned int socket_id, eth_rxconf& rx_conf,
 		struct rte_mempool* mb_pool)
 {
@@ -66,6 +64,33 @@ void dpdk::eth_dev::rx_queue_setup(uint16_t rx_queue_id, uint16_t nb_rx_desc,
 			<< "failed with ret=" << ret;
 		throw std::runtime_error(msg.str());
 	}
+}
+
+void dpdk::EthernetDevice::start()
+{
+	int ret = rte_eth_dev_start(m_port_id);
+
+	if (ret != 0) {
+		std::stringstream msg;
+		msg << "rte_eth_dev_start port=" << m_port_id
+			<< "failed with ret=" << ret;
+		throw std::runtime_error(msg.str());
+	}
+}
+
+void dpdk::EthernetDevice::promiscuous_enable()
+{
+	rte_eth_promiscuous_enable(m_port_id);
+}
+
+struct rte_eth_link dpdk::EthernetDevice::link_get_nowait()
+{
+	struct rte_eth_link link;
+
+	memset(&link, 0, sizeof(link));
+	rte_eth_link_get_nowait(m_port_id, &link);
+
+	return link;
 }
 
 dpdk::eth_txconf::eth_txconf()

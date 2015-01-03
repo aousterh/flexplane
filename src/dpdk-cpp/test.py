@@ -9,8 +9,13 @@ sys.setdlopenflags(saved_flags | ctypes.RTLD_GLOBAL)
 from dpdk import *
 sys.setdlopenflags(saved_flags)
 
-print "eal init:", rte_eal_init(["pytest", "-c", "6", "-n", "2", 
-                                      "--no-huge"]) #, "--no-pci"])
+import time
+import binascii
+import dpkt
+
+params = ["pytest", "-c", "6", "-n", "2", "--no-huge"]
+params += ["--vdev", "eth_pcap0,iface=eth0"]
+print "eal init:", rte_eal_init(params) #, "--no-pci"])
 
 enabled_cores = [i for i in xrange(RTE_MAX_LCORE) if rte_lcore_is_enabled(i)]
 print "enabled_lcores:", enabled_cores
@@ -40,4 +45,39 @@ print "rte_eth_dev_count", rte_eth_dev_count()
 
 eth_config = eth_conf()
 print "rx.hw_ip_checksum =",eth_config.rx().hw_ip_checksum()
+eth_dev = EthernetDevice(0, 1, 1, eth_config)
 
+txconf = eth_txconf()
+eth_dev.tx_queue_setup(0, 512, 0, txconf)
+
+rxconf = eth_rxconf()
+eth_dev.rx_queue_setup(0, 128, 0, rxconf, pool.get())
+
+eth_dev.start()
+eth_dev.promiscuous_enable()
+link = eth_dev.link_get_nowait()
+if (link.link_status):
+    duplex_opts = ["full-duplex", "half-duplex"]
+    duplex_str = duplex_opts[link.link_duplex == ETH_LINK_FULL_DUPLEX]
+    print "Port 0 Link Up - speed %u Mbps - %s" \
+           % (link.link_speed, duplex_str)
+else:
+    print "Port 0 Link Down"
+
+
+for i in xrange(10):
+    RX_BURST_SIZE = 64
+    pkts = new_mbuf_array(RX_BURST_SIZE)
+    nb_rx = rte_eth_rx_burst(0,0,pkts,RX_BURST_SIZE)
+    print "rx", nb_rx 
+    for i in xrange(nb_rx):
+        print "pkt %d" % i
+        data = mbuf_array_getitem(pkts, i).pkt_data()
+        pkt = dpkt.ethernet.Ethernet(data)
+        print repr(pkt)
+        
+        print binascii.hexlify(data)
+    
+    print "sleep(1)"
+    time.sleep(1)
+    

@@ -17,27 +17,38 @@ class eth_conf;
 class eth_txconf;
 class eth_rxconf;
 
-class eth_dev {
+class EthernetDevice {
 public:
 	/** see rte_eth_dev_configure */
-	eth_dev(uint8_t port_id, uint16_t nb_rx_q, uint16_t nb_tx_q,
+	EthernetDevice(uint8_t port_id, uint16_t nb_rx_q, uint16_t nb_tx_q,
 		      const eth_conf &dev_conf);
-	virtual ~eth_dev();
+	virtual ~EthernetDevice();
 
+	/** see rte_eth_macaddr_get */
 	struct ether_addr get_macaddr();
 
+	/** see rte_eth_tx_queue_setup */
 	void tx_queue_setup(uint16_t tx_queue_id,
 					  uint16_t nb_tx_desc, unsigned int socket_id,
 					  eth_txconf &tx_conf);
 
+	/** see rte_eth_rx_queue_setup */
 	void rx_queue_setup(uint16_t rx_queue_id, uint16_t nb_rx_desc,
 						unsigned int socket_id, eth_rxconf &rx_conf,
 					    struct rte_mempool *mb_pool);
+
+	/** see rte_eth_dev_start */
+	void start();
+
+	/** see rte_eth_promiscuous_enable */
+	void promiscuous_enable();
+
+	/** see rte_eth_link_get_nowait */
+	struct rte_eth_link link_get_nowait();
+
 private:
 	uint8_t m_port_id;
-
 };
-
 
 /**
  * see: struct rte_eth_thresh
@@ -59,6 +70,7 @@ private:
  */
 class eth_txconf {
 public:
+	eth_txconf();
 	eth_thresh tx_thresh() { return eth_thresh(&m.tx_thresh); }
 
 #define GET_SET(attr, type) GETTER_SETTER(eth_txconf, attr, type, m.attr)
@@ -68,8 +80,7 @@ public:
 	GET_SET(start_tx_per_q, uint8_t);
 #undef GET_SET
 private:
-	eth_txconf();
-	friend eth_dev;
+	friend EthernetDevice;
 	struct rte_eth_txconf m;
 };
 
@@ -78,6 +89,7 @@ private:
  */
 class eth_rxconf {
 public:
+	eth_rxconf();
 	eth_thresh rx_thresh() { return eth_thresh(&m.rx_thresh); }
 
 #define GET_SET(attr, type) GETTER_SETTER(eth_rxconf, attr, type, m.attr)
@@ -86,8 +98,7 @@ public:
 	GET_SET(start_rx_per_q, uint8_t);
 #undef GET_SET
 private:
-	eth_rxconf();
-	friend eth_dev;
+	friend EthernetDevice;
 	struct rte_eth_rxconf m;
 };
 
@@ -154,7 +165,7 @@ public:
 #undef GET_SET
 
 private:
-	friend eth_dev;
+	friend EthernetDevice;
 	struct rte_eth_conf m_conf;
 	rxmode m_rxmode;
 	rssconf m_rssconf;

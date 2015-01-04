@@ -27,6 +27,7 @@
 #include "../protocol/pacer.h"
 #include "../protocol/stat_print.h"
 #include "../protocol/topology.h"
+#include "../protocol/platform.h"
 
 /* number of elements to keep in the pktdesc local core cache */
 #define PKTDESC_MEMPOOL_CACHE_SIZE		256
@@ -498,11 +499,15 @@ make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
 	rte_pktmbuf_append(m, ETHER_HDR_LEN + ipv4_length);
 	ipv4_hdr->total_length = rte_cpu_to_be_16(ipv4_length);
 
+	ipv4_hdr->hdr_checksum = 0;
+#ifdef NO_HW_CHECKSUM
+	ipv4_hdr->hdr_checksum = fp_fold(fp_csum_partial(ipv4_hdr, 4*0x5, 0));
+#else
 	// Activate IP checksum offload for packet
 	m->ol_flags |= PKT_TX_IP_CKSUM;
 	m->pkt.vlan_macip.f.l2_len = sizeof(struct ether_hdr);
 	m->pkt.vlan_macip.f.l3_len = sizeof(struct ipv4_hdr);
-	ipv4_hdr->hdr_checksum = 0;
+#endif
 
 	return m;
 }

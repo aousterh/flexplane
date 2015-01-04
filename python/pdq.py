@@ -22,6 +22,10 @@ Sets/ resets flow deadline in packet header based on queue length.
 Initialized with / stores the same list of EndpointInfo objects as the Schedulers and Sink.
 
 Adds new flows to flow set & timer heap. 
+
+UPDATE: Each element in the timer heap is now a 3-tuple of form (time_to_send, dest_id, PDQ_layer). 
+Now, when the PDQ layer updates its variables, the timer heap will reflect the changed rates. 
+
 """
 class PyPDQQueueManager(PyQueueManager):
     # TODO: Calculate what to put here
@@ -29,52 +33,45 @@ class PyPDQQueueManager(PyQueueManager):
     LONG_DEADLINE = 0
     THRESHOLD = 0
 
-    def __init__(self, queue_bank, queue_capacity, dropper, endpoint_info_list):
+    def __init__(self, queue_bank, queue_capacity, dropper, endpoint_info_list, timer_heap_list):
         super(PyDropQueueManager, self).__init__()
         self.bank = queue_bank
         self.capacity = queue_capacity
         self.dropper = dropper
         self.endpoint_info_list = endpoint_info_list
+        self.timer_heap_list = timer_heap_list
 
     def enqueue(self, pkt_p, port, queue):
         if self.bank.occupancy(port, queue) >= self.capacity:
             self.dropper.drop(pkt_p)
         else:
-            self.add_deadline_to_header(pkt_p, port, queue)
-            self.add_max_rate_to_header(pkt_p)
-
             # Add new flow if it doesn't exist, or update flow
             # with the most recently calculated deadline.
             self.update_flow(pkt_p)
-
             self.bank.enqueue(port, queue, pkt_p)
 
-    def add_deadline_to_header(self, pkt_p, port, queue):
+    """
+    Adds info for a new flow to the PDQ layer flow set; 
+    Inserts flow into the timer heap at the endpoint.
+    """
+    def update_flow(self, pkt_p):
+        max_rate = 1
+        expected_trans_time = None
+
         if self.bank.occupancy(port, queue) < THRESHOLD:
             deadline = SHORT_DEADLINE
         else:
             deadline = LONG_DEADLINE
-        ## TODO: Add deadline to packet header here. 
-
-    """
-    If max rate is not already a header field, add it and set it to 1. 
-    """
-    def add_max_rate_to_header(pkt_p):
-        pass
-
-    """
-    Adds info for a new flow to the PDQ layer flow set, as well 
-    as the timer heap. 
-    """
-    def update_flow(self, pkt_p):
-        rate = 0
-        max_rate = pkt_p.max_rate
-        deadline = pkt_p.deadline
-        expected_trans_time = None
 
         ep_id = pkt_p.dest
-        flow_info = [rate, max_rate, deadline, expected_trans_time]
-        self.PDQ_Layer.flow_set[ep_id] = flow_info
+
+        time_to_send = 0
+
+        updated_flow_state = FlowState(pkt_p.src, pkt_p.dest, max_rate, expected_trans_time, deadline)
+        self.endpoint_info_list[pkt_p.src].PDQ_layer.flow_set[ep_id] = updated_flow_state
+
+        timer_heap = self.timer_heap_list[pkt_p.src]
+        heapq.heappush(timer_heap, (time_to_send, ep_id, self.endpoint_info_list[pkt_p.src].PDQ_layer.flow_set[ep_id]))
 
 
 """
@@ -96,11 +93,12 @@ class PyPDQEndpointScheduler(PyScheduler):
 
     PROBE_FREQ = 3
 
-    def __init__(self, queue_bank, n_queues_per_port, endpoint_info_list):
+    def __init__(self, queue_bank, n_queues_per_port, endpoint_info_list, timer_heap_list):
         super(PyPDQEndpointScheduler, self).__init__()
         self.bank = queue_bank
         self.n_queues_per_port = n_queues_per_port
         self.endpoint_info_list = endpoint_info_list
+        self.timer_heap_list = timer_heap_list
 
     def schedule(self, port):
         result = self.select_queue(self, port)
@@ -111,24 +109,49 @@ class PyPDQEndpointScheduler(PyScheduler):
             packet = self.bank.dequeue(port, queue_id)
             self.check_for_finished_flow(port, queue_id)
             self.update_timer_heap(port, packet, time_to_send, flow_state)
-            self.run_PDQ(port, packet)
+
+            # add header to packet here
+            self.add_header_to_packet(packet, port, queue_id)
+
+            # Send packet through PDQ layer and update rate
+            self.endpoint_info_list[port].PDQ_layer.process_outgoing_packet(packet, True)
             return packet
+
+
+    """
+    Calculates the deadline based on queue size; adds fields from PDQ's 
+    flow set into packet header. 
+    """
+    def add_header_to_packet(self, packet, port, queue_id):
+
+        flow_to_dest = self.endpoint_info_list[port].PDQ_layer.flow_set[packet.dest]
+
+        #rate, max_rate, deadline, expected_trans_time = flow_to_dest
+
+        if self.bank.occupancy(port, queue) < THRESHOLD:
+            deadline = SHORT_DEADLINE
+        else:
+            deadline = LONG_DEADLINE
+
+        # Add header here; temporarily setting them as subfields of packet..
+        # need to figure out how to do this correctly. 
+        packet.rate = flow_to_dest.R_s
+        packet.max_rate = flow_to_dest.R_max
+        packet.deadline = deadline
+        packet.expected_trans_time = flow_to_dest.expected_trans_time
+
+        self.PDQ_layer.flow_set[ep_id].deadline = deadline
 
     """
     Selects and returns a queue to transmit from, or None if it is nobody's turn
     to send. 
-
-    Each element in timer heap is a tuple of form:
-    (flow.time_to_send, flow_state); flow.time_to_send is an integer and flow_state
-    is a FlowState object.
-
     Structure of PDQ_layer.flow_set dictionary is:
     key = endpoint id
-    value = flow_info, which is in the form [R_h, R_max, deadline, expected_trans_time]
+    value = FlowState
     """
     def select_queue(self, port):
         # First remove flows that have missed their deadline. 
-        while len(self.timer_heap)> 0 and self.timer_heap[0][1].deadline <= self.time:
+        while len(self.timer_heap)> 0 and self.timer_heap[0][2].deadline <= self.time:
             heapq.heappop(self.timer_heap)
 
         if len(self.timer_heap) == 0:
@@ -160,12 +183,6 @@ class PyPDQEndpointScheduler(PyScheduler):
             else:
                 increment = 1/flow_state.R_s
             heapq.heappush(self.timer_heap, (time_to_send + increment, flow_state))
-
-    """
-    Send packet through PDQ layer and update rate.
-    """
-    def run_PDQ(self, port, packet):
-        self.PDQ_layer.process_outgoing_packet(next_pkt, True)
 
 """
 Scheduler for each PDQ router

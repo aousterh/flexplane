@@ -9,15 +9,13 @@ adjusts the packet's header.
 """
 class PDQ_Layer():
     def __init__(self):
-        self.flow_set = {} # Stores dict of src_id: [flow_info]
+        self.flow_set = {} # Stores dict of src_id: FlowState obj
 
     """
     Upon packet exit, determines whether to update router's flow variables.
     This function is called whenever a packet exits the router or endpoint.
     'source' arg is True if processing at source; false otherwise.  
 
-    TODO: Update so that it does not need to handle deleting of flows
-    (this is now handled at the endpoint)
     """
     def process_outgoing_packet(self, packet, source):
         if source == True: 
@@ -37,8 +35,7 @@ class PDQ_Layer():
 
         deadline_list = []
         for flow_dest, flow_info in self.flow_set.iteritems():
-            deadline = flow_info[2]
-            deadline_list.append((deadline, flow_dest))
+            deadline_list.append((flow_info.deadline, flow_dest))
 
         sorted_by_deadline = sorted(deadline_list)
         remaining_bw = 1
@@ -46,20 +43,19 @@ class PDQ_Layer():
         # Give each flow some rate according to deadline
         while (remaining_bw > 0 and len(sorted_by_deadline) > 0):
             flow_dest = sorted_by_deadline.pop(0)[1]
-            max_rate_for_flow_dest = self.flow_set[flow_dest][1]
+            max_rate_for_flow_dest = self.flow_set[flow_dest].R_max
             source_flow_rate = min(remaining_bw, max_rate_for_flow_dest) # Rate the source can give
-            switch_flow_rate = self.flow_set[flow_dest][0] #whatever the rate was before
+            switch_flow_rate = self.flow_set[flow_dest].R_s #whatever the rate was before
             
             new_flow_rate = min(source_flow_rate, switch_flow_rate)
             flow = self.flow_set[flow_dest]
-            flow[0] = new_flow_rate
-            self.flow_set[flow_dest] = flow
+            flow.R_s = new_flow_rate
             remaining_bw = remaining_bw - new_flow_rate
 
         # Assign the rest of the flows rate 0
         while len(sorted_by_deadline) > 0:
             flow_dest = sorted_by_deadline.pop(0)[1]
-            self.flow_set[flow_dest][0] = 0
+            self.flow_set[flow_dest].R_s = 0
 
     def update_packet_header(self, packet, source, flow_index):
         packet_flow = self.flow_set[flow_index]
@@ -67,7 +63,7 @@ class PDQ_Layer():
         if source == True:
             packet.header = [1, R_max, D_h, T_h]
         else:
-            packet.header = [packet_flow[0], R_max, D_h, T_h]
+            packet.header = [packet_flow.R_s, R_max, D_h, T_h]
 
 """
 Helper for the PDQ Endpoint Scheduler - stores info for each endpoint. 

@@ -9,8 +9,8 @@
 #include <stdint.h>
 #include "../graph-algo/algo_config.h"
 
-#define I_AM_MASTER				1
-#define IS_STRESS_TEST			0
+#define I_AM_MASTER			1
+#define IS_STRESS_TEST			1
 #define RUN_WITH_BACKUP			0
 #define USE_10_US_TIMESLOTS		1
 #define USE_1_US_TIMESLOTS		0

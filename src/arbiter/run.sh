@@ -8,4 +8,5 @@ else
     MASK="$1"
 fi
 
-sudo build/fast -c $MASK -n 3 --no-hpet -- -p 1
+sudo build/fast -c $MASK -n 3 --no-hpet  -m 512 -- -p 1
+

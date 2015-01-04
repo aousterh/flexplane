@@ -27,6 +27,7 @@
 #include "../protocol/pacer.h"
 #include "../protocol/stat_print.h"
 #include "../protocol/topology.h"
+#include "../protocol/platform.h"
 
 /* number of elements to keep in the pktdesc local core cache */
 #define PKTDESC_MEMPOOL_CACHE_SIZE		256
@@ -44,11 +45,15 @@
  * @timeslot: 16 least significant bits of the timeslot allocated
  * @flags: additional information about this alloc (path, drop, mark, etc.),
  * 			only the 4 least significant bits are used
+ * @id: sequential id of the packet the allocation is for (used only in emu)
  */
 struct pending_alloc {
 	uint16_t	dst;
 	uint16_t	timeslot;
 	uint8_t		flags;
+#if defined(EMULATION_ALGO)
+	uint16_t	id;
+#endif
 };
 
 /**
@@ -361,14 +366,8 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 	struct end_node_state *en = (struct end_node_state *)param;
 	struct comm_core_state *core = &ccore_state[rte_lcore_id()];
 	uint16_t node_id = en - end_nodes;
-	uint32_t total_timeslots = 0;
 	int i;
 	uint32_t num_triggered = 0;
-
-	/* count number of timeslots nacked */
-	for (i = 0; i < pd->n_dsts; i++) {
-		total_timeslots += pd->dst_counts[i];
-	}
 
 	/* if the alloc report was not fully acked, trigger another report */
 	for (i = 0; i < pd->n_areq; i++) {
@@ -380,7 +379,7 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 		}
 	}
 
-	comm_log_neg_ack(node_id, pd->n_areq, total_timeslots, pd->seqno,
+	comm_log_neg_ack(node_id, pd->n_areq, pd->used_alloc_tslot, pd->seqno,
 			num_triggered);
 }
 
@@ -500,11 +499,15 @@ make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
 	rte_pktmbuf_append(m, ETHER_HDR_LEN + ipv4_length);
 	ipv4_hdr->total_length = rte_cpu_to_be_16(ipv4_length);
 
+	ipv4_hdr->hdr_checksum = 0;
+#ifdef NO_HW_CHECKSUM
+	ipv4_hdr->hdr_checksum = fp_fold(fp_csum_partial(ipv4_hdr, 4*0x5, 0));
+#else
 	// Activate IP checksum offload for packet
 	m->ol_flags |= PKT_TX_IP_CKSUM;
 	m->pkt.vlan_macip.f.l2_len = sizeof(struct ether_hdr);
 	m->pkt.vlan_macip.f.l3_len = sizeof(struct ipv4_hdr);
-	ipv4_hdr->hdr_checksum = 0;
+#endif
 
 	return m;
 }
@@ -692,6 +695,20 @@ void get_admitted_fields(struct admitted_traffic *admitted, uint16_t index,
 }
 
 /**
+ * Fill in parts of @alloc that depend on the algorithm used, from the
+ * specified edge in @admitted.
+ */
+static inline
+void fill_algo_fields_in_alloc(struct pending_alloc *alloc,
+		struct admitted_traffic *admitted, uint16_t index) {
+#if defined(EMULATION_ALGO)
+	struct emu_admitted_edge *edge;
+	edge = get_admitted_edge(admitted, index);
+	alloc->id = edge->id;
+#endif
+}
+
+/**
  * Record the allocations received in @q_admitted and trigger a report to each
  * source endpoint that got a new allocation.
  */
@@ -722,7 +739,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	}
 
 	for (i = 0; i < rc; i++) {
-                partition = get_admitted_partition(admitted[i]);
+		partition = get_admitted_partition(admitted[i]);
 		current_timeslot = ++core->latest_timeslot[partition];
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 					    current_timeslot, partition);
@@ -751,8 +768,8 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 			alloc = &pending_q->allocs[wnd_pos(pending_q->tail++)];
 			alloc->dst = dst;
 			alloc->flags = flags & FLAGS_MASK;
-			/* TODO: convey tslot rather than tslot >> 4 */
 			alloc->timeslot = (current_timeslot >> 4) & 0xFFFF;
+			fill_algo_fields_in_alloc(alloc, admitted[i], j);
 			en->alloc_to_dst[dst]++;
 
 			/* trigger_report will make sure a TX is triggered */
@@ -822,7 +839,6 @@ next_alloc:
 		} else {
 			/* get the next slot in the pd->dsts array */
 			pd->dsts[n_dsts] = dst;
-			pd->dst_counts[n_dsts] = 0;
 			core->alloc_enc_space[dst] = n_dsts + 1;
 			n_dsts++;
 		}
@@ -830,9 +846,12 @@ next_alloc:
 
 	/* encode the allocation byte
 	 * upper 4 bits for destination index, lower 4 bits for flags */
-	pd->tslot_desc[n_tslot++] =
-                (core->alloc_enc_space[dst] << 4) | (cur_alloc->flags & 0xF);
-	pd->dst_counts[core->alloc_enc_space[dst] - 1]++;
+	pd->tslot_desc[n_tslot] = (core->alloc_enc_space[dst] << 4) |
+			(cur_alloc->flags & FLAGS_MASK);
+#if defined(EMULATION_ALGO)
+	pd->emu_tslot_desc[n_tslot].id = cur_alloc->id;
+#endif
+	n_tslot++;
 
 	/* remove the timeslot from the queue */
 	pending_q->head++;
@@ -849,11 +868,18 @@ cleanup:
 		core->alloc_enc_space[dst] = 0;
 	}
 
-	/* pad to even n_tslot */
-	if (n_tslot & 1)
-		pd->tslot_desc[n_tslot++] = 0;
-
 out:
+	pd->used_alloc_tslot = n_tslot;
+
+	/* pad to even n_tslot */
+	if (n_tslot & 1) {
+		pd->tslot_desc[n_tslot] = 0;
+#if defined(EMULATION_ALGO)
+		pd->emu_tslot_desc[n_tslot].id = 0;
+#endif
+		n_tslot++;
+	}
+
 	pd->n_dsts = n_dsts;
 	pd->alloc_tslot = n_tslot;
 	assert((pd->alloc_tslot & 1) == 0);

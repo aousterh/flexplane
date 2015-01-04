@@ -33,7 +33,7 @@ int control_do_queue_allocation(void)
 	}
 
 	/** TX queues */
-	for (i = 0; i < n_enabled_lcore; i++) {
+	for (i = 0; i < N_COMM_CORES; i++) {
 		for (j = 0; j < n_enabled_port; j++) {
 			ret = conf_alloc_tx_queue(enabled_lcore[i], enabled_port[j]);
 			if (ret != 0)

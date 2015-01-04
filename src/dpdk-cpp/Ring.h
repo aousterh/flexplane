@@ -52,6 +52,13 @@ inline Ring<T>::Ring(const std::string& name, unsigned count, int socket_id,
 }
 
 template<typename T>
+inline struct rte_ring* __attribute__((always_inline))
+Ring<T>::get()
+{
+	return m_ring;
+}
+
+template<typename T>
 inline int __attribute__((always_inline))
 Ring<T>::enqueue(T elem)
 {

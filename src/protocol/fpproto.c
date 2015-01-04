@@ -460,7 +460,8 @@ static int process_alloc(struct fpproto_conn *conn, u8 *data, u8 *data_end)
 	alloc_n_tslots = 2 * (payload_type & 0x3F);
 	curp += 2;
 
-	if (curp + 2 + 2 * alloc_n_dst + alloc_n_tslots > data_end)
+	if (curp + 2 + 2 * alloc_n_dst + alloc_n_tslots * ALLOC_BYTES_PER_TSLOT
+			> data_end)
 		goto incomplete_alloc_payload;
 
 	/* get base timeslot */
@@ -477,7 +478,7 @@ static int process_alloc(struct fpproto_conn *conn, u8 *data, u8 *data_end)
 		conn->ops->handle_alloc(conn->ops_param, alloc_base_tslot, alloc_dst, alloc_n_dst,
 			curp, alloc_n_tslots);
 
-	return 4 + 2 * alloc_n_dst + alloc_n_tslots;
+	return 4 + 2 * alloc_n_dst + alloc_n_tslots * ALLOC_BYTES_PER_TSLOT;
 
 incomplete_alloc_payload_one_byte:
 	conn->stat.rx_incomplete_alloc++;
@@ -487,7 +488,8 @@ incomplete_alloc_payload_one_byte:
 incomplete_alloc_payload:
 	conn->stat.rx_incomplete_alloc++;
 	fp_debug("ALLOC payload incomplete: expected %d bytes, got %d\n",
-			2 + 2 * alloc_n_dst + alloc_n_tslots, (int)(data_end - curp));
+			2 + 2 * alloc_n_dst + alloc_n_tslots * ALLOC_BYTES_PER_TSLOT,
+			(int)(data_end - curp));
 	return -1;
 }
 
@@ -698,6 +700,7 @@ handle_payload:
 		break;
 
 	case FASTPASS_PTYPE_ALLOC:
+	case FASTPASS_PTYPE_EMU_ALLOC:
 		payload_length = process_alloc(conn, curp, data_end);
 
 		fp_debug("process_alloc returned %d\n", payload_length);
@@ -863,18 +866,34 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 #ifdef FASTPASS_CONTROLLER
 	if (pd->alloc_tslot > 0) {
 		/* ALLOC type short */
-		*(__be16 *)curp = htons((FASTPASS_PTYPE_ALLOC << 12)
+		u16 alloc_type = FASTPASS_PTYPE_ALLOC;
+#if defined(EMULATION_ALGO)
+		alloc_type = FASTPASS_PTYPE_EMU_ALLOC;
+#endif
+		*(__be16 *)curp = htons((alloc_type << 12)
 								| (pd->n_dsts << 8)
-								|  ((pd->alloc_tslot + 1) / 2));
+								|  (pd->alloc_tslot / 2));
 		curp += 2;
 		*(__be16 *)curp = htons(pd->base_tslot);
 		curp += 2;
+		remaining_len -= 4;
 		for (i = 0; i < pd->n_dsts; i++) {
 			*(__be16 *)curp = htons(pd->dsts[i]);
 			curp += 2;
+			remaining_len -= 2;
 		}
 		memcpy(curp, pd->tslot_desc, pd->alloc_tslot);
 		curp += pd->alloc_tslot;
+		remaining_len -= pd->alloc_tslot;
+
+#if defined(EMULATION_ALGO)
+		/* add additional alloc info for emulation */
+		for (i = 0; i < pd->alloc_tslot; i++) {
+			*(__be16 *) curp = htons(pd->emu_tslot_desc[i].id);
+			curp += 2;
+			remaining_len -= 2;
+		}
+#endif
 	}
 	(void) i; (void) areq; (void)max_len; /* TODO, fix this better */
 #endif

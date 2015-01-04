@@ -642,12 +642,14 @@ conf_setup(void)
 			rte_exit(EXIT_FAILURE, "rte_eth_dev_flow_ctrl_set: err=%d, port=%d\n",
 					ret, portid);
 
+#if INTEL_NICS
 		print_short_diagnostic(portid);
 
 		// Disable Energy Efficient Ethernet (EEE), for lower latencies
 		port_pci_reg_write(portid, 0x0E30, 0);
 
 		print_short_diagnostic(portid);
+#endif
 	}
 
 	check_all_ports_link_status();

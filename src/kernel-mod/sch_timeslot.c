@@ -27,6 +27,7 @@
 #include <linux/version.h>
 #include <linux/ip.h>
 #include <linux/list.h>
+#include <linux/version.h>
 #include <net/netlink.h>
 #include <net/pkt_sched.h>
 #include <net/sock.h>
@@ -52,6 +53,7 @@ struct timeslot_skb_q {
 	struct list_head list;
 	struct sk_buff	*head;		/* list of skbs for this flow : first skb */
 	struct sk_buff *tail;		/* last skb in the list */
+	u16 id;						/* optional id for the packets in this queue */
 };
 
 /*
@@ -62,6 +64,7 @@ struct tsq_dst {
 	struct rb_node	fp_node; 	/* anchor in fp_root[] trees */
 	struct list_head skb_qs;	/* a queue for each timeslot */
 	s64		credit;				/* time remaining in the last scheduled timeslot */
+	u16		next_id;			/* sequential id to be assigned to the next timeslot */
 };
 
 struct rcu_hash_tbl_cleanup {
@@ -90,7 +93,9 @@ struct tsq_sched_stat {
 	u64		dropped_timeslots;
 	/* alloc-related */
 	u64		unwanted_alloc;
-	u64		dst_not_found_admit_now;
+	u64		dst_not_found_handle_now;
+	u64		unrecognized_id;
+	u64		unrecognized_action;
 };
 
 /**
@@ -270,6 +275,7 @@ static struct tsq_dst *dst_lookup(struct tsq_sched_data *q, u64 src_dst_key,
 	rb_insert_color(&dst->fp_node, root);
 	INIT_LIST_HEAD(&dst->skb_qs);
 	dst->credit = 0;
+	dst->next_id = 0;
 
 	q->flows++;
 	q->inactive_flows++;
@@ -483,6 +489,7 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 			q->inactive_flows--;
 
 		skb_q_init(timeslot_q);
+		timeslot_q->id = dst->next_id++; /* assign this MTU the next id */
 		list_add_tail(&timeslot_q->list, &dst->skb_qs);
 		dst->credit = q->tslot_len_approx;
 		q->stat.added_tslots++;
@@ -691,58 +698,7 @@ done:
 }
 #endif
 
-void tsq_admit_now(void *priv, u64 src_dst_key)
-{
-	struct tsq_sched_data *q = priv_to_sched_data(priv);
-	struct tsq_dst *dst;
-	struct timeslot_skb_q *timeslot_q;
-
-	/* find the mentioned destination */
-	spin_lock(&q->hash_tbl_lock);
-	dst = dst_lookup(q, src_dst_key, false);
-	if (unlikely(dst == NULL)) {
-		FASTPASS_WARN("couldn't find flow 0x%llX from alloc.\n", src_dst_key);
-		q->stat.dst_not_found_admit_now++;
-		return;
-	}
-
-	/* are there timeslots waiting? */
-	if (unlikely(list_empty(&dst->skb_qs))) {
-		/* got an alloc without a timeslot */
-		q->stat.unwanted_alloc++;
-		fp_debug("got an allocation over demand, flow 0x%04llX\n",
-				dst->src_dst_key);
-		return;
-	}
-
-	/* get a timeslot's worth skb_q */
-	timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
-	list_del(dst->skb_qs.next);
-	/* if we dequeued the last skb, make sure it has no remaining credit */
-	if (unlikely(list_empty(&dst->skb_qs))) {
-		dst->credit = 0;
-		q->inactive_flows++;
-	}
-	q->stat.used_timeslots++;
-	spin_unlock(&q->hash_tbl_lock);
-
-	/* put in prequeue */
-	spin_lock(&q->prequeue_lock);
-	skb_q_append(&q->prequeue, timeslot_q);
-	spin_unlock(&q->prequeue_lock);
-
-	/* unthrottle qdisc */
-	qdisc_unthrottled(q->qdisc);
-	__netif_schedule(qdisc_root(q->qdisc));
-
-	/* free the timeslot_q */
-	kmem_cache_free(timeslot_skb_q_cachep, timeslot_q);
-}
-
- /*
-  * Drop a timeslot's worth of skbs for this flow
-  */
-void tsq_drop_now(void *priv, u64 src_dst_key)
+void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 {
 	struct tsq_sched_data *q = priv_to_sched_data(priv);
 	struct tsq_dst *dst;
@@ -755,7 +711,7 @@ void tsq_drop_now(void *priv, u64 src_dst_key)
 	dst = dst_lookup(q, src_dst_key, false);
 	if (unlikely(dst == NULL)) {
 		FASTPASS_WARN("couldn't find flow 0x%llX from alloc.\n", src_dst_key);
-		q->stat.dst_not_found_admit_now++;
+		q->stat.dst_not_found_handle_now++;
 		return;
 	}
 
@@ -769,20 +725,64 @@ void tsq_drop_now(void *priv, u64 src_dst_key)
 	}
 
 	/* get a timeslot's worth skb_q */
-	timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
-	list_del(dst->skb_qs.next);
+	if (action == TSLOT_ACTION_ADMIT_HEAD) {
+		/* get the first timeslot in the skb_q */
+		timeslot_q = list_first_entry(&dst->skb_qs, struct timeslot_skb_q, list);
+		list_del(dst->skb_qs.next);
+	} else if ((action == TSLOT_ACTION_ADMIT_BY_ID) ||
+			(action == TSLOT_ACTION_DROP_BY_ID)){
+		/* get the timeslot with the specified id */
+		list_for_each_entry(timeslot_q, &dst->skb_qs, list) {
+			if (timeslot_q->id == id)
+				goto found_entry;
+		}
+		FASTPASS_WARN("couldn't find MTU with id %d\n", id);
+		q->stat.unrecognized_id++;
+		spin_unlock(&q->hash_tbl_lock);
+		return;
+
+found_entry:
+		list_del(&timeslot_q->list);
+		fp_debug("expected MTU with id %d, dequeued MTU with id %d\n", id,
+				timeslot_q->id);
+	} else {
+		FASTPASS_WARN("unrecognized action %d\n", action);
+		q->stat.unrecognized_action++;
+		spin_unlock(&q->hash_tbl_lock);
+		return;
+	}
+
 	/* if we dequeued the last skb, make sure it has no remaining credit */
 	if (unlikely(list_empty(&dst->skb_qs))) {
 		dst->credit = 0;
 		q->inactive_flows++;
 	}
-	q->stat.dropped_timeslots++;
+
+	/* log the action that will be performed on this tslot */
+	if (action == TSLOT_ACTION_DROP_BY_ID)
+		q->stat.dropped_timeslots++;
+	else
+		q->stat.used_timeslots++;
+
 	spin_unlock(&q->hash_tbl_lock);
 
-	/* drop packets */
-	for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
-		skb_next = skb->next;
-		qdisc_drop(skb, q->qdisc);
+	if (action == TSLOT_ACTION_DROP_BY_ID) {
+		/* drop the packets */
+		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
+			skb_next = skb->next;
+			qdisc_drop(skb, q->qdisc);
+		}
+	} else {
+		/* admit the packets now */
+
+		/* put in prequeue */
+		spin_lock(&q->prequeue_lock);
+		skb_q_append(&q->prequeue, timeslot_q);
+		spin_unlock(&q->prequeue_lock);
+
+		/* unthrottle qdisc */
+		qdisc_unthrottled(q->qdisc);
+		__netif_schedule(qdisc_root(q->qdisc));
 	}
 
 	/* free the timeslot_q */
@@ -1058,7 +1058,11 @@ static int tsq_tc_change(struct Qdisc *sch, struct nlattr *opt) {
 		if (data_rate_spec.rate == 0)
 			err = -EINVAL;
 		else
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+			psched_ratecfg_precompute(&q->data_rate, &data_rate_spec);
+#else
 			psched_ratecfg_precompute(&q->data_rate, &data_rate_spec, 0);
+#endif
 	}
 	if (tb[TCA_FASTPASS_TIMESLOT_NSEC]) {
 		FASTPASS_WARN("got deprecated timeslot length paramter\n");
@@ -1161,7 +1165,11 @@ static int tsq_tc_init(struct Qdisc *sch, struct nlattr *opt)
 	q->tslot_shift		= 20;
 
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+	psched_ratecfg_precompute(&q->data_rate, &data_rate_spec);
+#else
 	psched_ratecfg_precompute(&q->data_rate, &data_rate_spec, 0);
+#endif
 	q->dst_hash_tbl	= NULL;
 	skb_q_init(&q->enqueue_skb_q);
 	skb_q_init(&q->reg_prio);
@@ -1227,7 +1235,11 @@ static int tsq_tc_dump(struct Qdisc *sch, struct sk_buff *skb)
 
 	if (nla_put_u32(skb, TCA_FASTPASS_PLIMIT, sch->limit) ||
 	    nla_put_u32(skb, TCA_FASTPASS_BUCKETS_LOG, q->hash_tbl_log) ||
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+	    nla_put_u32(skb, TCA_FASTPASS_DATA_RATE, (u32) q->data_rate.rate_bps) ||
+#else
 	    nla_put_u32(skb, TCA_FASTPASS_DATA_RATE, (u32) q->data_rate.rate_bytes_ps) ||
+#endif
 	    nla_put_u32(skb, TCA_FASTPASS_TIMESLOT_NSEC, q->tslot_len_approx) ||
 	    nla_put_u32(skb, TCA_FASTPASS_TIMESLOT_MUL, q->tslot_mul) ||
 	    nla_put_u32(skb, TCA_FASTPASS_TIMESLOT_SHIFT, q->tslot_shift))
@@ -1253,7 +1265,11 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 
 	/* configuration */
 	seq_printf(seq, "\n  buckets_log %u", q->hash_tbl_log);
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,11,0)
+	seq_printf(seq, ", rate %u", (u32) q->data_rate.rate_bps);
+#else
 	seq_printf(seq, ", rate %u", (u32) q->data_rate.rate_bytes_ps);
+#endif
 	seq_printf(seq, ", timeslot_ns %u", q->tslot_len_approx);
 	seq_printf(seq, ", timeslot_mul %u", q->tslot_mul);
 	seq_printf(seq, ", timeslot_shift %u", q->tslot_shift);
@@ -1285,9 +1301,15 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 		seq_printf(seq, "\n  %llu allocation errors in dst_lookup", scs->allocation_errors);
 	if (scs->classify_errors)
 		seq_printf(seq, "\n  %llu packets could not be classified", scs->classify_errors);
-	if (scs->dst_not_found_admit_now)
-		seq_printf(seq, "\n  %llu flow could not be found in timeslot_admit_now",
-				scs->dst_not_found_admit_now);
+	if (scs->dst_not_found_handle_now)
+		seq_printf(seq, "\n  %llu flow could not be found in timeslot_handle_now",
+				scs->dst_not_found_handle_now);
+	if (scs->unrecognized_id)
+		seq_printf(seq, "\n  %llu unrecognized timeslot id",
+				scs->unrecognized_id);
+	if (scs->unrecognized_action)
+		seq_printf(seq, "\n  %llu unrecognized timeslot action (not ADMIT or DROP)",
+				scs->unrecognized_action);
 
 	/* warnings */
 	seq_printf(seq, "\n warnings:");

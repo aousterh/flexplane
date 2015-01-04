@@ -5,4 +5,9 @@
 2. Add "-l /sbin/sulogin -n" to /etc/init/ttyS0.conf for auto-login, i.e.,
 	exec /sbin/getty -l /sbin/sulogin -n -L 115200 ttyS0 vt102
 
+3. Optional: install kernel modules to vm:
+   . ~/fastpass_env.sh
+   ./mount_vm.sh
+   make INSTALL_MOD_PATH=$VM_HD_MOUNTPOINT modules_install
+   ./umount_vm.sh
 

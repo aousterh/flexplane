@@ -8,5 +8,8 @@ else
     MASK="$1"
 fi
 
-sudo build/fast -c $MASK -n 3 --no-hpet  -m 512 -- -p 1
+mkdir -p log/
+
+# -m 512 commented out; bring back if needed
+sudo build/fast -c $MASK -n 3 --no-hpet -- -p 1
 

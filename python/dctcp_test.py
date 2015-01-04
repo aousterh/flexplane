@@ -22,7 +22,9 @@ dropper = Dropper(emu_output)
 # make router
 dctcp_params = dctcp_args()
 dctcp_params.q_capacity = 4096
-dctcp_params.K_threshold = 65  # from Alizadeh et al. SIGCOMM 2010. this might not be correct in general
+
+#dctcp_params.K_threshold = 65  # from Alizadeh et al. SIGCOMM 2010. this might not be correct in general
+dctcp_params.K_threshold = 20 # for 1 Gbit/s
 
 rtr = DCTCPRouter(0, dctcp_params, dropper)
 

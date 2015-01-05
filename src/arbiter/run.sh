@@ -10,4 +10,6 @@ fi
 
 mkdir -p log/
 
+# -m 512 commented out; bring back if needed
 sudo build/fast -c $MASK -n 3 --no-hpet -- -p 1
+

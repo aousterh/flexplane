@@ -68,5 +68,8 @@ set_512_non_numa_pages()
 	create_mnt_huge
 }
 
+# remove any existing huge pages
+clear_huge_pages
+
 # setup huge pages
 set_512_non_numa_pages

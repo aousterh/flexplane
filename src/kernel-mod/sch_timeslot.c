@@ -708,6 +708,7 @@ static inline void mark_ecn(struct sk_buff *skb)
 {
 	__be16 proto = skb->protocol;
 	struct iphdr * iph;
+	__be16 old_word, new_word;
 
 	if (proto != __constant_htons(ETH_P_IP)) {
 		/* not IPv4. probably IPv6? */
@@ -718,10 +719,12 @@ static inline void mark_ecn(struct sk_buff *skb)
 
 	/* mark ECN Congestion Encountered in IPv4 packet */
 	iph = (struct iphdr *) skb_network_header(skb);
+	old_word = ((__be16 *) iph)[0];
 	iph->tos |= ECN_CE;
 
     /* update checksum */
-	iph->check = htons(ntohs(iph->check) - ECN_CE);
+	new_word = ((__be16 *) iph)[0];
+	csum_replace2(&iph->check, old_word, new_word);
 }
 
 void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)

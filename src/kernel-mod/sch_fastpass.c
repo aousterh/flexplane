@@ -351,16 +351,24 @@ static void inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
 		u8 flags, u16 id)
 {
 #if (defined(EMULATION_ALGO))
-	if (unlikely(flags == EMU_FLAGS_DROP)) {
-		tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id);
-		q->stat.dropped_timeslots++;
-	} else if (flags == EMU_FLAGS_NONE) {
+	switch (flags) {
+	case EMU_FLAGS_NONE:
 		tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_BY_ID, id);
 		q->stat.admitted_timeslots++;
-	} else {
-		/* unrecognized action, don't take any action */
-		q->stat.unrecognized_action++;
+		return;
+	case EMU_FLAGS_DROP:
+		tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id);
+		q->stat.dropped_timeslots++;
+		return;
+	case EMU_FLAGS_ECN_MARK:
+		tsq_handle_now(q, dst_id, TSLOT_ACTION_MARK_BY_ID, id);
+		q->stat.marked_timeslots++;
+		return;
 	}
+
+	/* unrecognized action, don't take any action */
+	FASTPASS_WARN("unrecognized flags %d for packet with id %d\n", flags, id);
+	q->stat.unrecognized_action++;
 #else
 	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_HEAD, 0 /* ignored */);
 	q->stat.admitted_timeslots++;
@@ -920,8 +928,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", acked %llu", q->acked_tslots);
 	seq_printf(seq, ", allocs %u", atomic_read(&q->alloc_tslots));
 	seq_printf(seq, ", used %llu", q->used_tslots);
-	seq_printf(seq, ", admitted %llu", scs->admitted_timeslots);
+	seq_printf(seq, ", admitted (unmarked) %llu", scs->admitted_timeslots);
 	seq_printf(seq, ", dropped %llu", scs->dropped_timeslots);
+	seq_printf(seq, ", marked %llu", scs->marked_timeslots);
 
 	seq_printf(seq, "\n  %llu requests w/no a-req", scs->request_with_empty_flowqueue);
 

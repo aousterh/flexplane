@@ -12,6 +12,7 @@ struct fp_sched_stat {
 	/* dequeue-related */
 	__u64		admitted_timeslots;
 	__u64		dropped_timeslots;
+	__u64		marked_timeslots;
 	__u64		early_enqueue;
 	__u64		late_enqueue1;
 	__u64		late_enqueue2;

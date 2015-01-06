@@ -7,6 +7,7 @@
 #define	TSLOT_ACTION_ADMIT_HEAD		0x0
 #define TSLOT_ACTION_ADMIT_BY_ID	0x1
 #define	TSLOT_ACTION_DROP_BY_ID		0x2
+#define TSLOT_ACTION_MARK_BY_ID		0x3
 
 struct tsq_ops {
 	char			id[IFNAMSIZ];

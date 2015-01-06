@@ -12,10 +12,14 @@ else
 KCPPFLAGS = -DFASTPASS_ENDPOINT
 KCPPFLAGS += -DCONFIG_IP_FASTPASS_DEBUG
 KCPPFLAGS += -DEMULATION_ALGO
+KCPPFLAGS += -I/usr/include
 #KCPPFLAGS += -DPIPELINED_ALGO
 
+HOSTCC = /mnt/vol/engshare/third-party/centos6-native/gcc/gcc-4.7.1/cc6c9dc/bin/gcc
+CC = /mnt/vol/engshare/third-party/centos6-native/gcc/gcc-4.7.1/cc6c9dc/bin/gcc
+
 default:
-	$(MAKE) -C $(KDIR) M=$$PWD KCPPFLAGS="$(KCPPFLAGS)"
+	$(MAKE) -C $(KDIR) M=$$PWD KCPPFLAGS="$(KCPPFLAGS)" HOSTCC="$(HOSTCC)" CC="$(CC)"
 clean:
 	rm -f fastpass.o sch_fastpass.o sch_timeslot.o fastpass_proto.o ../protocol/fpproto.o fastpass.ko compat-3_2.o
 

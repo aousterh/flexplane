@@ -27,9 +27,7 @@ struct emu_state g_emu_state;
 struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
-struct drop_tail_args args = {
-		.q_capacity	= 128,
-};
+struct drop_tail_args args;
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out)
 {
@@ -97,6 +95,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 			EMU_NUM_PACKET_QS, PACKET_Q_SIZE);
 
 	/* init emu_state */
+        args.q_capacity = 128;
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
             (fp_ring **) packet_queues, R_DropTail, &args, E_Simple, NULL);

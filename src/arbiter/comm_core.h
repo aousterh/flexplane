@@ -81,7 +81,7 @@ extern struct comm_core_state ccore_state[RTE_MAX_LCORE];
 
 static inline uint32_t controller_ip(void)
 {
-	return IPv4(10,0,0,254);
+  return IPv4(192,168,1,1);
 }
 
 /**

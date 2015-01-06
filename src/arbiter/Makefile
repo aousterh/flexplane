@@ -30,20 +30,20 @@ SRCS-y := main.c \
 #          pim_admission_core.c \
 #          ../grant-accept/pim.c
 
-CFLAGS += -O3 
+CFLAGS += -O3
 #CFLAGS += $(WERROR_FLAGS)
-CFLAGS += -DFASTPASS_CONTROLLER 
+CFLAGS += -DFASTPASS_CONTROLLER
 #CFLAGS += -DCONFIG_IP_FASTPASS_DEBUG
 CFLAGS += -DLOG_TO_STDOUT
-CFLAGS += -DPRINT_CONN_LOG_TO_STDOUT 
+CFLAGS += -DPRINT_CONN_LOG_TO_STDOUT
 CFLAGS += -DNO_HW_CHECKSUM
 #CFLAGS += -DINTEL_NICS
 #CFLAGS += -DPIM_SINGLE_ADMISSION_CORE
 #CFLAGS += -DNO_ATOMIC
-CFLAGS += -I${PWD} 
+CFLAGS += -I${PWD}
 CFLAGS += -I$(PWD)/$(EMU_DIR)
 #CFLAGS += -g -O1
-CFLAGS += -g 
+CFLAGS += -g
 CFLAGS += -DNDEBUG
 CFLAGS += -march=core2
 #CFLAGS += -DPARALLEL_ALGO
@@ -59,5 +59,8 @@ CPPFLAGS += -D__STDC_LIMIT_MACROS
 # linker settings to work with C++
 LD = g++
 LDFLAGS += -lstdc++
+
+# don't use KNI
+CONFIG_RTE_LIBRTE_KNI=n
 
 include $(RTE_SDK)/mk/rte.extapp.mk

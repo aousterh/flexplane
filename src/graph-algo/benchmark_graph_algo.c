@@ -33,6 +33,8 @@
 #define ROUTER_OUTPUT_PORT_CAPACITY             512
 
 #ifdef EMULATION_ALGO
+#define ENDPOINTS_PER_COMM	NUM_NODES
+#define TOTAL_FLOWS_PER_COMM	(ENDPOINTS_PER_COMM * NUM_NODES * FLOWS_PER_NODE)
 #define BIN_MEMPOOL_SIZE PACKET_MEMPOOL_SIZE
 #else
 #define BIN_MEMPOOL_SIZE 2048
@@ -63,6 +65,19 @@ struct simple_ep_args e_args = {
 		.q_capacity = 128,
 };
 
+/**
+ * Return the index of the flow within next_packet_id, for this @src, @dst,
+ * 	and @flow. Used only for emulation.
+ */
+static inline
+uint32_t flow_index(uint16_t src, uint16_t dst, uint16_t flow) {
+	return ((src * NUM_NODES) + dst) * FLOWS_PER_NODE + flow;
+}
+
+#if defined(EMULATION_ALGO)
+uint16_t	next_packet_id[TOTAL_FLOWS_PER_COMM];
+#endif
+
 // Runs one experiment. Returns the number of packets admitted.
 uint32_t run_experiment(struct request_info *requests, uint32_t start_time,
 		uint32_t end_time, uint32_t num_requests,
@@ -87,8 +102,15 @@ uint32_t run_experiment(struct request_info *requests, uint32_t start_time,
         // Issue all new requests for this batch
         while ((current_request->timeslot >> BATCH_SHIFT) == (b % (65536 >> BATCH_SHIFT)) &&
                current_request < requests + num_requests) {
+#if defined (EMULATION_ALGO)
+        	uint16_t start_id = next_packet_id[flow_index(current_request->src,
+        			current_request->dst, 0)]++;
         	add_backlog(status, current_request->src, current_request->dst,
-                        current_request->backlog);
+                        current_request->backlog, start_id);
+#else
+        	add_backlog(status, current_request->src, current_request->dst,
+                        current_request->backlog, 0);
+#endif
             current_request++;
         }
         flush_backlog(status);
@@ -139,8 +161,15 @@ void run_admissible(struct request_info *requests, uint32_t start_time, uint32_t
         // Issue all new requests for this batch
         while ((current_request->timeslot >> BATCH_SHIFT) == (b % (65536 >> BATCH_SHIFT)) &&
                current_request < requests + num_requests) {
-            add_backlog(status, current_request->src, current_request->dst,
-                        current_request->backlog);
+#if defined (EMULATION_ALGO)
+        	uint16_t start_id = next_packet_id[flow_index(current_request->src,
+        			current_request->dst, 0)]++;
+        	add_backlog(status, current_request->src, current_request->dst,
+                        current_request->backlog, start_id);
+#else
+        	add_backlog(status, current_request->src, current_request->dst,
+                        current_request->backlog, 0);
+#endif
             current_request++;
         }
         flush_backlog(status);

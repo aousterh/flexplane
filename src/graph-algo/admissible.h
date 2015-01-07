@@ -37,7 +37,7 @@ struct admitted_traffic;
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
-		uint32_t amount) {
+		uint32_t amount, uint16_t start_id) {
 	pim_add_backlog((struct pim_state *) state, src, dst, amount);
 }
 
@@ -102,7 +102,7 @@ void handle_spent_demands(struct admissible_state *state)
 
 static inline
 void add_backlog(struct admissible_state *status, uint16_t src, uint16_t dst,
-		uint32_t amount) {
+		uint32_t amount, uint16_t start_id) {
 	seq_add_backlog((struct seq_admissible_status *) status, src, dst, amount);
 }
 
@@ -179,14 +179,14 @@ void handle_spent_demands(struct admissible_state *state)
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
-		uint32_t amount) {
+		uint32_t amount, uint16_t start_id) {
 	uint16_t dst_node;
 	uint8_t flow;
 	struct emu_state *emu_state = (struct emu_state *) state;
 
 	flow = dst & FLOW_MASK;
 	dst_node = dst >> FLOW_SHIFT;
-	emu_add_backlog(emu_state, src, dst_node, flow, amount);
+	emu_add_backlog(emu_state, src, dst_node, flow, amount, start_id);
 }
 
 static inline

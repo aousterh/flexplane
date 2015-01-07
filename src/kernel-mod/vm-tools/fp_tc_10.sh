@@ -16,7 +16,7 @@ echo 2129920 > /proc/sys/net/core/wmem_default
 
 ./del_tc.sh
 
-sudo insmod fastpass.ko fastpass_debug=1 ctrl_addr=$CONTROLLER_IP req_cost=20000 req_bucketlen=40000 retrans_timeout_ns=2000000 req_min_gap=1000
+sudo insmod fastpass.ko fastpass_debug=0 ctrl_addr=$CONTROLLER_IP req_cost=20000 req_bucketlen=40000 retrans_timeout_ns=2000000 req_min_gap=1000
 
 echo -- lsmod after --
 lsmod | grep fastpass

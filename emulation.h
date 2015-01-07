@@ -25,8 +25,6 @@
 
 /* comm core state - 1 comm core right now */
 #define EPGS_PER_COMM			(EMU_NUM_ENDPOINT_GROUPS)
-#define ENDPOINTS_PER_COMM		(NUM_NODES)
-#define TOTAL_FLOWS_PER_COMM	(ENDPOINTS_PER_COMM * NUM_NODES * FLOWS_PER_NODE)
 
 struct emu_state;
 
@@ -43,11 +41,9 @@ class RouterDriver;
 /**
  * Emu state allocated for each comm core
  * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
- * @next_packet_id: the next id to assign to created packets
  */
 struct emu_comm_state {
 	struct fp_ring	*q_epg_new_pkts[EPGS_PER_COMM];
-	uint16_t		next_packet_id[TOTAL_FLOWS_PER_COMM];
 };
 
 /**
@@ -110,11 +106,12 @@ void emu_alloc_init(struct emu_state *state,
 #endif
 
 /**
- * Add backlog from src to dst for flow.
+ * Add backlog from @src to @dst for @flow. Add @amount MTUs, with the first id
+ * of @start_id.
  */
 static inline
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount);
+		uint16_t flow, uint32_t amount, uint16_t start_id);
 
 /**
  * Emulate a single timeslot.

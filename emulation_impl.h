@@ -22,23 +22,10 @@
 #define MIN(X, Y)	(X <= Y ? X : Y)
 #define EMU_ADD_BACKLOG_BATCH_SIZE	64
 
-/**
- * Return the index of the flow within next_packet_id, for this @src, @dst,
- * 	and @flow.
- */
-static inline
-uint32_t flow_index(uint16_t src, uint16_t dst, uint16_t flow) {
-	return ((src * NUM_NODES) + dst) * FLOWS_PER_NODE + flow;
-}
-
-/**
- * Add backlog from src to dst for flow.
- */
 static inline
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount) {
+		uint16_t flow, uint32_t amount, uint16_t start_id) {
 	uint32_t i, n_pkts;
-	uint16_t id;
 	struct emu_comm_state *comm_state;
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
@@ -51,8 +38,8 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	while (amount > 0) {
 		n_pkts = 0;
 		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
-			id = comm_state->next_packet_id[flow_index(src, dst, flow)]++;
-			pkt_ptrs[n_pkts] = create_packet(state, src, dst, flow, id);
+			pkt_ptrs[n_pkts] = create_packet(state, src, dst, flow,
+					start_id++);
 			n_pkts++;
 		}
 

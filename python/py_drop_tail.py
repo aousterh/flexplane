@@ -96,9 +96,9 @@ epg = PyEndpointGroup(epg_cla, epg_qm, epg_sch, epg_sink, 0, NUM_ENDPOINTS)
 driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
                                  state.stat, PACKET_MEMPOOL_SIZE)
 
-emu_add_backlog(state,0,1,0,3)
+emu_add_backlog(state,0,1,0,3,0)
 
-emu_add_backlog(state,5,6,0,4)
+emu_add_backlog(state,5,6,0,4,0)
 
 for i in xrange(10):
     driver.step()

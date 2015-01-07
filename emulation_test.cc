@@ -100,9 +100,10 @@ int main() {
     /* run a basic test of emulation framework */
     test = new EmulationTest(R_DropTail);
     printf("\nTEST 1: basic\n");
-    emu_add_backlog(&test->state, 0, 1, 0, 1); // src, dst, id, amount
-    emu_add_backlog(&test->state, 0, 3, 0, 3);
-    emu_add_backlog(&test->state, 7, 3, 0, 2);
+    /* src, dst, flow, amount, start_id */
+    emu_add_backlog(&test->state, 0, 1, 0, 1, 0);
+    emu_add_backlog(&test->state, 0, 3, 0, 3, 0);
+    emu_add_backlog(&test->state, 7, 3, 0, 2, 0);
 
     for (i = 0; i < 8; i++)
         test->emulate_and_print_admitted();
@@ -112,7 +113,7 @@ int main() {
     printf("\nTEST 2: drop-tail\n");
     test = new EmulationTest(R_DropTail);
     for (i = 0; i < 10; i++) {
-        emu_add_backlog(&test->state, i, 13, 0, 3);
+        emu_add_backlog(&test->state, i, 13, 0, 3, 0);
         test->emulate_and_print_admitted();
     }
     for (i = 0; i < 10; i++) {
@@ -123,7 +124,7 @@ int main() {
     printf("\nTEST 3: RED\n");
     test = new EmulationTest(R_RED);
     for (i = 0; i < 1000; i++) {
-        emu_add_backlog(&test->state, i % EMU_NUM_ENDPOINTS, 13, 0, 3);
+        emu_add_backlog(&test->state, i % EMU_NUM_ENDPOINTS, 13, 0, 3, 0);
         test->emulate_and_print_admitted();
     }
     for (i = 0; i < 100; i++) {

@@ -89,8 +89,8 @@ static void add_initial_requests(struct comm_core_state *core,
 	uint32_t i;
 	for (src = 0; src < num_srcs; src++)
 		for (i = 0; i < num_dsts_per_src; i++)
-			add_backlog(g_admissible_status(),
-					src, (src + 1 + i) % num_srcs , flow_size);
+			add_backlog(g_admissible_status(), src, (src + 1 + i) % num_srcs,
+					flow_size, 0);
 
 	flush_backlog(g_admissible_status());
 }
@@ -212,8 +212,8 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 				break;
 
 			/* enqueue the request */
-			add_backlog(g_admissible_status(),
-					next_request.src, next_request.dst, next_request.backlog);
+			add_backlog(g_admissible_status(), next_request.src,
+					next_request.dst, next_request.backlog, 0);
 			comm_log_demand_increased(next_request.src, next_request.dst, 0,
 					next_request.backlog, next_request.backlog);
 

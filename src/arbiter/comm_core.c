@@ -331,7 +331,9 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 		demand_diff = (s32)demand - (s32)orig_demand;
 		if (demand_diff > 0) {
 			comm_log_demand_increased(node_id, dst, orig_demand, demand, demand_diff);
-			add_backlog(g_admissible_status(), node_id, dst, demand_diff);
+			/* get the sequential ID from the demand */
+			add_backlog(g_admissible_status(), node_id, dst, demand_diff,
+					orig_demand & 0xFFFF);
 			en->demands[dst] = demand;
 			num_increases++;
 		} else {

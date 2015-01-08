@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DEV="eth0"
-TC="/sbin/tc"
+TC="./tc"
 
 sudo $TC qdisc del dev $DEV root
 sudo rmmod fastpass

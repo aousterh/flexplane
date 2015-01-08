@@ -4,8 +4,7 @@
 	<comment></comment>
 	<projects>
 		<project>dpdk-include</project>
-		<project>linux_kernel</project>
-		<project>linux-kernel</project>
+		<project>linux-stable-3.18</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

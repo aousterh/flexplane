@@ -23,6 +23,11 @@
 
 struct packet_queue;
 
+enum component_type {
+	TYPE_ROUTER,
+	TYPE_ENDPOINT
+};
+
 struct drop_tail_args {
     uint16_t q_capacity;
 };
@@ -30,7 +35,7 @@ struct drop_tail_args {
 class DropTailQueueManager : public QueueManager {
 public:
 	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity,
-			Dropper &dropper);
+			Dropper &dropper, enum component_type type);
 	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -42,6 +47,9 @@ private:
 
 	/** the means to drop packets */
 	Dropper m_dropper;
+
+	/** type - router or endpoint, used for logging */
+	enum component_type m_type;
 };
 
 typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>
@@ -69,8 +77,13 @@ inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 {
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */
-		adm_log_emu_router_dropped_packet(&g_state->stat);
 		m_dropper.drop(pkt);
+
+		/* log the drop */
+		if (m_type == TYPE_ROUTER)
+			adm_log_emu_router_dropped_packet(&g_state->stat);
+		else
+			adm_log_emu_endpoint_dropped_packet(&g_state->stat);
 	} else {
 		m_bank->enqueue(port, queue, pkt);
 	}

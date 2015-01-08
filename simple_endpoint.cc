@@ -6,6 +6,7 @@
  */
 
 #include "simple_endpoint.h"
+#include "queue_managers/drop_tail.h"
 #include "api.h"
 #include "api_impl.h"
 
@@ -17,7 +18,7 @@ SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
   m_emu_output(emu_output),
   m_dropper(m_emu_output),
   m_cla(),
-  m_qm(&m_bank, q_capacity, m_dropper),
+  m_qm(&m_bank, q_capacity, m_dropper, TYPE_ENDPOINT),
   m_sch(&m_bank),
   m_sink(m_emu_output),
   SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id, num_endpoints)

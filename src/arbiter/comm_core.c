@@ -794,13 +794,20 @@ struct __static_check_wnd_size {
 static inline void fill_packet_report(struct comm_core_state *core,
 		struct fpproto_pktdesc *pd, struct end_node_state *en)
 {
+	struct pending_alloc_queue *pending_q = &en->pending_allocs;
+	uint32_t unsent_allocs;
+
 	pd->n_areq = 0;
 
 	while (!report_empty(&en->report_queue)
 			&& pd->n_areq < FASTPASS_PKT_MAX_AREQ) {
 		uint16_t node = report_pop(&en->report_queue);
 		pd->areq[pd->n_areq].src_dst_key = node;
-		pd->areq[pd->n_areq].tslots = en->alloc_to_dst[node];
+
+		/* AREQ should not include allocs that have not been sent, due to
+		 * limits on the number of allocs per control packet */
+		unsent_allocs = pending_q->tail - pending_q->head;
+		pd->areq[pd->n_areq].tslots = en->alloc_to_dst[node] - unsent_allocs;
 		pd->n_areq++;
 	}
 
@@ -863,6 +870,7 @@ next_alloc:
 		cur_alloc = &pending_q->allocs[wnd_pos(pending_q->head)];
 		goto next_alloc;
 	}
+
 cleanup:
 	/* we set core->alloc_enc_space back to zeros */
 	for (i = 0; i < n_dsts; i++) {

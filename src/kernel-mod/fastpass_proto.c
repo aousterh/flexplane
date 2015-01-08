@@ -11,6 +11,7 @@
 #include <linux/errno.h>
 #include <linux/slab.h>
 #include <linux/netdevice.h>
+#include <linux/version.h>
 #include <net/protocol.h>
 #include <net/ip.h>
 #include <net/inet_common.h>
@@ -21,6 +22,7 @@
 
 #include "fastpass_proto.h"
 #include "../protocol/platform.h"
+#include "compat.h"
 
 struct inet_hashinfo fastpass_hashinfo;
 EXPORT_SYMBOL_GPL(fastpass_hashinfo);
@@ -140,7 +142,11 @@ int fpproto_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 	rt = ip_route_connect(fl4, usin->sin_addr.s_addr, saddr,
 			      RT_CONN_FLAGS(sk), oif,
 			      sk->sk_protocol,
-			      inet->inet_sport, usin->sin_port, sk, true);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0)
+				  inet->inet_sport, usin->sin_port, sk);
+#else
+				inet->inet_sport, usin->sin_port, sk, true);
+#endif
 	if (IS_ERR(rt)) {
 		err = PTR_ERR(rt);
 		if (err == -ENETUNREACH)
@@ -275,7 +281,8 @@ static void fpproto_send_skb(struct sock *sk, struct sk_buff *skb)
 	/* don't need the lock because the tasklet guarantees mutual exclusion */
 
 	/* send onwards */
-	err = ip_queue_xmit(skb, &inet->cork.fl);
+	err = ip_queue_xmit_compat(sk, skb, &inet->cork.fl);
+
 	err = net_xmit_eval(err);
 	if (unlikely(err != 0)) {
 		fp->stat.xmit_errors++;
@@ -456,7 +463,9 @@ static struct inet_protosw fastpass4_protosw = {
 	.protocol	=  IPPROTO_FASTPASS,
 	.prot		=  &fastpass_prot,
 	.ops		=  &inet_dgram_ops,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,16,0)
 	.no_check	=  0,		/* must checksum (RFC 3828) */
+#endif
 	.flags		=  0,
 };
 

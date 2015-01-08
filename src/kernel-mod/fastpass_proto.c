@@ -22,6 +22,7 @@
 
 #include "fastpass_proto.h"
 #include "../protocol/platform.h"
+#include "compat.h"
 
 struct inet_hashinfo fastpass_hashinfo;
 EXPORT_SYMBOL_GPL(fastpass_hashinfo);
@@ -280,7 +281,8 @@ static void fpproto_send_skb(struct sock *sk, struct sk_buff *skb)
 	/* don't need the lock because the tasklet guarantees mutual exclusion */
 
 	/* send onwards */
-	err = ip_queue_xmit(skb, &inet->cork.fl);
+	err = ip_queue_xmit_compat(sk, skb, &inet->cork.fl);
+
 	err = net_xmit_eval(err);
 	if (unlikely(err != 0)) {
 		fp->stat.xmit_errors++;
@@ -461,7 +463,9 @@ static struct inet_protosw fastpass4_protosw = {
 	.protocol	=  IPPROTO_FASTPASS,
 	.prot		=  &fastpass_prot,
 	.ops		=  &inet_dgram_ops,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,16,0)
 	.no_check	=  0,		/* must checksum (RFC 3828) */
+#endif
 	.flags		=  0,
 };
 

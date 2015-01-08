@@ -21,7 +21,7 @@ EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
 		void *args) {
 	switch(type) {
 	case(E_Simple):
-		uint16_t q_capacity = (args == NULL) ? 128 : ((struct simple_ep_args *) args)->q_capacity;
+		uint16_t q_capacity = (args == NULL) ? 4096 : ((struct simple_ep_args *) args)->q_capacity;
 		return new SimpleEndpointGroup(num_endpoints, emu_output, start_id,
 				q_capacity);
 	}

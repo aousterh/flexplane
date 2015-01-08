@@ -11,6 +11,7 @@
 #include <linux/errno.h>
 #include <linux/slab.h>
 #include <linux/netdevice.h>
+#include <linux/version.h>
 #include <net/protocol.h>
 #include <net/ip.h>
 #include <net/inet_common.h>
@@ -140,7 +141,11 @@ int fpproto_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 	rt = ip_route_connect(fl4, usin->sin_addr.s_addr, saddr,
 			      RT_CONN_FLAGS(sk), oif,
 			      sk->sk_protocol,
-			      inet->inet_sport, usin->sin_port, sk, true);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0)
+				  inet->inet_sport, usin->sin_port, sk);
+#else
+				inet->inet_sport, usin->sin_port, sk, true);
+#endif
 	if (IS_ERR(rt)) {
 		err = PTR_ERR(rt);
 		if (err == -ENETUNREACH)

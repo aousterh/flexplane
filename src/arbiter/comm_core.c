@@ -39,6 +39,9 @@
 
 #define IGMP_SEND_INTERVAL_SEC		10
 
+/* kill packet to shut off the arbiter remotely */
+#define	IPPROTO_FASTPASS_KILL		225
+
 /**
  * Information about a pending allocation.
  * @dst: the destination of this alloc
@@ -562,6 +565,11 @@ comm_rx(struct rte_mbuf *m, uint8_t portid)
 		comm_log_rx_watchdog_packet(portid);
 		saw_watchdog_packet = true;
 		goto cleanup; /* discard packet */
+	}
+
+	if (unlikely(ipv4_hdr->next_proto_id == IPPROTO_FASTPASS_KILL)) {
+		/* this is a kill packet. exit the arbiter. */
+		rte_exit(EXIT_SUCCESS, "Received kill packet");
 	}
 
 	if (unlikely(ipv4_hdr->next_proto_id != IPPROTO_FASTPASS)) {

@@ -727,7 +727,7 @@ static inline void mark_ecn(struct sk_buff *skb)
 	csum_replace2(&iph->check, old_word, new_word);
 }
 
-void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
+int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 {
 	struct tsq_sched_data *q = priv_to_sched_data(priv);
 	struct tsq_dst *dst;
@@ -741,7 +741,7 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 	if (unlikely(dst == NULL)) {
 		FASTPASS_WARN("couldn't find flow 0x%llX from alloc.\n", src_dst_key);
 		q->stat.dst_not_found_handle_now++;
-		return;
+		return 0;
 	}
 
 	/* are there timeslots waiting? */
@@ -750,7 +750,7 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 		q->stat.unwanted_alloc++;
 		fp_debug("got an allocation over demand, flow 0x%04llX\n",
 				dst->src_dst_key);
-		return;
+		return 0;
 	}
 
 	/* get a timeslot's worth skb_q */
@@ -778,7 +778,7 @@ void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 	}
 no_match:
 	spin_unlock(&q->hash_tbl_lock);
-	return;
+	return 0;
 
 found_entry:
 	/* remove timeslot_q from the list */
@@ -833,6 +833,8 @@ found_entry:
 
 	/* free the timeslot_q */
 	kmem_cache_free(timeslot_skb_q_cachep, timeslot_q);
+
+	return 1; /* successfully handled one timeslot */
 }
 
 /* Extract packet from the queue (part of the qdisc API) */

@@ -275,6 +275,11 @@ void flow_inc_used(struct fp_sched_data *q, struct fp_dst* dst, u64 amount) {
 	q->used_tslots += amount;
 }
 
+void flow_dec_used(struct fp_sched_data *q, struct fp_dst* dst, u64 amount) {
+	dst->used_tslots -= amount;
+	q->used_tslots -= amount;
+}
+
 /**
  * Increase the number of unrequested packets for the flow.
  *   Maintains the necessary invariants, e.g. adds the flow to the unreq_flows
@@ -345,33 +350,38 @@ release:
 
 /**
  * Transmit or drop a single alloc to @dst_id with index @id, according to
- * @flags and the algorithm used (emulation, etc.).
+ * @flags and the algorithm used (emulation, etc.). Return the number of
+ * timeslots handled (0 or 1).
  */
-static void inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
+static int inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
 		u8 flags, u16 id)
 {
 #if (defined(EMULATION_ALGO))
+	int ret;
+
 	switch (flags) {
 	case EMU_FLAGS_NONE:
-		tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_BY_ID, id);
-		q->stat.admitted_timeslots++;
-		return;
+		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_BY_ID, id);
+		q->stat.admitted_timeslots += ret;
+		return ret;
 	case EMU_FLAGS_DROP:
-		tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id);
-		q->stat.dropped_timeslots++;
-		return;
+		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id);
+		q->stat.dropped_timeslots += ret;
+		return ret;
 	case EMU_FLAGS_ECN_MARK:
-		tsq_handle_now(q, dst_id, TSLOT_ACTION_MARK_BY_ID, id);
-		q->stat.marked_timeslots++;
-		return;
+		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_MARK_BY_ID, id);
+		q->stat.marked_timeslots += ret;
+		return ret;
 	}
 
 	/* unrecognized action, don't take any action */
 	FASTPASS_WARN("unrecognized flags %d for packet with id %d\n", flags, id);
 	q->stat.unrecognized_action++;
+	return 0;
 #else
 	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_HEAD, 0 /* ignored */);
 	q->stat.admitted_timeslots++;
+	return 1; /* always assume successful */
 #endif
 }
 
@@ -391,6 +401,7 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	u64 now_real = fp_get_time_ns();
 	u64 current_timeslot;
 	u16 id = 0;
+	int handled_tslots;
 
 #if defined(EMULATION_ALGO)
 	u16 *ids = (u16 *) (tslots + n_tslots);
@@ -467,7 +478,25 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			handle_single_alloc(q, dst_id, flags, id);
+			handled_tslots = handle_single_alloc(q, dst_id, flags, id);
+
+#if defined(EMULATION_ALGO)
+			if (unlikely(handled_tslots == 0)) {
+				/* no tslot was successfully handled - decrement the counters */
+				fp_debug("no tslot was successfully handled with id %d\n", id);
+				q->stat.handle_tslots_unsuccessful++;
+
+				/* note: we assume these counters are used only in
+				 * handle_reset, handle_alloc, handle_ack, handle_areq, and
+				 * other functions executed within that thread. otherwise there
+				 * might be a race condition. */
+
+				dst = get_dst(q, dst_id);
+				flow_dec_used(q, dst, 1);
+				dst->alloc_tslots--;
+				release_dst(q, dst);
+			}
+#endif
 
 			atomic_inc(&q->alloc_tslots);
 			if (full_tslot > current_timeslot) {
@@ -970,6 +999,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->unrecognized_action)
 		seq_printf(seq, "\n  %llu timeslots with unrecognized actions (packet encoding error?)",
 				scs->unrecognized_action);
+	if (scs->handle_tslots_unsuccessful)
+		seq_printf(seq, "\n  %llu timeslots not successfully handled by tsq_handle_tslot_now (due to retransmission?)",
+				scs->handle_tslots_unsuccessful);
 	if (scs->alloc_too_late)
 		seq_printf(seq, "\n  %llu late allocations (something wrong with time-sync?)",
 				scs->alloc_too_late);

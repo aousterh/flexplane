@@ -28,6 +28,7 @@ struct fp_sched_stat {
 	__u64		alloc_premature;
 	__u64		unwanted_alloc;
 	__u64		unrecognized_action;
+	__u64		handle_tslots_unsuccessful;
 	/* alloc report-related */
 	__u64		alloc_report_larger_than_requested;
 	__u64		timeslots_assumed_lost;

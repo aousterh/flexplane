@@ -50,9 +50,10 @@ void tsq_schedule(void *priv, u64 src_dst_key, u64 timeslot);
 
 /**
  * Handles a timeslot from a flow (specified by src_dst_key) right now. This
- * involves admitting, marking, or dropping, according to the action.
+ * involves admitting, marking, or dropping, according to the action. Returns
+ * the number of timeslots handled (0 or 1).
  */
-void tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id);
+int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id);
 
 /**
  * Garbage-collects information for empty queues.

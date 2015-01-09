@@ -6,7 +6,7 @@
 
 //#define MAX_NODES 1024
 //#define FP_NODES_SHIFT 10  // 2^FP_NODES_SHIFT = MAX_NODES
-#define NUM_NODES 32
+#define NUM_NODES 64
 #define MAX_NODES 256
 #define FP_NODES_SHIFT 8  // 2^FP_NODES_SHIFT = MAX_NODES
 #define MAX_RACKS 16

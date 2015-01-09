@@ -26,6 +26,7 @@
 #define MAX_FLOWS (MAX_NODES * FLOWS_PER_NODE)
 
 #define FB_DEPLOYMENT			0
+#define CLASSIFY_BY_IP		1 /* alternative is mac address */
 
 #if (FB_DEPLOYMENT == 1)
 #define FB_RACK_PERFECT_HASH_CONST	0x33
@@ -34,9 +35,10 @@
 #define CISCO_SWITCH_MAC_PREFIX		0xa4934c000000
 #endif
 
-/* translates IP address to short FastPass ID */
-static inline u16 fp_map_ip_to_id(__be32 ipaddr) {
-	return (u16)(ntohl(ipaddr) & ((1 << 8) - 1));
+/* translates IP address to short FastPass ID - either IPv4 or 4 least
+ * significant bytes of IPv6 */
+static inline u16 fp_map_ip_to_id(u32 ipaddr) {
+	return ipaddr % NUM_NODES;
 }
 
 /* translates MAC address to short FastPass ID */

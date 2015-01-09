@@ -285,7 +285,7 @@ static struct tsq_dst *dst_lookup(struct tsq_sched_data *q, u64 src_dst_key,
 	return dst;
 }
 
-static inline u64 get_mac(struct sk_buff *skb)
+static inline u64 get_dst_mac(struct sk_buff *skb)
 {
 	struct ethhdr *ethh;
 	u64 res;
@@ -335,7 +335,7 @@ static struct timeslot_skb_q *classify_hi_prio(struct sk_buff *skb, struct tsq_s
 	case __constant_htons(ETH_P_1588):
 	case __constant_htons(ETH_P_ALL):
 		/* Special case the PTP broadcasts: MAC 01:1b:19:00:00:00 */
-		if (likely(get_mac(skb) == 0x011b19000000)) {
+		if (likely(get_dst_mac(skb) == 0x011b19000000)) {
 			q->stat.ptp_pkts++;
 			return &q->hi_prio;
 		}
@@ -404,16 +404,34 @@ static struct tsq_dst *classify_data(struct sk_buff *skb, struct tsq_sched_data 
 	u16 dst_id;
 	u16 flow_id;
 	u64 src_dst_key;
-	u64 mac;
 
-	/* get MAC address */
-	mac = get_mac(skb);
+	/* get the skb's key (src_dst_key) from IP or mac */
+#if (CLASSIFY_BY_IP == 1)
+	/* obtain ID from IP address */
+	__be16 proto = skb->protocol;
+	struct iphdr * iph;
 
-	/* get the skb's key (src_dst_key) */
+	if (unlikely(proto == __constant_htons(ETH_P_IPV6))) {
+		/* use 4 least significant bytes of IPv6 address */
+		struct ipv6hdr * iph6 = (struct ipv6hdr *) skb_network_header(skb);
+		u32 partial_ipv6_addr = ntohl(iph6->daddr.s6_addr32[0]);
+		dst_id = fp_map_ip_to_id(partial_ipv6_addr);
+		fp_debug("classify IPv6 data with lower 4 bytes %x\n",
+				partial_ipv6_addr);
+	} else {
+		iph = (struct iphdr *) skb_network_header(skb);
+		dst_id = fp_map_ip_to_id(ntohl(iph->daddr));
+	}
+
+#else
+	/* obtain ID from MAC address */
+	u64 mac = get_dst_mac(skb);
+
 	if (unlikely(mac_is_out_of_rack(mac)))
 		dst_id = OUT_OF_BOUNDARY_NODE_ID;
 	else
 		dst_id = fp_map_mac_to_id(mac);
+#endif
 
 	flow_id = get_priority(skb);
 

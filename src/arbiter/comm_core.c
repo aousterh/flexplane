@@ -558,7 +558,6 @@ comm_rx(struct rte_mbuf *m, uint8_t portid)
 	uint16_t ether_type;
 	uint16_t ip_total_len;
 	uint16_t ip_hdr_len;
-	uint64_t mac_addr;
 	bool saw_watchdog_packet = false;
 
 	eth_hdr = rte_pktmbuf_mtod(m, struct ether_hdr *);
@@ -613,16 +612,19 @@ comm_rx(struct rte_mbuf *m, uint8_t portid)
 		goto cleanup;
 	}
 
+#if (CLASSIFY_BY_IP == 1)
+	/* obtain ID from IPv4 address */
+	/* arbiter only support IPv4 right now, not IPv6 */
+	req_src = fp_map_ip_to_id(ntohl(ipv4_hdr->src_addr));
+#else
+	/* obtain ID from MAC address */
+	uint64_t mac_addr;
 	mac_addr = ((u64)ntohs(*(__be16 *)&eth_hdr->s_addr.addr_bytes[0]) << 32)
  			  | ntohl(*(__be32 *)&eth_hdr->s_addr.addr_bytes[2]);
-//	printf("got ethernet %02X:%02X:%02X:%02X:%02X:%02X parsed 0x%012lX\n",
-//			eth_hdr->s_addr.addr_bytes[0],eth_hdr->s_addr.addr_bytes[1],
-//			eth_hdr->s_addr.addr_bytes[2],eth_hdr->s_addr.addr_bytes[3],
-//			eth_hdr->s_addr.addr_bytes[4],eth_hdr->s_addr.addr_bytes[5],
-//			mac_addr);
+	req_src = fp_map_mac_to_id(mac_addr);
+#endif
 
 	/* each end_node_state is per endpoint (rather than per flow) */
-	req_src = fp_map_mac_to_id(mac_addr);
 	en = &end_nodes[req_src];
 
 	/* copy most recent ethernet and IP addresses, for return packets */

@@ -86,6 +86,7 @@ struct tsq_sched_stat {
 	u64		ssh_pkts;
 	u64		data_pkts;
 	u64		classify_errors;
+	u64		classified_ipv6;
 	u64		above_plimit;
 	u64		allocation_errors;
 	u64		pkt_too_big;
@@ -418,6 +419,7 @@ static struct tsq_dst *classify_data(struct sk_buff *skb, struct tsq_sched_data 
 		dst_id = fp_map_ip_to_id(partial_ipv6_addr);
 		fp_debug("classify IPv6 data with lower 4 bytes %x\n",
 				partial_ipv6_addr);
+		q->stat.classified_ipv6++;
 	} else {
 		iph = (struct iphdr *) skb_network_header(skb);
 		dst_id = fp_map_ip_to_id(ntohl(iph->daddr));
@@ -1383,6 +1385,9 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 	if (scs->unwanted_alloc)
 		seq_printf(seq, "\n  %llu timeslots allocated beyond the demand of the flow (could happen due to reset / controller timeouts)",
 				scs->unwanted_alloc);
+	if (scs->classified_ipv6)
+		seq_printf(seq, "\n  %llu packets classified as IPv6. may lead to unexpected behavior.",
+				scs->classified_ipv6);
 
 	return 0;
 }

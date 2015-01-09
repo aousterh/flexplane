@@ -45,7 +45,7 @@ endif
 .PHONY: clean
 all: emulation py
 clean:
-	rm -f emulation *.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
+	rm -f emulation *.o drivers/*.o queue_managers/*.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
 emulation: emulation_test.o emulation.o endpoint_group.o simple_endpoint.o \

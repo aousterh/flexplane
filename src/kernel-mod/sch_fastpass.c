@@ -537,14 +537,22 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 				return;
 			}
 
-			fp_debug("controller allocated %llu our allocated %llu, will increase demand by %llu\n",
+#if defined(EMULATION_ALGO)
+			/* log but do nothing, timeslots will be retransmitted */
+			fp_debug("arbiter allocated %llu our allocated %llu, %llu lost\n", count,
+					dst->alloc_tslots, n_lost);
+#else
+			fp_debug("arbiter allocated %llu our allocated %llu, will increase demand by %llu\n",
 					count, dst->alloc_tslots, n_lost);
 
+			/* re-request timeslots because they will not be retransmitted */
 			dst->alloc_tslots += n_lost;
 			flow_inc_used(q, dst, n_lost);
 			flow_inc_demand(q, dst_id, dst, n_lost);
 
 			atomic_add(n_lost, &q->alloc_tslots);
+#endif
+
 			q->stat.timeslots_assumed_lost += n_lost;
 		}
 

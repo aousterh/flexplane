@@ -374,10 +374,31 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 	int i;
 	uint32_t num_triggered = 0;
 
+#if defined(EMULATION_ALGO)
+	struct pending_alloc_queue *pending_q = &en->pending_allocs;
+	struct pending_alloc *alloc;
+	u8 descriptor;
+
+	/* if any un-ACK-ed allocs, add them to the queue of pending allocs so they
+	 * will be retransmitted */
+	for (i = 0; i < pd->used_alloc_tslot; i++) {
+		descriptor = pd->tslot_desc[i];
+
+		/* fill the next alloc in the queue with this alloc */
+		alloc = &pending_q->allocs[wnd_pos(pending_q->tail++)];
+
+		alloc->dst = pd->dsts[(descriptor >> 4) - 1];
+		alloc->flags = descriptor & FLAGS_MASK;
+		alloc->timeslot = pd->base_tslot;
+		alloc->id = pd->emu_tslot_desc[i].id;
+	}
+#endif
+
 	/* if the alloc report was not fully acked, trigger another report */
 	for (i = 0; i < pd->n_areq; i++) {
 		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key;
 		if ((int32_t)pd->areq[i].tslots - (int32_t)en->acked_allocs[dst] > 0) {
+
 			/* still not acked, trigger a report to end node*/
 			trigger_report(en, &en->report_queue, dst);
 			num_triggered++;

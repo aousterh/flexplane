@@ -88,7 +88,7 @@ void print_comm_log(uint16_t lcore_id)
 
 	printf("\n  processed %lu tslots (%lu non-empty ptn) with %lu node-tslots, diff: %lu",
                cl->processed_tslots, cl->non_empty_tslots, cl->occupied_node_tslots, cl->total_demand - cl->occupied_node_tslots);
-	printf("\n  TX %lu pkts (%lu watchdogs), %lu bytes, %lu triggers, %lu report-triggers (%lu due to neg-acks(",
+	printf("\n  TX %lu pkts (%lu watchdogs), %lu bytes, %lu triggers, %lu report-triggers (%lu due to neg-acks)",
 			cl->tx_pkt, cl->tx_watchdog_pkts, cl->tx_bytes, cl->triggered_send, cl->reports_triggered,
 			cl->neg_ack_triggered_reports);
 	printf("\n  set %lu timers, canceled %lu, expired %lu",

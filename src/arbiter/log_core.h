@@ -14,6 +14,7 @@ struct log_core_cmd {
 	uint64_t end_time;
 
 	uint64_t log_gap_ticks;
+	uint64_t q_log_gap_ticks;
 };
 
 /**

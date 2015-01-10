@@ -186,6 +186,7 @@ void launch_cores(void)
 
 	/*** LOG CORE ***/
 	log_cmd.log_gap_ticks = (uint64_t)(LOG_GAP_SECS * rte_get_timer_hz());
+	log_cmd.q_log_gap_ticks = (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz());
 	log_cmd.start_time = start_time;
 	log_cmd.end_time = end_time;
 

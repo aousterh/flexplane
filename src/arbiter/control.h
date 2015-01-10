@@ -79,6 +79,12 @@
 /* how many seconds in between writes to log */
 #define		LOG_GAP_SECS		0.1
 
+/*
+ * how many seconds in between writes to queue log, in file.
+ * LOG_GAP_SECS should be an even multiple of this.
+ */
+#define		Q_LOG_GAP_SECS		0.001
+
 #define RTE_LOGTYPE_CONTROL RTE_LOGTYPE_USER1
 #define CONTROL_DEBUG(a...) RTE_LOG(DEBUG, CONTROL, ##a)
 #define CONTROL_INFO(a...) RTE_LOG(INFO, CONTROL, ##a)

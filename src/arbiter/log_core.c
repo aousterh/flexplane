@@ -17,6 +17,7 @@
 #include "admission_log.h"
 #include "../emulation/admissible_log.h"
 #include "../emulation/admissible_log_impl.h"
+#include "../emulation/queue_bank_log.h"
 #include "../grant-accept/partitioning.h"
 #include "../graph-algo/admissible_algo_log.h"
 #include "../graph-algo/algo_config.h"
@@ -292,19 +293,34 @@ int exec_log_core(void *void_cmd_p)
 {
 	struct log_core_cmd *cmd = (struct log_core_cmd *) void_cmd_p;
 	uint64_t next_ticks = rte_get_timer_cycles();
+	uint64_t q_next_ticks = rte_get_timer_cycles();
 	int i, j;
 	struct conn_log_struct conn_log;
 	FILE *fp;
+	FILE *fp_queues;
 	char filename[MAX_FILENAME_LEN];
+	char filename_queues[MAX_FILENAME_LEN];
+	u64 time = fp_get_time_ns();
+	u64 time_prev;
 
 	snprintf(filename, MAX_FILENAME_LEN, "log/conn-%016llX.csv",
-			fp_get_time_ns());
+			time);
+	snprintf(filename_queues, MAX_FILENAME_LEN, "log/queues-%016llX.csv",
+			time);
 
 	/* open file for conn log */
 	fp = fopen(filename, "w");
 	if (fp == NULL) {
 		LOGGING_ERR("lcore %d could not open file for logging: %s\n",
 				rte_lcore_id(), filename);
+		return -1;
+	}
+
+	/* open file for queues log */
+	fp_queues = fopen(filename_queues, "w");
+	if (fp_queues == NULL) {
+		LOGGING_ERR("lcore %d could not open file for queue logging: %s\n",
+				rte_lcore_id(), filename_queues);
 		return -1;
 	}
 
@@ -316,9 +332,24 @@ int exec_log_core(void *void_cmd_p)
 		save_admission_core_stats(i);
 
 	while (1) {
-		/* wait until proper time */
-		while (next_ticks > rte_get_timer_cycles())
+		/* wait until proper time for main log */
+		while (next_ticks > rte_get_timer_cycles()) {
+#if (defined(EMULATION_ALGO) && MAINTAIN_QUEUE_BANK_LOG_COUNTERS)
+			/* while waiting, sample queues and write to file */
+			while (q_next_ticks > rte_get_timer_cycles())
+				rte_pause();
+
+			time = fp_get_time_ns();
+			fprintf(fp_queues, "time now (ns): %llu\n", time - time_prev);
+			time_prev = time;
+
+			struct emu_state *state = (struct emu_state *) g_admissible_status();
+			print_queue_bank_log_to_file(fp_queues, &state->queue_bank_stats);
+			q_next_ticks += cmd->q_log_gap_ticks;
+#else
 			rte_pause();
+#endif
+		}
 
 		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
 		print_global_admission_log();
@@ -349,6 +380,7 @@ int exec_log_core(void *void_cmd_p)
 		}
 
 		fflush(fp);
+		fflush(fp_queues);
 
 		next_ticks += cmd->log_gap_ticks;
 	}

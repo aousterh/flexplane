@@ -339,8 +339,10 @@ int exec_log_core(void *void_cmd_p)
 			while (q_next_ticks > rte_get_timer_cycles())
 				rte_pause();
 
+			/* print time now and since last log */
 			time = fp_get_time_ns();
-			fprintf(fp_queues, "time now (ns): %llu\n", time - time_prev);
+			fprintf(fp_queues, "time now (ns): %llu,", time);
+			fprintf(fp_queues, " since last log (ns): %llu", time - time_prev);
 			time_prev = time;
 
 			struct emu_state *state = (struct emu_state *) g_admissible_status();

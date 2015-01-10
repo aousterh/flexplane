@@ -54,12 +54,15 @@ void emu_init_state(struct emu_state *state,
 	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->q_epg_ingress[0] = packet_queues[pq++];
 
-	Dropper dropper(*state->out);
+	Dropper dropper(*state->out, &state->queue_bank_stats);
 
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		// TODO: use fp_malloc?
-		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i, dropper);
+		/* clear queue bank stats */
+		memset(&state->queue_bank_stats, 0, sizeof(struct queue_bank_stats));
+
+		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i,
+				dropper, &state->queue_bank_stats);
 		assert(state->routers[i] != NULL);
 		state->router_drivers[i] = new RouterDriver(state->routers[i],
 				state->q_router_ingress[0], state->q_epg_ingress[0],

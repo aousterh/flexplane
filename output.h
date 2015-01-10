@@ -10,6 +10,7 @@
 
 #include "admitted.h"
 #include "packet.h"
+#include "queue_bank_log.h"
 
 /**
  * A class used to admit and drop packets
@@ -81,14 +82,18 @@ private:
  */
 class Dropper {
 public:
-	Dropper(EmulationOutput &emu_output)
-		: m_emu_output(emu_output) {}
+	Dropper(EmulationOutput &emu_output, struct queue_bank_stats *stats)
+		: m_emu_output(emu_output), m_stats(stats) {}
 
-	inline void  __attribute__((always_inline))	drop(struct emu_packet *packet)
-	{ m_emu_output.drop(packet); }
+	inline void  __attribute__((always_inline))	drop(struct emu_packet *packet,
+			uint32_t port) {
+		m_emu_output.drop(packet);
+		queue_bank_log_drop(m_stats, port);
+	}
 
 private:
 	EmulationOutput &m_emu_output;
+	struct queue_bank_stats *m_stats;
 };
 
 /** implementation */

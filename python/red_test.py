@@ -17,7 +17,7 @@ emu_output = EmulationOutput(state.q_admitted_out,
                              state.admitted_traffic_mempool, 
                              state.packet_mempool,
                              state.stat)
-dropper = Dropper(emu_output)
+dropper = Dropper(emu_output, state.queue_bank_stats)
 
 # make router
 red_params = red_args()
@@ -28,7 +28,7 @@ red_params.max_th = 200; # 2 milliseconds
 red_params.max_p = 0.05;
 red_params.wq_shift = 3;
 
-rtr = REDRouter(0, red_params, dropper)
+rtr = REDRouter(0, red_params, dropper, state.queue_bank_stats)
 
 #make endpoint group
 ENDPOINT_MAX_QUEUE_SIZE = 1 << 10 # should be power of two

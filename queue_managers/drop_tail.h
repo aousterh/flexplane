@@ -61,7 +61,8 @@ typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager,
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-    DropTailRouter(uint16_t q_capacity, Dropper &dropper);
+    DropTailRouter(uint16_t q_capacity, Dropper &dropper,
+    		struct queue_bank_stats *stats);
     virtual ~DropTailRouter();
 
 private:
@@ -77,7 +78,7 @@ inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 {
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */
-		m_dropper.drop(pkt);
+		m_dropper.drop(pkt, port);
 
 		/* log the drop */
 		if (m_type == TYPE_ROUTER)

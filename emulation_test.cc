@@ -12,6 +12,7 @@
 #include "emulation_impl.h"
 #include "endpoint.h"
 #include "packet.h"
+#include "queue_bank_log.h"
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
 #include "../graph-algo/fp_ring.h"
@@ -82,6 +83,9 @@ public:
         	admitted_print(admitted);
         	fp_mempool_put(state.admitted_traffic_mempool, admitted);
         }
+
+/*        printf("queue bank logging:");
+        print_queue_bank_log(&state.queue_bank_stats);*/
     }
 
 public:

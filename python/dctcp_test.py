@@ -17,7 +17,7 @@ emu_output = EmulationOutput(state.q_admitted_out,
                              state.admitted_traffic_mempool, 
                              state.packet_mempool,
                              state.stat)
-dropper = Dropper(emu_output)
+dropper = Dropper(emu_output, state.queue_bank_stats)
 
 # make router
 dctcp_params = dctcp_args()
@@ -26,7 +26,7 @@ dctcp_params.q_capacity = 4096
 #dctcp_params.K_threshold = 65  # from Alizadeh et al. SIGCOMM 2010. this might not be correct in general
 dctcp_params.K_threshold = 20 # for 1 Gbit/s
 
-rtr = DCTCPRouter(0, dctcp_params, dropper)
+rtr = DCTCPRouter(0, dctcp_params, dropper, state.queue_bank_stats)
 
 #make endpoint group
 ENDPOINT_MAX_QUEUE_SIZE = 1 << 10 # should be power of two

@@ -18,8 +18,9 @@ DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 		throw std::runtime_error("bank should be non-NULL");
 }
 
-DropTailRouter::DropTailRouter(uint16_t q_capacity, Dropper &dropper)
-	: m_bank(EMU_ROUTER_NUM_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY),
+DropTailRouter::DropTailRouter(uint16_t q_capacity, Dropper &dropper,
+		struct queue_bank_stats *stats)
+	: m_bank(EMU_ROUTER_NUM_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
 	  m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity, dropper, TYPE_ROUTER),

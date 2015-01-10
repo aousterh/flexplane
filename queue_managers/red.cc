@@ -32,17 +32,18 @@ void REDQueueManager::enqueue(struct emu_packet *pkt,
     if (qlen >= m_red_params.q_capacity) {
         /* no space to enqueue, drop this packet */
       //      printf("REDenq: force drop qlen %d capacity%d\n", qlen, m_red_params.q_capacity);
-        mark_or_drop(pkt, RED_FORCEDROP);
+        mark_or_drop(pkt, RED_FORCEDROP, port);
 	return;
     } else {
-        if (red_rules(pkt, qlen) != RED_DROPPKT) {
+        if (red_rules(pkt, qlen, port) != RED_DROPPKT) {
 	    m_bank->enqueue(port, queue, pkt);
 	}
     }
 }
 
 #define RAND_RANGE (1<<16)-1
-uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
+uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
+		uint32_t port)
 {
     // note that the EWMA weight is specified as a bit shift factor
     if (qlen >= q_avg) {
@@ -59,7 +60,7 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
     // XXX TODO: handling idle slots since the time the queue became empty
 
     if (q_avg > m_red_params.max_th) {
-        accept = mark_or_drop(pkt, 0);
+        accept = mark_or_drop(pkt, 0, port);
     } else if (q_avg > m_red_params.min_th) { // in (q_min, q_max]: probabilistic drop/mark
         p_b = m_red_params.max_p * (float)(q_avg - m_red_params.min_th)/(m_red_params.max_th - m_red_params.min_th);
         p_a = p_b / (1 - count_since_last * p_b);
@@ -69,7 +70,7 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
 
         // mark_or_drop with probability p_a
         if (p_a*RAND_RANGE  <= random_int(&random_state, RAND_RANGE)) {
-            accept = mark_or_drop(pkt, false);
+            accept = mark_or_drop(pkt, false, port);
         }
     } 
     count_since_last++;
@@ -77,12 +78,13 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen)
     return accept;
 }
 
-uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop) { 
+uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
+		uint32_t port) {
     count_since_last = -1;
     if (force_drop || !(m_red_params.ecn)) {
       //        printf("RED dropping pkt\n");
         adm_log_emu_router_dropped_packet(&g_state->stat);
-        m_dropper.drop(pkt);
+        m_dropper.drop(pkt, port);
 	return RED_DROPPKT;
     } else {
         /* mark the ECN bit */
@@ -96,8 +98,9 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop) {
  * All ports of a REDRouter run RED. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-REDRouter::REDRouter(uint16_t id, struct red_args *red_params, Dropper &dropper)
-    : m_bank(EMU_ROUTER_NUM_PORTS, 1, RED_QUEUE_CAPACITY),
+REDRouter::REDRouter(uint16_t id, struct red_args *red_params, Dropper &dropper,
+		struct queue_bank_stats *stats)
+    : m_bank(EMU_ROUTER_NUM_PORTS, 1, RED_QUEUE_CAPACITY, stats),
       m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
 	  m_cla(),
       m_qm(&m_bank, red_params, dropper),

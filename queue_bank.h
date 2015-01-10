@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdexcept>
 #include "circular_queue.h"
+#include "queue_bank_log.h"
 
 /**
  * A collection of queues. The queue bank keeps M queues for each of N input
@@ -26,11 +27,13 @@ public:
 	 * @param n_ports: the number of ports in the queue bank
 	 * @param n_queues: the the number of queues per port
 	 * @param queue_max_size: the maximum number of packets each queue can hold
+	 * @param stats: enqueue/dequeue stats
 	 *
 	 * @important: queue_max_size must be a power of two
 	 * @important: n_queues must be <= 64
 	 */
-	QueueBank(uint32_t n_ports, uint32_t n_queues, uint32_t queue_max_size);
+	QueueBank(uint32_t n_ports, uint32_t n_queues, uint32_t queue_max_size,
+			struct queue_bank_stats *stats);
 
 	/**
 	 * d'tor
@@ -98,6 +101,9 @@ private:
 
 	/** a mask with 1 for non-empty queues, 0 for empty queues */
 	uint64_t *m_non_empty_queues;
+
+	/** logging stats */
+	struct queue_bank_stats *m_stats;
 };
 
 
@@ -107,8 +113,8 @@ typedef QueueBank<struct emu_packet> PacketQueueBank;
 
 template <typename ELEM >
 QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
-		uint32_t queue_max_size)
-	: m_n_ports(n_ports), m_n_queues(n_queues)
+		uint32_t queue_max_size, struct queue_bank_stats *stats)
+	: m_n_ports(n_ports), m_n_queues(n_queues), m_stats(stats)
 {
 	uint32_t i;
 	uint32_t size_bytes = cq_memsize(queue_max_size);
@@ -169,6 +175,8 @@ inline void QueueBank<ELEM>::enqueue(uint32_t port, uint32_t queue, ELEM *e) {
 
 	/* enqueue */
 	cq_enqueue(m_queues[flat], (void *)e);
+
+	queue_bank_log_enqueue(m_stats, port);
 }
 
 template <typename ELEM >
@@ -184,6 +192,8 @@ inline ELEM *QueueBank<ELEM>::dequeue(uint32_t port, uint32_t queue)
 
 	uint64_t port_empty = (m_non_empty_queues[port] == 0) & 0x1;
 	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
+
+	queue_bank_log_dequeue(m_stats, port);
 
 	return res;
 }

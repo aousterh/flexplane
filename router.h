@@ -42,7 +42,7 @@ public:
 class RouterFactory {
 public:
     static Router *NewRouter(enum RouterType type, void *args, uint16_t id,
-                             Dropper &dropper);
+                             Dropper &dropper, struct queue_bank_stats *stats);
 };
 #endif
 

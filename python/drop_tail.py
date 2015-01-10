@@ -66,7 +66,7 @@ emu_output = EmulationOutput(state.q_admitted_out,
                              state.admitted_traffic_mempool, 
                              state.packet_mempool,
                              state.stat)
-dropper = Dropper(emu_output)
+dropper = Dropper(emu_output, state.queue_bank_stats)
 
 # make router
 NUM_ENDPOINTS = 32
@@ -74,7 +74,7 @@ NUM_QUEUES_PER_PORT = 4
 MAX_QUEUE_CAPACITY_POW_2 = 256
 DROP_TAIL_QUEUE_CAPCITY = 5 
 
-bank = PacketQueueBank(NUM_ENDPOINTS, NUM_QUEUES_PER_PORT, MAX_QUEUE_CAPACITY_POW_2)
+bank = PacketQueueBank(NUM_ENDPOINTS, NUM_QUEUES_PER_PORT, MAX_QUEUE_CAPACITY_POW_2, state.queue_bank_stats)
 rt = PyTorRoutingTable()
 cla = PyFlowIDClassifier()
 qm = PyDropQueueManager(bank, DROP_TAIL_QUEUE_CAPCITY, dropper)
@@ -83,7 +83,7 @@ sch = PyPrioScheduler(bank, NUM_QUEUES_PER_PORT)
 rtr = PyRouter(rt,cla,qm,sch,NUM_ENDPOINTS)
 
 #make endpoint group
-epg_bank = PacketQueueBank(NUM_ENDPOINTS, NUM_QUEUES_PER_PORT, MAX_QUEUE_CAPACITY_POW_2)
+epg_bank = PacketQueueBank(NUM_ENDPOINTS, NUM_QUEUES_PER_PORT, MAX_QUEUE_CAPACITY_POW_2, state.queue_bank_stats)
 epg_cla = PyFlowIDClassifier()
 epg_qm = PyDropQueueManager(epg_bank, DROP_TAIL_QUEUE_CAPCITY, dropper)
 epg_sch = PyPrioScheduler(epg_bank, NUM_QUEUES_PER_PORT)

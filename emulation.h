@@ -12,6 +12,7 @@
 #include "config.h"
 #include "endpoint.h"
 #include "router.h"
+#include "queue_bank_log.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include "../protocol/topology.h"
@@ -55,6 +56,7 @@ struct emu_comm_state {
  * @stat: global emulation stats
  * @core_stats: stats per emulation core
  * @comm_state: state allocated per comm core to manage new packets
+ * @queue_bank_stats: stats about one queue bank to be output by the log core
  * @endpoint_groups: representations of groups of endpoints
  * @q_epg_ingress: queues of packets to endpoint groups from the network
  * @routers: representations of routers
@@ -68,6 +70,7 @@ struct emu_state {
 	struct emu_admission_statistics			stat;
 //	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
 	struct emu_comm_state					comm_state;
+	struct queue_bank_stats					queue_bank_stats;
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus

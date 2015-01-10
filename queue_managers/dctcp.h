@@ -50,7 +50,8 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManage
  */
 class DCTCPRouter : public DCTCPRouterBase {
 public:
-    DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params, Dropper &dropper);
+    DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params, Dropper &dropper,
+    		struct queue_bank_stats *stats);
     virtual ~DCTCPRouter();
 
 private:

@@ -18,9 +18,9 @@
  * @ port_drops: number of drops that have occurred at each port
  */
 struct queue_bank_stats {
-	uint64_t port_enqueues[QUEUE_BANK_MAX_PORTS];
-	uint64_t port_dequeues[QUEUE_BANK_MAX_PORTS];
-	uint64_t port_drops[QUEUE_BANK_MAX_PORTS];
+	u64		port_enqueues[QUEUE_BANK_MAX_PORTS];
+	u64		port_dequeues[QUEUE_BANK_MAX_PORTS];
+	u64		port_drops[QUEUE_BANK_MAX_PORTS];
 };
 
 static inline __attribute__((always_inline))
@@ -42,29 +42,37 @@ void queue_bank_log_drop(struct queue_bank_stats *st, uint32_t port) {
 }
 
 /**
- * Print the current contents of the queue bank log.
+ * Print the current contents of the queue bank log to a specific file.
+ */
+static inline
+void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st) {
+	uint32_t port;
+
+	fprintf(fp, "\nenqueues:   ");
+	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
+		fprintf(fp, " %llu", st->port_enqueues[port]);
+	}
+	fprintf(fp, "\ndequeues:   ");
+	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
+		fprintf(fp, " %llu", st->port_dequeues[port]);
+	}
+	fprintf(fp, "\noccupancies:");
+	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
+		fprintf(fp, " %llu", st->port_enqueues[port] - st->port_dequeues[port]);
+	}
+	fprintf(fp, "\ndrops:      ");
+	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
+		fprintf(fp, " %llu", st->port_drops[port]);
+	}
+	fprintf(fp, "\n");
+}
+
+/**
+ * Print the current contents of the queue bank log to standard out.
  */
 static inline
 void print_queue_bank_log(struct queue_bank_stats *st) {
-	uint32_t port;
-
-	printf("\nenqueues:   ");
-	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		printf(" %llu", st->port_enqueues[port]);
-	}
-	printf("\ndequeues:   ");
-	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		printf(" %llu", st->port_dequeues[port]);
-	}
-	printf("\noccupancies:");
-	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		printf(" %llu", st->port_enqueues[port] - st->port_dequeues[port]);
-	}
-	printf("\ndrops:      ");
-	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		printf(" %llu", st->port_drops[port]);
-	}
-	printf("\n");
+	print_queue_bank_log_to_file(stdout, st);
 }
 
 #endif /* QUEUE_BANK_LOG_H_ */

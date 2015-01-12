@@ -13,7 +13,7 @@
 struct emu_packet;
 
 enum RouterType {
-    R_DropTail, R_RED
+    R_DropTail, R_RED, R_DCTCP
 };
 
 #ifdef __cplusplus

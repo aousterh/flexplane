@@ -101,8 +101,9 @@ static void do_ack_seqno(struct fpproto_conn *conn, u64 seqno)
 	pd = outwnd_pop(conn, seqno);
 
 	if (conn->ops->handle_ack)
-		conn->ops->handle_ack(conn->ops_param, pd);		/* will free pd */
+		conn->ops->handle_ack(conn->ops_param, pd);
 
+	/* free pd */
 	fpproto_pktdesc_free(pd);
 }
 
@@ -111,8 +112,20 @@ static void do_neg_ack_seqno(struct fpproto_conn *conn, u64 seq)
 	struct fpproto_pktdesc *pd = outwnd_peek(conn, seq);
 	fp_debug("Unacked tx seq 0x%llX\n", seq);
 	if (conn->ops->handle_neg_ack)
-		conn->ops->handle_neg_ack(conn->ops_param, pd);		/* will NOT free pd */
+		conn->ops->handle_neg_ack(conn->ops_param, pd);
+	/* don't free pd */
 }
+
+#if defined(RETRANSMIT_UNACKED_ALLOCS)
+static void do_skipped_ack_seqno(struct fpproto_conn *conn, u64 seq)
+{
+	struct fpproto_pktdesc *pd = outwnd_peek(conn, seq);
+	fp_debug("Skipped tx seq 0x%llX\n", seq);
+	if (conn->ops->handle_skipped_ack)
+		conn->ops->handle_skipped_ack(conn->ops_param, pd);
+	/* don't free pd */
+}
+#endif
 
 static void free_unacked(struct fpproto_conn *conn)
 {
@@ -145,6 +158,7 @@ static void do_proto_reset(struct fpproto_conn *conn, u64 reset_time,
 	conn->inwnd = ~0UL;
 	conn->consecutive_bad_pkts = 0;
 	conn->next_timeout_seqno = wnd_head(&conn->outwnd) + 1;
+	conn->next_skip_ack_seqno = wnd_head(&conn->outwnd) + 1;
 
 	/* are we in sync? */
 	conn->in_sync = in_sync;
@@ -310,6 +324,23 @@ static void ack_payload_handler(struct fpproto_conn *conn, u64 ack_seq, u64 ack_
 
 		todo_mask &= ~(1UL << offset);
 	}
+
+#if defined(RETRANSMIT_UNACKED_ALLOCS)
+	/* for each un-ACK-ed packet seq < ack_seq, notify the app that the ACK was
+	 * skipped. only notify once per skipped packet. */
+
+	if (ack_seq >= conn->next_skip_ack_seqno) {
+		cur_seqno = conn->next_skip_ack_seqno;
+		while (wnd_at_or_after(&conn->outwnd, cur_seqno, &cur_seqno) &&
+				cur_seqno < ack_seq) {
+			conn->stat.skip_ack_pkts++;
+			do_skipped_ack_seqno(conn, cur_seqno);
+
+			cur_seqno++;
+		}
+		conn->next_skip_ack_seqno = ack_seq + 1;
+	}
+#endif
 
 	if (n_acked > 0) {
 		recompute_and_reset_retrans_timer(conn);
@@ -958,6 +989,7 @@ void fpproto_update_internal_stats(struct fpproto_conn *conn)
 			wnd_empty(&conn->outwnd) ? 0 : wnd_earliest_marked(&conn->outwnd);
 	conn->stat.inwnd					= conn->inwnd;
 	conn->stat.next_timeout_seqno	= conn->next_timeout_seqno;
+	conn->stat.next_skip_ack_seqno	= conn->next_skip_ack_seqno;
 }
 
 void fpproto_init_conn(struct fpproto_conn *conn, struct fpproto_ops *ops,

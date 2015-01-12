@@ -34,11 +34,12 @@ static inline void fpproto_print_stats(struct fp_proto_stat* sps, void *file)
 	fp_fprintf(file, "\n  egress_seq 0x%llX", sps->out_max_seqno);
 	fp_fprintf(file, ", earliest_unacked 0x%llX", sps->earliest_unacked);
 	fp_fprintf(file, ", next_timeout seq 0x%llX", sps->next_timeout_seqno);
+	fp_fprintf(file, ", next_skip_ack_seq 0x%llX", sps->next_skip_ack_seqno);
 	/* TX */
 	fp_fprintf(file, "\n  TX %llu ctrl pkts", sps->committed_pkts);
-	fp_fprintf(file, " (%llu acked, %llu not acked, %llu timeout, %llu fell off)",
+	fp_fprintf(file, " (%llu acked, %llu not acked, %llu timeout, %llu skipped ack, %llu fell off)",
 			sps->acked_packets, sps->never_acked_pkts, sps->timeout_pkts,
-			sps->fall_off_outwnd);
+			sps->skip_ack_pkts, sps->fall_off_outwnd);
 	fp_fprintf(file, ", %llu timeouts", sps->timeout_handler_runs);
 	fp_fprintf(file, ", %llu timer_sets", sps->reprogrammed_timer);
 	fp_fprintf(file, "\n  %llu ack payloads", sps->ack_payloads);

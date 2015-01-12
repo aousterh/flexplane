@@ -54,8 +54,12 @@ struct comm_log {
 	uint64_t neg_acks_with_alloc;
 	uint64_t neg_ack_destinations;
 	uint64_t neg_ack_timeslots;
+	uint64_t skipped_acks_without_alloc;
+	uint64_t skipped_acks_with_alloc;
+	uint64_t skipped_ack_timeslots;
 	uint64_t error_encoding_packet;
 	uint64_t flush_buffer_in_add_backlog;
+	uint64_t skipped_ack_triggered_reports;
 	uint64_t neg_ack_triggered_reports;
 	uint64_t reports_triggered;
 	uint64_t total_demand;
@@ -271,6 +275,20 @@ static inline void comm_log_neg_ack_increased_backlog(uint16_t src,
 	(void)src;(void)dst;(void)amount;(void)seqno;
 	COMM_DEBUG("increased backlog from node %d to %d by %d due to neg ack of seqno 0x%lX\n",
 			src, dst, amount, seqno);
+}
+
+static inline void comm_log_skipped_ack(uint16_t src,
+		uint16_t n_skipped_allocs, uint64_t seqno, uint32_t n_dsts) {
+	(void)src;(void)n_skipped_allocs;(void)seqno;(void)n_dsts;
+	if (n_skipped_allocs == 0) {
+		CL->skipped_acks_without_alloc++;
+		return;
+	}
+	CL->skipped_acks_with_alloc++;
+	CL->skipped_ack_timeslots += n_skipped_allocs;
+	CL->skipped_ack_triggered_reports += n_dsts;
+	COMM_DEBUG("skipped ack node %d seqno %lX triggered %u reports and affected %u timeslots\n",
+		   src, seqno, n_dsts, n_skipped_allocs);
 }
 
 static inline void comm_log_neg_ack(uint16_t src, uint16_t n_dsts,

@@ -43,6 +43,9 @@ extern bool fastpass_debug;
 #define FASTPASS_INGRESS_SEQNO_OFFSET	FASTPASS_TO_CONTROLLER_SEQNO_OFFSET
 #endif
 
+#if (defined(FASTPASS_CONTROLLER) && defined(EMULATION_ALGO))
+#define RETRANSMIT_UNACKED_ALLOCS	1
+#endif
 
 #define FASTPASS_BAD_PKT_RESET_THRESHOLD	10
 #define FASTPASS_RESET_WINDOW_NS	(1000*1000*1000)
@@ -175,6 +178,12 @@ struct fpproto_ops {
 	void	(*handle_neg_ack)(void *param, struct fpproto_pktdesc *pd);
 
 	/**
+	 * Called when an ACK is received for a packet after this one, suggesting
+	 * that this one was likely lost.
+	 */
+	void	(*handle_skipped_ack)(void *param, struct fpproto_pktdesc *pd);
+
+	/**
 	 * The protocol needs to send information to the controller -- the user
 	 *    should send a packet, so that information can piggy back.
 	 */
@@ -219,12 +228,14 @@ struct fp_proto_stat {
 	__u64 too_early_ack;
 	__u64 acked_packets;
 	__u64 timeout_pkts;
+	__u64 skip_ack_pkts;
 	__u64 informative_ack_payloads;
 	__u64 reprogrammed_timer;
 	__u64 earliest_unacked;
 	__u64 committed_pkts;
 	__u64 never_acked_pkts;
 	__u64 next_timeout_seqno;
+	__u64 next_skip_ack_seqno;
 	__u16 tx_num_unacked;
 
 	/* send-related */
@@ -271,6 +282,8 @@ struct fp_proto_stat {
  * @bins: pointers to the packet descriptors of each bin
  * @earliest_unacked: sequence number of the earliest unacked packet in the
  * 		outwnd. only valid if the outwnd is not empty.
+ * @next_skip_ack_seqno: sequence number of the earliest packet that has not
+ * 		been ACKED and has not already been skipped in an ACK vector
  */
 struct fpproto_conn {
 	u64						last_reset_time;
@@ -288,6 +301,7 @@ struct fpproto_conn {
 	struct fp_window		outwnd;
 	struct fpproto_pktdesc	*unacked_pkts[(1 << FASTPASS_WND_LOG)];
 	u64						next_timeout_seqno;
+	u64						next_skip_ack_seqno;
 
 	/* inwnd */
 	u64						inwnd;

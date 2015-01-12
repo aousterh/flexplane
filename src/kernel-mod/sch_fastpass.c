@@ -828,14 +828,15 @@ void ctrl_rcv_handler(void *priv, u8 *pkt, u32 len, __be32 saddr, __be32 daddr)
 }
 
 struct fpproto_ops fastpass_sch_proto_ops = {
-	.handle_reset	= &handle_reset,
-	.handle_alloc	= &handle_alloc,
-	.handle_ack		= &handle_ack,
-	.handle_neg_ack	= &handle_neg_ack,
-	.handle_areq	= &handle_areq,
-	.trigger_request= &trigger_tx_voidp,
-	.set_timer		= &set_retrans_timer,
-	.cancel_timer	= &cancel_retrans_timer,
+	.handle_reset		= &handle_reset,
+	.handle_alloc		= &handle_alloc,
+	.handle_ack			= &handle_ack,
+	.handle_neg_ack		= &handle_neg_ack,
+	.handle_skipped_ack	= NULL, /* unused */
+	.handle_areq		= &handle_areq,
+	.trigger_request	= &trigger_tx_voidp,
+	.set_timer			= &set_retrans_timer,
+	.cancel_timer		= &cancel_retrans_timer,
 };
 
 /* reconnects the control socket to the controller */

@@ -147,17 +147,19 @@ static void trigger_request_voidp(void *param);
 static void handle_areq(void *param, u16 *dst_and_count, int n);
 static void set_retrans_timer(void *param, u64 when);
 static int cancel_retrans_timer(void *param);
+static void handle_skipped_ack(void *param, struct fpproto_pktdesc *pd);
 static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd);
 static void handle_ack(void *param, struct fpproto_pktdesc *pd);
 
 struct fpproto_ops proto_ops = {
-	.handle_reset	= &handle_reset,
-	.handle_areq	= &handle_areq,
-	.handle_ack		= &handle_ack,
-	.handle_neg_ack	= &handle_neg_ack,
-	.trigger_request= &trigger_request_voidp,
-	.set_timer		= &set_retrans_timer,
-	.cancel_timer	= &cancel_retrans_timer,
+	.handle_reset		= &handle_reset,
+	.handle_areq		= &handle_areq,
+	.handle_ack			= &handle_ack,
+	.handle_neg_ack		= &handle_neg_ack,
+	.handle_skipped_ack	= &handle_skipped_ack,
+	.trigger_request	= &trigger_request_voidp,
+	.set_timer			= &set_retrans_timer,
+	.cancel_timer		= &cancel_retrans_timer,
 };
 
 void comm_init_global_structs(uint64_t first_time_slot)
@@ -366,18 +368,16 @@ static void handle_reset(void *param)
 			sizeof(en->report_queue.is_pending));
 }
 
-static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
+static void handle_skipped_ack(void *param, struct fpproto_pktdesc *pd)
 {
 	struct end_node_state *en = (struct end_node_state *)param;
-	struct comm_core_state *core = &ccore_state[rte_lcore_id()];
 	uint16_t node_id = en - end_nodes;
-	int i;
-	uint32_t num_triggered = 0;
 
-#if defined(EMULATION_ALGO)
+#if defined(RETRANSMIT_UNACKED_ALLOCS)
 	struct pending_alloc_queue *pending_q = &en->pending_allocs;
 	struct pending_alloc *alloc;
 	u8 descriptor;
+	int i;
 
 	/* if any un-ACK-ed allocs, add them to the queue of pending allocs so they
 	 * will be retransmitted */
@@ -392,7 +392,22 @@ static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
 		alloc->timeslot = pd->base_tslot;
 		alloc->id = pd->emu_tslot_desc[i].id;
 	}
+
+	/* trigger reports for affected dsts */
+	for (i = 0; i < pd->n_dsts; i++)
+		trigger_report(en, &en->report_queue, pd->dsts[i]);
 #endif
+
+	comm_log_skipped_ack(node_id, pd->used_alloc_tslot, pd->seqno, pd->n_dsts);
+}
+
+static void handle_neg_ack(void *param, struct fpproto_pktdesc *pd)
+{
+	struct end_node_state *en = (struct end_node_state *)param;
+	struct comm_core_state *core = &ccore_state[rte_lcore_id()];
+	uint16_t node_id = en - end_nodes;
+	int i;
+	uint32_t num_triggered = 0;
 
 	/* if the alloc report was not fully acked, trigger another report */
 	for (i = 0; i < pd->n_areq; i++) {
@@ -418,6 +433,14 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 	uint16_t dst_count;
 	int i;
 
+#if defined(RETRANSMIT_UNACKED_ALLOCS)
+	/* ack the ALLOCs in the packet rather than the cumulative counts */
+	for (i = 0; i < pd->used_alloc_tslot; i++) {
+		uint16_t dst = pd->dsts[(pd->tslot_desc[i] >> 4) - 1];
+		en->acked_allocs[dst]++;
+		total_acked++;
+	}
+#else
 	for (i = 0; i < pd->n_areq; i++) {
 		uint16_t dst = (uint16_t)pd->areq[i].src_dst_key;
 		int32_t new_acked =
@@ -429,6 +452,7 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 			total_acked += new_acked;
 		}
 	}
+#endif
 
 	comm_log_ack(node_id, pd->n_areq, total_acked, pd->seqno);
 }

@@ -20,16 +20,19 @@
 #define		MAINTAIN_AFTER_TSLOTS_HISTOGRAM		1
 #define		AFTER_TSLOTS_HISTOGRAM_NUM_BINS		32
 #define		AFTER_TSLOTS_HISTOGRAM_SHIFT		0
+#define		TSLOTS_BEHIND_TOLERANCE 10
 
 /**
  * logged information for a core
  * @core_ahead: this core was ahead of schedule for this many timeslots
+ * @core_behind: this core was behind for this many timeslots
  */
 struct admission_log {
 	uint64_t batches_started;
 	uint64_t last_started_alloc_tsc;
 	uint64_t after_tslots_histogram[AFTER_TSLOTS_HISTOGRAM_NUM_BINS];
 	uint64_t core_ahead;
+	uint64_t core_behind;
 };
 
 extern struct admission_log admission_core_logs[RTE_MAX_LCORE];
@@ -83,6 +86,10 @@ static inline void admission_log_allocation_end(uint64_t logical_timeslot) {
 
 static inline void admission_log_core_ahead() {
 	AL->core_ahead++;
+}
+
+static inline void admission_log_core_behind() {
+	AL->core_behind++;
 }
 
 #undef CL

@@ -117,6 +117,11 @@ int exec_emu_admission_core(void *void_cmd_p)
 	time_now = fp_get_time_ns();
 	tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
 	while (1) {
+		/* log if behind */
+		if (tslot > logical_timeslot - TIMESLOTS_PER_ONE_WAY_DELAY +
+				TSLOTS_BEHIND_TOLERANCE)
+			admission_log_core_behind();
+
 		/* pace emulation so that timeslots arrive at endpoints just in time */
 		while (tslot < logical_timeslot - TIMESLOTS_PER_ONE_WAY_DELAY) {
 			admission_log_core_ahead();

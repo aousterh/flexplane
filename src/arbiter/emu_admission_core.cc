@@ -9,6 +9,8 @@
 
 #include <rte_errno.h>
 #include <rte_string_fns.h>
+#include <pthread.h>
+#include <sched.h>
 
 #include "admission_core_common.h"
 #include "admission_log.h"
@@ -107,8 +109,22 @@ int exec_emu_admission_core(void *void_cmd_p)
 {
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
+	int ret;
 	uint64_t logical_timeslot = cmd->start_timeslot;
 	uint64_t start_time_first_timeslot, time_now, tslot;
+
+	/* set thread priority to max */
+	pthread_t this_thread = pthread_self();
+	struct sched_param params;
+	params.sched_priority = sched_get_priority_max(SCHED_FIFO);
+	ret = pthread_setschedparam(this_thread, SCHED_FIFO, &params);
+	if (ret != 0) {
+	  ADMISSION_DEBUG("core %d admission %d failed to set thread realtime priority\n",
+			  rte_lcore_id(), core_ind);
+	} else {
+	  ADMISSION_DEBUG("core %d admission %d successfully set thread realtime priority\n",
+			  rte_lcore_id(), core_ind);
+	}
 
 	ADMISSION_DEBUG("core %d admission %d starting allocations\n",
 			rte_lcore_id(), core_ind);

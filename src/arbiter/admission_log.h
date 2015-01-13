@@ -33,6 +33,7 @@ struct admission_log {
 	uint64_t after_tslots_histogram[AFTER_TSLOTS_HISTOGRAM_NUM_BINS];
 	uint64_t core_ahead;
 	uint64_t core_behind;
+	uint64_t tslots_skipped;
 };
 
 extern struct admission_log admission_core_logs[RTE_MAX_LCORE];
@@ -88,8 +89,9 @@ static inline void admission_log_core_ahead() {
 	AL->core_ahead++;
 }
 
-static inline void admission_log_core_behind() {
+static inline void admission_log_core_skipped_tslots(uint64_t tslots_skipped) {
 	AL->core_behind++;
+	AL->tslots_skipped += tslots_skipped;
 }
 
 #undef CL

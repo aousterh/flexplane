@@ -268,6 +268,7 @@ void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index)
 			al->core_ahead);
 	printf("  tslots core behind by more than %d: %lu (diff), %lu (total)\n",
 			TSLOTS_BEHIND_TOLERANCE, D(core_behind), al->core_behind);
+	printf("  tslots skipped: %d\n", al->tslots_skipped);
 #undef D
 
 	/* save the admission logs for this core */

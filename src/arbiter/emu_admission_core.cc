@@ -112,6 +112,7 @@ int exec_emu_admission_core(void *void_cmd_p)
 	int ret;
 	uint64_t logical_timeslot = cmd->start_timeslot;
 	uint64_t start_time_first_timeslot, time_now, tslot;
+        int64_t timeslots_behind;
 
 	/* set thread priority to max */
 	pthread_t this_thread = pthread_self();
@@ -133,10 +134,15 @@ int exec_emu_admission_core(void *void_cmd_p)
 	time_now = fp_get_time_ns();
 	tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
 	while (1) {
-		/* log if behind */
-		if (tslot > logical_timeslot - TIMESLOTS_PER_ONE_WAY_DELAY +
-				TSLOTS_BEHIND_TOLERANCE)
-			admission_log_core_behind();
+		/* check if we're behind */
+		timeslots_behind = tslot - logical_timeslot +
+				TIMESLOTS_PER_ONE_WAY_DELAY;
+		if (timeslots_behind > TSLOTS_BEHIND_TOLERANCE) {
+			/* skip timeslots to catch up */
+			logical_timeslot += timeslots_behind;
+
+			admission_log_core_skipped_tslots(timeslots_behind);
+		}
 
 		/* pace emulation so that timeslots arrive at endpoints just in time */
 		while (tslot < logical_timeslot - TIMESLOTS_PER_ONE_WAY_DELAY) {

@@ -46,7 +46,7 @@ void queue_bank_log_drop(struct queue_bank_stats *st, uint32_t port) {
  */
 static inline
 void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
-		uint64_t time_ns)
+		u64 time_ns)
 {
 	uint32_t port;
 

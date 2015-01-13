@@ -45,24 +45,30 @@ void queue_bank_log_drop(struct queue_bank_stats *st, uint32_t port) {
  * Print the current contents of the queue bank log to a specific file.
  */
 static inline
-void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st) {
+void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
+		uint64_t time_ns)
+{
 	uint32_t port;
 
-	fprintf(fp, "\nenqueues:   ");
+	/* Take snapshot so we can print without values changin underneath us */
+	queue_bank_stats lst;
+	memcpy(&lst, st, sizeof(lst));
+
+	fprintf(fp, "%llu,enqueues", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		fprintf(fp, " %llu", st->port_enqueues[port]);
+		fprintf(fp, ",%llu", lst.port_enqueues[port]);
 	}
-	fprintf(fp, "\ndequeues:   ");
+	fprintf(fp, "\n%llu,dequeues", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		fprintf(fp, " %llu", st->port_dequeues[port]);
+		fprintf(fp, ",%llu", lst.port_dequeues[port]);
 	}
-	fprintf(fp, "\noccupancies:");
+	fprintf(fp, "\n%llu,occupancies", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		fprintf(fp, " %llu", st->port_enqueues[port] - st->port_dequeues[port]);
+		fprintf(fp, ",%llu", lst.port_enqueues[port] - lst.port_dequeues[port]);
 	}
-	fprintf(fp, "\ndrops:      ");
+	fprintf(fp, "\n%llu,drops", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		fprintf(fp, " %llu", st->port_drops[port]);
+		fprintf(fp, ",%llu", lst.port_drops[port]);
 	}
 	fprintf(fp, "\n");
 }

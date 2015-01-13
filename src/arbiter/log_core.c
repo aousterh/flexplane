@@ -342,14 +342,11 @@ int exec_log_core(void *void_cmd_p)
 			while (q_next_ticks > rte_get_timer_cycles())
 				rte_pause();
 
-			/* print time now and since last log */
+			/* print time now */
 			time = fp_get_time_ns();
-			fprintf(fp_queues, "time now (ns): %llu,", time);
-			fprintf(fp_queues, " since last log (ns): %llu", time - time_prev);
-			time_prev = time;
 
 			struct emu_state *state = (struct emu_state *) g_admissible_status();
-			print_queue_bank_log_to_file(fp_queues, &state->queue_bank_stats);
+			print_queue_bank_log_to_file(fp_queues, &state->queue_bank_stats, time);
 			q_next_ticks += cmd->q_log_gap_ticks;
 #else
 			rte_pause();

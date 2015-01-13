@@ -788,7 +788,7 @@ int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 			if (timeslot_q->id == id)
 				goto found_entry;
 		}
-		FASTPASS_WARN("couldn't find MTU with id %d\n", id);
+		fp_debug("couldn't find MTU with id %d\n", id);
 		q->stat.unrecognized_id++;
 		goto no_match;
 	default:

@@ -8,7 +8,7 @@
 #ifndef QUEUE_BANK_LOG_H_
 #define QUEUE_BANK_LOG_H_
 
-#define MAINTAIN_QUEUE_BANK_LOG_COUNTERS	0
+#define MAINTAIN_QUEUE_BANK_LOG_COUNTERS	1
 #define QUEUE_BANK_MAX_PORTS				64
 
 /**
@@ -51,7 +51,7 @@ void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
 	uint32_t port;
 
 	/* Take snapshot so we can print without values changin underneath us */
-	queue_bank_stats lst;
+	struct queue_bank_stats lst;
 	memcpy(&lst, st, sizeof(lst));
 
 	fprintf(fp, "%llu,enqueues", time_ns);
@@ -77,8 +77,8 @@ void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
  * Print the current contents of the queue bank log to standard out.
  */
 static inline
-void print_queue_bank_log(struct queue_bank_stats *st) {
-	print_queue_bank_log_to_file(stdout, st);
+void print_queue_bank_log(struct queue_bank_stats *st, uint64_t time_ns) {
+  print_queue_bank_log_to_file(stdout, st, time_ns);
 }
 
 #endif /* QUEUE_BANK_LOG_H_ */

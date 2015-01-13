@@ -96,7 +96,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 			EMU_NUM_PACKET_QS, PACKET_Q_SIZE);
 
 	/* init emu_state */
-    args.q_capacity = 256;
+    args.q_capacity = 512;
     args.K_threshold = 64;
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,

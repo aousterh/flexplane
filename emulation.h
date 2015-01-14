@@ -57,10 +57,10 @@ struct emu_comm_state {
  * @core_stats: stats per emulation core
  * @comm_state: state allocated per comm core to manage new packets
  * @queue_bank_stats: stats about one queue bank to be output by the log core
- * @endpoint_groups: representations of groups of endpoints
  * @q_epg_ingress: queues of packets to endpoint groups from the network
- * @routers: representations of routers
+ * @endpoint_drivers: one driver for each endpoint group in the network
  * @q_router_ingress: a queue of incoming packets for each router
+ * @router_drivers: one driver for each router in the network
  */
 struct emu_state {
 	struct emu_admitted_traffic				*admitted;
@@ -76,10 +76,8 @@ struct emu_state {
 #ifdef __cplusplus
 	EmulationOutput	*out;
 
-	EndpointGroup	*endpoint_groups[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
-	Router			*routers[EMU_NUM_ROUTERS];
 	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
 	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
 #endif

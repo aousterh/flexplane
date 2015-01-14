@@ -29,10 +29,18 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 	  m_stat(stat)
 {}
 
+EndpointDriver::~EndpointDriver() {
+	delete m_epg;
+}
+
 void EndpointDriver::step() {
 	push();
 	pull();
 	process_new();
+}
+
+void EndpointDriver::reset_endpoint(uint16_t src) {
+	m_epg->reset(src);
 }
 
 /**
@@ -80,5 +88,3 @@ inline void EndpointDriver::process_new()
 			(void **) &pkts, MAX_NEW_PACKET_BURST);
 	m_epg->new_packets(&pkts[0], n_pkts);
 }
-
-

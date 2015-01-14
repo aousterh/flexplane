@@ -30,6 +30,10 @@ RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
 	seed_random(&m_random, time(NULL));
 }
 
+RouterDriver::~RouterDriver() {
+	delete m_router;
+}
+
 /**
  * Emulate a timeslot at a single router
  */

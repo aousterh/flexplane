@@ -18,6 +18,7 @@ public:
 	RouterDriver(Router *router, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router,
 			struct emu_admission_statistics *stat);
+	~RouterDriver();
 
 	void step();
 private:

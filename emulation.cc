@@ -33,6 +33,8 @@ void emu_init_state(struct emu_state *state,
 		EndpointType e_type, void *e_args) {
 	uint32_t i, pq;
 	uint32_t size;
+	EndpointGroup *epg;
+	Router *rtr;
 
 	g_state = state;
 
@@ -61,24 +63,22 @@ void emu_init_state(struct emu_state *state,
 		/* clear queue bank stats */
 		memset(&state->queue_bank_stats, 0, sizeof(struct queue_bank_stats));
 
-		state->routers[i] = RouterFactory::NewRouter(r_type, r_args, i,
-				dropper, &state->queue_bank_stats);
-		assert(state->routers[i] != NULL);
-		state->router_drivers[i] = new RouterDriver(state->routers[i],
+		rtr = RouterFactory::NewRouter(r_type, r_args, i, dropper,
+				&state->queue_bank_stats);
+		assert(rtr != NULL);
+		state->router_drivers[i] = new RouterDriver(rtr,
 				state->q_router_ingress[0], state->q_epg_ingress[0],
 				&state->stat);
 	}
 
 	/* initialize all the endpoints in one endpoint group */
-	state->endpoint_groups[0] = EndpointGroupFactory::NewEndpointGroup(e_type,
-			EMU_NUM_ENDPOINTS, *state->out, 0, e_args);
+	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS,
+			*state->out, 0, e_args);
 
-	assert(state->endpoint_groups[0] != NULL);
+	assert(epg != NULL);
 	state->endpoint_drivers[0] =
 			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
-					state->q_router_ingress[0],
-					state->q_epg_ingress[0],
-					state->endpoint_groups[0],
+					state->q_router_ingress[0], state->q_epg_ingress[0], epg,
 					&state->stat);
 }
 
@@ -89,7 +89,6 @@ void emu_cleanup(struct emu_state *state) {
 	/* free all endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		delete state->endpoint_drivers[i];
-		delete state->endpoint_groups[i];
 
 		/* free packet queues, return packets to mempool */
 		free_packet_ring(state, state->comm_state.q_epg_new_pkts[i]);
@@ -99,8 +98,6 @@ void emu_cleanup(struct emu_state *state) {
 	/* free all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		delete state->router_drivers[i];
-		// TODO: call fp_free?
-		delete state->routers[i];
 
 		/* free ingress queue for this router, return packets to mempool */
 		free_packet_ring(state, state->q_router_ingress[i]);
@@ -138,9 +135,7 @@ void emu_emulate(struct emu_state *state) {
 }
 
 void emu_reset_sender(struct emu_state *state, uint16_t src) {
-
-	/* TODO: clear the packets in the routers too? */
-	state->endpoint_groups[0]->reset(src);
+	state->endpoint_drivers[0]->reset_endpoint(src);
 }
 
 /* frees all the packets in an fp_ring, and frees the ring itself */

@@ -18,11 +18,17 @@ public:
 	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router, EndpointGroup *epg,
 			struct emu_admission_statistics *stat);
+	~EndpointDriver();
 
 	/**
 	 * Emulate a single timeslot
 	 */
 	void step();
+
+	/**
+	 * Reset one endpoint
+	 */
+	void reset_endpoint(uint16_t src);
 
 private:
 	void push();

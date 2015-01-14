@@ -31,7 +31,7 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 	  m_stat(stat)
 {}
 
-EndpointDriver::~EndpointDriver() {
+void EndpointDriver::cleanup() {
 	delete m_epg;
 }
 

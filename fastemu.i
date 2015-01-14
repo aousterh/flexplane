@@ -125,6 +125,10 @@ struct fp_ring *get_new_pkts_ring(struct emu_state *state) {
 	return state->comm_state.q_epg_new_pkts[0];
 }
 
+struct fp_ring *get_reset_ring(struct emu_state *state) {
+	return state->comm_state.q_resets[0];
+}
+
 struct emu_admitted_traffic *get_admitted(struct emu_state *state) {
 	struct emu_admitted_traffic *admitted;
 	if (fp_ring_dequeue(state->q_admitted_out, (void **) &admitted) != 0)

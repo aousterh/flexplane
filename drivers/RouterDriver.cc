@@ -30,7 +30,7 @@ RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
 	seed_random(&m_random, time(NULL));
 }
 
-RouterDriver::~RouterDriver() {
+void RouterDriver::cleanup() {
 	delete m_router;
 }
 

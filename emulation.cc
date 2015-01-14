@@ -91,6 +91,7 @@ void emu_cleanup(struct emu_state *state) {
 
 	/* free all endpoints */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		state->endpoint_drivers[i]->cleanup();
 		delete state->endpoint_drivers[i];
 
 		/* free packet queues, return packets to mempool */
@@ -100,6 +101,7 @@ void emu_cleanup(struct emu_state *state) {
 
 	/* free all routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		state->router_drivers[i]->cleanup();
 		delete state->router_drivers[i];
 
 		/* free ingress queue for this router, return packets to mempool */
@@ -173,8 +175,14 @@ void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
 	if (q_new_packets == NULL)
 		throw std::runtime_error("couldn't allocate q_new_packets");
 
+	struct fp_ring *q_resets = fp_ring_create("q_resets", packet_ring_size, 0,
+			0);
+	if (q_resets == NULL)
+		throw std::runtime_error("couldn't allocate q_resets");
+
 	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
-	packet_queues[1] = q_new_packets;
+	packet_queues[2] = q_new_packets;
+	packet_queues[3] = q_resets;
 
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
 			packet_mempool, packet_queues, R_DropTail, NULL,

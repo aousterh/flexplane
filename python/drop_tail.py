@@ -93,7 +93,7 @@ epg = PyEndpointGroup(epg_cla, epg_qm, epg_sch, epg_sink, 0, NUM_ENDPOINTS)
 
 
 # network driver
-driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr,
+driver = SingleRackNetworkDriver(get_new_pkts_ring(state), epg, rtr, get_reset_ring(state),
                                  state.stat, PACKET_MEMPOOL_SIZE)
 
 emu_add_backlog(state,0,1,0,30,0)

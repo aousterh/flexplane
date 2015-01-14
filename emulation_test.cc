@@ -53,6 +53,9 @@ public:
 
                 rtr_args = (void *) &red_params;
                 break;
+
+            default:
+            	printf("Router type %d not supported in emulation test.\n", rtype);
             }
 
 

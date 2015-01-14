@@ -50,8 +50,9 @@ void print_global_admission_log_emulation() {
 		printf("\n  %lu packet allocs failed (increase packet mempool size?)",
 				st->packet_alloc_failed);
 	if (st->enqueue_backlog_failed)
-		printf("\n  %lu enqueue backlog failed",
-				st->enqueue_backlog_failed);
+		printf("\n  %lu enqueue backlog failed", st->enqueue_backlog_failed);
+	if (st->enqueue_reset_failed)
+		printf("\n  %lu enqueue reset failed", st->enqueue_reset_failed);
 	if (st->send_packet_failed)
 		printf("\n  %lu send packet failed", st->send_packet_failed);
 	printf("\n");

@@ -16,19 +16,14 @@ struct emu_admission_statistics;
 class EndpointDriver {
 public:
 	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
-			struct fp_ring *q_from_router, EndpointGroup *epg,
-			struct emu_admission_statistics *stat);
+			struct fp_ring *q_from_router, struct fp_ring *q_resets,
+			EndpointGroup *epg, struct emu_admission_statistics *stat);
 	~EndpointDriver();
 
 	/**
 	 * Emulate a single timeslot
 	 */
 	void step();
-
-	/**
-	 * Reset one endpoint
-	 */
-	void reset_endpoint(uint16_t src);
 
 private:
 	void push();
@@ -38,6 +33,7 @@ private:
 	struct fp_ring *m_q_new_packets;
 	struct fp_ring *m_q_to_router;
 	struct fp_ring *m_q_from_router;
+	struct fp_ring *m_q_resets;
 	EndpointGroup *m_epg;
 	struct emu_admission_statistics	*m_stat;
 };

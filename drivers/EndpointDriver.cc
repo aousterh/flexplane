@@ -21,10 +21,12 @@
 
 EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 		struct fp_ring* q_to_router, struct fp_ring* q_from_router,
-		EndpointGroup* epg, struct emu_admission_statistics *stat)
+		struct fp_ring *q_resets, EndpointGroup* epg,
+		struct emu_admission_statistics *stat)
 	: m_q_new_packets(q_new_packets),
 	  m_q_to_router(q_to_router),
 	  m_q_from_router(q_from_router),
+	  m_q_resets(q_resets),
 	  m_epg(epg),
 	  m_stat(stat)
 {}
@@ -34,13 +36,17 @@ EndpointDriver::~EndpointDriver() {
 }
 
 void EndpointDriver::step() {
+	uint64_t endpoint_id;
+
+	/* handle any resets */
+	while (fp_ring_dequeue(m_q_resets, (void **) &endpoint_id) != -ENOENT) {
+		/* cast pointer to int identifying the endpoint */
+		m_epg->reset((uint16_t) endpoint_id);
+	}
+
 	push();
 	pull();
 	process_new();
-}
-
-void EndpointDriver::reset_endpoint(uint16_t src) {
-	m_epg->reset(src);
 }
 
 /**

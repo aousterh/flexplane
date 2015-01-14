@@ -22,7 +22,7 @@
 #define ADMITTED_Q_LOG_SIZE		4
 #define PACKET_MEMPOOL_SIZE		(1024 * 16)
 #define PACKET_Q_LOG_SIZE		12
-#define EMU_NUM_PACKET_QS		(2 + EMU_NUM_ROUTERS)
+#define EMU_NUM_PACKET_QS		(3 * EMU_NUM_ENDPOINT_GROUPS + EMU_NUM_ROUTERS)
 
 /* comm core state - 1 comm core right now */
 #define EPGS_PER_COMM			(EMU_NUM_ENDPOINT_GROUPS)
@@ -42,9 +42,11 @@ class RouterDriver;
 /**
  * Emu state allocated for each comm core
  * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
+ * @q_resets: a queue of pending resets, for each endpoint group
  */
 struct emu_comm_state {
 	struct fp_ring	*q_epg_new_pkts[EPGS_PER_COMM];
+	struct fp_ring	*q_resets[EPGS_PER_COMM];
 };
 
 /**
@@ -98,6 +100,12 @@ void emu_init_state(struct emu_state *state,
 void emu_cleanup(struct emu_state *state);
 
 /**
+ * Emulate a single timeslot.
+ */
+void emu_emulate(struct emu_state *state);
+
+
+/**
  * Allocates rings and mempools, and initializes an emulation state
  */
 #ifdef NO_DPDK
@@ -115,17 +123,9 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		uint16_t flow, uint32_t amount, uint16_t start_id);
 
 /**
- * Emulate a single timeslot.
+ * Reset the emulation state for a single sender @src.
  */
-void emu_emulate(struct emu_state *state);
-
-/**
- * Reset the emulation state for a single sender.
- */
-#ifdef __cplusplus
-extern "C" void emu_reset_sender(struct emu_state *state, uint16_t src);
-#else
+static inline
 void emu_reset_sender(struct emu_state *state, uint16_t src);
-#endif
 
 #endif /* EMULATION_H_ */

@@ -55,4 +55,21 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	}
 }
 
+static inline
+void emu_reset_sender(struct emu_state *state, uint16_t src) {
+	struct emu_comm_state *comm_state;
+	struct fp_ring *q_resets;
+	uint64_t endpoint_id = src;
+
+	comm_state = &state->comm_state;
+	q_resets = comm_state->q_resets[src / EMU_ENDPOINTS_PER_EPG];
+
+	/* enqueue a notification to the endpoint driver's reset queue */
+	/* cast src id to a pointer */
+	while (fp_ring_enqueue(q_resets, (void *) endpoint_id) == -ENOBUFS) {
+		/* no space in ring. this should never happen. log and retry. */
+		adm_log_emu_enqueue_reset_failed(&state->stat);
+	}
+}
+
 #endif /* EMULATION_IMPL_H_ */

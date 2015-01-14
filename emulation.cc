@@ -49,12 +49,15 @@ void emu_init_state(struct emu_state *state,
 
 	/* construct topology: 1 router with 1 rack of endpoints */
 
-	/* initialize rings */
+	/* initialize rings for routers and endpoints */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		state->q_router_ingress[i] = packet_queues[pq++];
 	}
-	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->q_epg_ingress[0] = packet_queues[pq++];
+
+	/* initialize state used to communicate with comm cores */
+	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
+	state->comm_state.q_resets[0] = packet_queues[pq++];
 
 	Dropper dropper(*state->out, &state->queue_bank_stats);
 
@@ -78,8 +81,8 @@ void emu_init_state(struct emu_state *state,
 	assert(epg != NULL);
 	state->endpoint_drivers[0] =
 			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
-					state->q_router_ingress[0], state->q_epg_ingress[0], epg,
-					&state->stat);
+					state->q_router_ingress[0], state->q_epg_ingress[0],
+					state->comm_state.q_resets[0], epg, &state->stat);
 }
 
 void emu_cleanup(struct emu_state *state) {
@@ -114,8 +117,6 @@ void emu_cleanup(struct emu_state *state) {
 	fp_free(state->packet_mempool);
 }
 
-
-
 void emu_emulate(struct emu_state *state) {
 	uint32_t i;
 
@@ -132,10 +133,6 @@ void emu_emulate(struct emu_state *state) {
 		state->router_drivers[i]->step();
 
 	state->out->flush();
-}
-
-void emu_reset_sender(struct emu_state *state, uint16_t src) {
-	state->endpoint_drivers[0]->reset_endpoint(src);
 }
 
 /* frees all the packets in an fp_ring, and frees the ring itself */

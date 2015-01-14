@@ -37,6 +37,7 @@ struct emu_admission_statistics {
 	/* framework failures */
 	uint64_t packet_alloc_failed;
 	uint64_t enqueue_backlog_failed;
+	uint64_t enqueue_reset_failed;
 	uint64_t send_packet_failed;
 	uint64_t admitted_struct_overflow;
 
@@ -100,6 +101,13 @@ void adm_log_emu_enqueue_backlog_failed(
 		struct emu_admission_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->enqueue_backlog_failed += n_pkts;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_enqueue_reset_failed(
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->enqueue_reset_failed++;
 }
 
 static inline __attribute__((always_inline))

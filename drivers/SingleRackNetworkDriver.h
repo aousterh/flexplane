@@ -29,7 +29,7 @@ public:
 	 * 	 	must be a power of 2.
 	 */
 	SingleRackNetworkDriver(struct fp_ring *q_new_packets,
-			EndpointGroup *epg, Router *router,
+			EndpointGroup *epg, Router *router, struct fp_ring *q_resets,
 			struct emu_admission_statistics *stat, uint32_t ring_size);
 
 	/**

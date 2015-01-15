@@ -326,8 +326,10 @@ static void handle_reset(void *param)
 		dst = get_dst(q, dst_id);
 
 		/* if flow was empty anyway, nothing more to do */
-		if (likely(dst->demand_tslots == dst->used_tslots))
-			goto release;
+		if (likely(dst->demand_tslots == dst->used_tslots)) {
+			release_dst(q, dst);
+			continue;
+		}
 
 		/* has timeslots pending, rebase counters to 0 */
 		dst->demand_tslots -= dst->used_tslots;
@@ -343,8 +345,11 @@ static void handle_reset(void *param)
 
 		/* add flow to request queue if it's not already there */
 		unreq_dsts_enqueue_if_not_queued(q, dst_id, dst);
-release:
+
 		release_dst(q, dst);
+
+		/* reset timeslot ids in tsq */
+		tsq_reset_ids(q, dst_id);
 	}
 }
 

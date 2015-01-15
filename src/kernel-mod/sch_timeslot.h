@@ -56,6 +56,12 @@ void tsq_schedule(void *priv, u64 src_dst_key, u64 timeslot);
 int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id);
 
 /**
+ * Reset the ids of a flow (identified by @src_dst_key), to begin with 0 and
+ * increase to (n_tslots - 1).
+ */
+void tsq_reset_ids(void *priv, u64 src_dst_key);
+
+/**
  * Garbage-collects information for empty queues.
  */
 void tsq_garbage_collect(void *priv);

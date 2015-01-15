@@ -857,6 +857,26 @@ found_entry:
 	return 1; /* successfully handled one timeslot */
 }
 
+void tsq_reset_ids(void *priv, u64 src_dst_key)
+{
+	struct tsq_sched_data *q = priv_to_sched_data(priv);
+	struct tsq_dst *dst;
+	struct timeslot_skb_q *timeslot_q;
+	u16 id = 0;
+
+	spin_lock(&q->hash_tbl_lock);
+
+	dst = dst_lookup(q, src_dst_key, false);
+	list_for_each_entry(timeslot_q, &dst->skb_qs, list) {
+		timeslot_q->id = id++;
+	}
+	dst->next_id = id;
+
+	fp_debug("reset ids of flow %llu. next id %d.\n", src_dst_key, id);
+
+	spin_unlock(&q->hash_tbl_lock);
+}
+
 /* Extract packet from the queue (part of the qdisc API) */
 static struct sk_buff *tsq_dequeue(struct Qdisc *sch)
 {

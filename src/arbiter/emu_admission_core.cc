@@ -115,7 +115,7 @@ int exec_emu_admission_core(void *void_cmd_p)
         int64_t timeslots_behind;
 
 	/* set thread priority to max */
-	pthread_t this_thread = pthread_self();
+/*	pthread_t this_thread = pthread_self();
 	struct sched_param params;
 	params.sched_priority = sched_get_priority_max(SCHED_FIFO);
 	ret = pthread_setschedparam(this_thread, SCHED_FIFO, &params);
@@ -125,7 +125,7 @@ int exec_emu_admission_core(void *void_cmd_p)
 	} else {
 	  ADMISSION_DEBUG("core %d admission %d successfully set thread realtime priority\n",
 			  rte_lcore_id(), core_ind);
-	}
+                          }*/
 
 	ADMISSION_DEBUG("core %d admission %d starting allocations\n",
 			rte_lcore_id(), core_ind);

@@ -73,7 +73,6 @@ int fpproto_rcv(struct sk_buff *skb)
 	if (unlikely((skb_shinfo(skb)->frag_list != NULL)
 			|| (skb_shinfo(skb)->nr_frags != 0))) {
 		fastpass_sk(sk)->stat.rx_fragmented++;
-		FASTPASS_WARN("RX a fragmented control packet, which is not supported\n");
 		goto discard_out;
 	}
 

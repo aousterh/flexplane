@@ -72,8 +72,18 @@ int fpproto_rcv(struct sk_buff *skb)
 
 	if (unlikely((skb_shinfo(skb)->frag_list != NULL)
 			|| (skb_shinfo(skb)->nr_frags != 0))) {
+		struct sk_buff *trailer;
+		/* bit of trouble, got a fragmented packet */
 		fastpass_sk(sk)->stat.rx_fragmented++;
-		goto discard_out;
+
+		/* try to linearize */
+		if (skb_cow_data(skb, 0, &trailer) != 0) {
+			/* we're in real trouble, could not linearize. will drop */
+			fastpass_sk(sk)->stat.linearize_fragments_failed++;
+			goto discard_out;
+		}
+
+		/* success, can continue! */
 	}
 
 //	bh_lock_sock_nested(sk);
@@ -416,8 +426,11 @@ void fpproto_print_socket_errors(struct sock *sk, struct seq_file *seq)
 		seq_printf(seq, "\n  %llu control packets had errors traversing the IP stack",
 				sks->xmit_errors);
 	if (sks->rx_fragmented)
-		seq_printf(seq, "\n  %llu received a fragmented skb (no current support)",
+		seq_printf(seq, "\n  %llu received a fragmented skb (will linearize)",
 				sks->rx_fragmented);
+	if (sks->linearize_fragments_failed)
+		seq_printf(seq, "\n  %llu linearizing fragmented skb failed",
+				sks->linearize_fragments_failed);
 }
 
 /* The interface for receiving packets from IP */

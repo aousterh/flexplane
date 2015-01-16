@@ -25,6 +25,7 @@ extern struct kmem_cache *fpproto_pktdesc_cachep __read_mostly;
 struct fp_socket_stat {
 	/* rx-related */
 	__u64 rx_fragmented;
+	__u64 linearize_fragments_failed;
 
 	/* send-related */
 	__u64 xmit_errors;

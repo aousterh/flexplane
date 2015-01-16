@@ -123,7 +123,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
     rtype = R_DropTail;
     rtr_args = &dt_args;
 #else
-	rte_exit(EXIT_FAILURE, "Unrecognized router type\n");
+#error "Unrecognized router type"
 #endif
 
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],

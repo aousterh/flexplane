@@ -21,6 +21,14 @@ void print_global_admission_log_emulation() {
 
 	printf("\nadmission core (emu with %d nodes)", NUM_NODES);
 
+#if defined(DCTCP)
+	printf("\nrouter type DCTCP");
+#elif defined(RED)
+	printf("\nrouter type RED");
+#elif defined(DROP_TAIL)
+	printf("\nrouter type drop tail");
+#endif
+
 #define D(X) (st->X - sv->X)
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));

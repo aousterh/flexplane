@@ -55,6 +55,7 @@ CFLAGS += $(CMD_LINE_CFLAGS)
 
 # C++ flags
 CPPFLAGS += $(CFLAGS)
+CPPFLAGS += $(EMU_RTR_FLAGS)
 CPPFLAGS += -D__STDC_LIMIT_MACROS
 
 # linker settings to work with C++

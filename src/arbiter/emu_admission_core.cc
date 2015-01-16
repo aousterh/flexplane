@@ -19,6 +19,7 @@
 #include "../emulation/endpoint.h"
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"
+#include "../emulation/queue_managers/red.h"
 #include "../emulation/packet.h"
 #include "../emulation/router.h"
 #include "../graph-algo/algo_config.h"
@@ -30,7 +31,6 @@ struct emu_state g_emu_state;
 struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
-struct dctcp_args args;
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out)
 {
@@ -98,11 +98,39 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 			EMU_NUM_PACKET_QS, PACKET_Q_SIZE);
 
 	/* init emu_state */
-    args.q_capacity = 512;
-    args.K_threshold = 64;
+	enum RouterType rtype;
+	void *rtr_args;
+#if defined(DCTCP)
+	struct dctcp_args dctcp_args;
+    dctcp_args.q_capacity = 512;
+    dctcp_args.K_threshold = 64;
+
+    rtype = R_DCTCP;
+    rtr_args = &dctcp_args;
+#elif defined(RED)
+    struct red_args red_params;
+    red_params.min_th = 150;
+    red_params.max_th = 250;
+    red_params.max_p = 0.1;
+    red_params.wq_shift = 9;
+
+    rtype = R_RED;
+    rtr_args = &red_params;
+#elif defined(DROP_TAIL)
+    struct drop_tail_args dt_args;
+    dt_args.q_capacity = 500;
+
+    rtype = R_DropTail;
+    rtr_args = &dt_args;
+#else
+	rte_exit(EXIT_FAILURE, "Unrecognized router type\n");
+#endif
+
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
-            (fp_ring **) packet_queues, R_DCTCP, &args, E_Simple, NULL);
+            (fp_ring **) packet_queues, rtype, rtr_args, E_Simple, NULL);
+
+
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

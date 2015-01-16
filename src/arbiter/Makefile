@@ -52,7 +52,13 @@ CFLAGS += -march=core2
 CFLAGS += -DEMULATION_ALGO
 #CCFLAGS += -DEMU_NO_BATCH_CALLS
 CFLAGS += $(CMD_LINE_CFLAGS)
-CFLAGS += $(EMU_RTR_FLAGS)
+
+# use drop tail if nothing else is specified
+ifeq ($(EMU_RTR_FLAGS),)
+	CFLAGS += -DDROP_TAIL
+else
+	CFLAGS += $(EMU_RTR_FLAGS)
+endif
 
 # C++ flags
 CPPFLAGS += $(CFLAGS)

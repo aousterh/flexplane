@@ -120,6 +120,16 @@ module_param(max_preload, uint, 0444);
 MODULE_PARM_DESC(max_preload, "how futuristic can an allocation be and still be accepted");
 EXPORT_SYMBOL_GPL(max_preload);
 
+/**
+ * Data to be sent along with an areq to the arbiter
+ * @data: bytes of data, use varies by scheme
+ * @num_tslots: number of timeslots this request data is for
+ */
+struct request_data {
+	u8	data[MAX_REQ_DATA_BYTES];
+	u16	num_tslots;
+};
+
 /*
  * Per flow structure, dynamically allocated
  */
@@ -131,6 +141,9 @@ struct fp_dst {
 	u64		used_tslots;		/* timeslots in which packets moved */
 	spinlock_t lock;
 	uint8_t state;
+	struct request_data areq_data[MAX_REQ_DATA_PER_DST]; /* queue of data to put in areqs to arbiter */
+	u16 areq_data_head;
+	u16 areq_data_tail;
 };
 
 /**
@@ -600,6 +613,8 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 	int i;
 	u64 new_acked;
 	u64 delta;
+	struct request_data *req_data;
+	(void) req_data;
 
 	for (i = 0; i < pd->n_areq; i++) {
 		u32 dst_id = pd->areq[i].src_dst_key;
@@ -618,8 +633,34 @@ static void handle_ack(void *param, struct fpproto_pktdesc *pd)
 			/* the demand-limiting window might be in effect, re-enqueue flow */
 			if (unlikely(dst->requested_tslots != dst->demand_tslots))
 				unreq_dsts_enqueue_if_not_queued(q, dst_id, dst);
-		}
 
+#if defined(EMULATION_ALGO)
+			/* remove data that corresponds to ACK-ed areqs from queue */
+			while (1) {
+				if (unlikely(dst->areq_data_head == dst->areq_data_tail)) {
+					fp_debug("acked more demand than there is data in the areq_data queue");
+					q->stat.ack_delta_exceeds_data_queue++;
+				}
+
+				/* get the request data currently at the head of the queue */
+				req_data = &dst->areq_data[dst->areq_data_head %
+										   MAX_REQ_DATA_PER_DST];
+
+				if (req_data->num_tslots <= delta) {
+					/* ACK all tslots that use this request data */
+					dst->areq_data_head++;
+					delta -= req_data->num_tslots;
+
+					if (delta == 0)
+						break; /* done ACK-ing areq data */
+				} else {
+					/* ACK some of the tslots that use this request data */
+					req_data->num_tslots -= delta;
+					break; /* done ACK-ing areq data */
+				}
+			}
+#endif
+		}
 		release_dst(q, dst);
 	}
 }
@@ -990,6 +1031,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->alloc_report_larger_than_requested)
 		seq_printf(seq, "\n  %llu alloc report larger than requested_timeslots (causes a reset)",
 				scs->alloc_report_larger_than_requested);
+	if (scs->ack_delta_exceeds_data_queue)
+		seq_printf(seq, "\n  %llu times newly ACKed timeslots exceeded data in areq data queue",
+				scs->ack_delta_exceeds_data_queue);
 
 	fpproto_print_errors(&q->conn.stat, seq);
 	fpproto_print_socket_errors(q->ctrl_sock->sk, seq);
@@ -999,6 +1043,8 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->queued_flow_already_acked)
 		seq_printf(seq, "\n  %llu acked flows in flowqueue (possible ack just after timeout)",
 				scs->queued_flow_already_acked);
+	if (scs->data_queue_full)
+		seq_printf(seq, "\n  %llu data queue full", scs->data_queue_full);
 	if (scs->unwanted_alloc)
 		seq_printf(seq, "\n  %llu timeslots allocated beyond the demand of the flow (could happen due to reset / controller timeouts)",
 				scs->unwanted_alloc);
@@ -1150,11 +1196,39 @@ static void fpq_stop_qdisc(void *priv) {
 	fastpass_proc_cleanup(q);
 }
 
-static void fpq_add_timeslot(void *priv, u64 dst_id)
+static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
 {
 	struct fp_sched_data *q = (struct fp_sched_data *)priv;
 	struct fp_dst *dst = get_dst(q, dst_id);
+	struct request_data *req_data;
+	(void) request_data; (void) req_data;
+
 	flow_inc_demand(q, dst_id, dst, 1);
+
+#if defined(EMULATION_ALGO)
+	if ((dst->areq_data_tail + 1) % MAX_REQ_DATA_PER_DST ==
+			(dst->areq_data_head % MAX_REQ_DATA_PER_DST)) {
+		/* queue is full, tslot must reuse data from previous packet */
+		fp_debug("areq data queue full for dst %llu, head %u, tail %u\n",
+				dst_id, dst->areq_data_head, dst->areq_data_tail);
+		q->stat.data_queue_full++;
+
+		/* increment the count on the last in-use areq_data */
+		req_data = &dst->areq_data[(dst->areq_data_tail - 1) %
+		                           MAX_REQ_DATA_PER_DST];
+		req_data->num_tslots++;
+
+		goto release;
+	}
+
+	/* there is space, copy request data to next entry in queue */
+	req_data = &dst->areq_data[dst->areq_data_tail % MAX_REQ_DATA_PER_DST];
+	memcpy(&req_data->data[0], request_data, sizeof(MAX_REQ_DATA_BYTES));
+	req_data->num_tslots = 1;
+	dst->areq_data_tail++;
+
+release:
+#endif
 	release_dst(q, dst);
 }
 

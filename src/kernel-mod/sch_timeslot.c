@@ -490,6 +490,7 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 	s64 cost;
 	bool created_new_timeslot = false;
 	u64 src_dst_key;
+	u8 request_data[MAX_REQ_DATA_BYTES];
 
 	cost = (s64) psched_l2t_ns(&q->data_rate, qdisc_pkt_len(skb));
 
@@ -533,8 +534,11 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 	skb_q_enqueue(timeslot_q, skb);
 	spin_unlock(&q->hash_tbl_lock);
 
-	if (created_new_timeslot)
-		q->timeslot_ops->add_timeslot(sched_data_to_priv(q), src_dst_key);
+	if (created_new_timeslot) {
+		/* TODO: fill in request data from packet, depending on scheme */
+		q->timeslot_ops->add_timeslot(sched_data_to_priv(q), src_dst_key,
+				&request_data[0]);
+	}
 
 	fp_debug("enqueued data packet of len %d to flow 0x%llX\n",
 			qdisc_pkt_len(skb), dst->src_dst_key);

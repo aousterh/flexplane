@@ -9,13 +9,17 @@
 #define	TSLOT_ACTION_DROP_BY_ID		0x2
 #define TSLOT_ACTION_MARK_BY_ID		0x3
 
+#define MAX_REQ_DATA_BYTES		8
+#define MAX_REQ_DATA_PER_DST	64
+
 struct tsq_ops {
 	char			id[IFNAMSIZ];
 	int			priv_size;
 	int			(* new_qdisc)(void *priv, struct net *qdisc_net, u32 tslot_mul,
 								u32 tslot_shift);
 	void		(* stop_qdisc)(void *priv);
-	void		(* add_timeslot)(void *priv, u64 src_dst_key);
+	void		(* add_timeslot)(void *priv, u64 src_dst_key,
+			u8 *request_data);
 };
 
 struct tsq_qdisc_entry {

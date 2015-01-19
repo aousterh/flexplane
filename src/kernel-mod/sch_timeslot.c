@@ -40,6 +40,7 @@
 
 #include "sch_timeslot.h"
 #include "fastpass_proto.h"
+#include "../protocol/flags.h"
 #include "../protocol/platform.h"
 #include "../protocol/pacer.h"
 #include "../protocol/window.h"

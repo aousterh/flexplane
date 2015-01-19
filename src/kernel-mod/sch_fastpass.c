@@ -1223,7 +1223,7 @@ static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
 
 	/* there is space, copy request data to next entry in queue */
 	req_data = &dst->areq_data[dst->areq_data_tail % MAX_REQ_DATA_PER_DST];
-	memcpy(&req_data->data[0], request_data, sizeof(MAX_REQ_DATA_BYTES));
+	memcpy(&req_data->data[0], request_data, emu_req_data_bytes());
 	req_data->num_tslots = 1;
 	dst->areq_data_tail++;
 

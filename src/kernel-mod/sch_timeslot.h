@@ -9,7 +9,6 @@
 #define	TSLOT_ACTION_DROP_BY_ID		0x2
 #define TSLOT_ACTION_MARK_BY_ID		0x3
 
-#define MAX_REQ_DATA_BYTES		8
 #define MAX_REQ_DATA_PER_DST	256
 
 struct tsq_ops {

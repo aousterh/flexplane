@@ -123,11 +123,15 @@ EXPORT_SYMBOL_GPL(max_preload);
 /**
  * Data to be sent along with an areq to the arbiter
  * @data: bytes of data, use varies by scheme
- * @num_tslots: number of timeslots this request data is for
+ * @num_tslots: number of timeslots this request data is for (if there are more
+ * 		than MAX_REQ_DATA_PER_DST outstanding areqs, one request_data will be
+ * 		used for multiple tslots)
+ * @unreq_tslots: number of num_tslots that have not yet been requested
  */
 struct request_data {
 	u8	data[MAX_REQ_DATA_BYTES];
 	u16	num_tslots;
+	u16 unreq_tslots;
 };
 
 /*
@@ -144,6 +148,7 @@ struct fp_dst {
 	struct request_data areq_data[MAX_REQ_DATA_PER_DST]; /* queue of data to put in areqs to arbiter */
 	u16 areq_data_head;
 	u16 areq_data_tail;
+	u16 areq_data_next_to_send;	/* index of the first unsent areq data */
 };
 
 /**
@@ -704,6 +709,8 @@ static void send_request(struct fp_sched_data *q)
 	struct fp_kernel_pktdesc *kern_pd;
 	struct fpproto_pktdesc *pd;
 	u64 new_requested;
+	struct request_data *req_data;
+	(void) req_data;
 
 	fp_debug("start: unreq_flows=%u, unreq_tslots=%llu, now_mono=%llu, scheduled=%llu, diff=%lld, next_seq=%08llX\n",
 			n_unreq_dsts(q), atomic_read(&q->demand_tslots) - q->requested_tslots, now_monotonic,
@@ -719,6 +726,9 @@ static void send_request(struct fp_sched_data *q)
 	pd = &kern_pd->pktdesc;
 
 	pd->n_areq = 0;
+#if defined(EMULATION_ALGO)
+	pd->areq_data_bytes = 0;
+#endif
 
 	spin_lock_irq(&q->conn_lock);
 	if (unlikely(q->is_destroyed == true))
@@ -744,7 +754,47 @@ static void send_request(struct fp_sched_data *q)
 			continue;
 		}
 
-		q->requested_tslots += (new_requested - dst->requested_tslots);
+#if defined(EMULATION_ALGO)
+		pd->areq_data_counts[pd->n_areq] = 0;
+		if (emu_req_data_bytes() == 0 ||
+				new_requested == dst->requested_tslots)
+			goto finished_request_data;
+
+		/* add request data to the pktdesc, as long as there is more space */
+		while (pd->areq_data_bytes + emu_req_data_bytes() <=
+				FASTPASS_PKT_MAX_AREQ_DATA) {
+			req_data = &dst->areq_data[dst->areq_data_next_to_send %
+			                           MAX_REQ_DATA_PER_DST];
+
+			/* copy in one more request data for this areq dst */
+			memcpy(&pd->areq_data[pd->areq_data_bytes], &req_data->data[0],
+					emu_req_data_bytes());
+			req_data->unreq_tslots--;
+			pd->areq_data_counts[pd->n_areq]++;
+			pd->areq_data_bytes += emu_req_data_bytes();
+
+			if (likely(req_data->unreq_tslots == 0))
+				dst->areq_data_next_to_send++; /* move to next req_data */
+
+			if (pd->areq_data_counts[pd->n_areq] ==
+					new_requested - dst->requested_tslots)
+				goto finished_request_data; /* added all the data for this dst */
+		}
+
+		/* not enough space to encode all the requested areq data in this
+		 * pkt. send as much as fits and re-enqueue this flow. */
+		fp_debug("requested diff %llu exceeds remaining areq data space, added %u instead",
+				new_requested - dst->requested_tslots,
+				pd->areq_data_counts[pd->n_areq]);
+		q->stat.areq_data_exceeded_pkt++;
+
+		new_requested = dst->requested_tslots + pd->areq_data_counts[pd->n_areq];
+		unreq_dsts_enqueue_if_not_queued(q, dst_id, dst);
+
+finished_request_data:
+#endif
+
+		q->requested_tslots += new_requested - dst->requested_tslots;
 		dst->requested_tslots = new_requested;
 		release_dst(q, dst);
 
@@ -752,6 +802,12 @@ static void send_request(struct fp_sched_data *q)
 		pd->areq[pd->n_areq].tslots = new_requested;
 
 		pd->n_areq++;
+
+#if defined(EMULATION_ALGO)
+		if (pd->areq_data_bytes + emu_req_data_bytes() >
+			FASTPASS_PKT_MAX_AREQ_DATA)
+			break; /* no more areq data space */
+#endif
 	}
 
 	if(pd->n_areq == 0) {
@@ -1017,6 +1073,7 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", marked %llu", scs->marked_timeslots);
 
 	seq_printf(seq, "\n  %llu requests w/no a-req", scs->request_with_empty_flowqueue);
+	seq_printf(seq, "\n  %llu a-req data exceeded one ctrl pkt", scs->areq_data_exceeded_pkt);
 
 	/* protocol state */
 	fpproto_update_internal_stats(&q->conn);
@@ -1217,6 +1274,7 @@ static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
 		req_data = &dst->areq_data[(dst->areq_data_tail - 1) %
 		                           MAX_REQ_DATA_PER_DST];
 		req_data->num_tslots++;
+		req_data->unreq_tslots++;
 
 		goto release;
 	}
@@ -1225,6 +1283,7 @@ static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
 	req_data = &dst->areq_data[dst->areq_data_tail % MAX_REQ_DATA_PER_DST];
 	memcpy(&req_data->data[0], request_data, emu_req_data_bytes());
 	req_data->num_tslots = 1;
+	req_data->unreq_tslots = 1;
 	dst->areq_data_tail++;
 
 release:

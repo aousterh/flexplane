@@ -16,6 +16,7 @@
 #include <rte_ip.h>
 #endif
 
+#include "flags.h"
 #include "platform/generic.h"
 #include "platform/debug.h"
 #include "window.h"
@@ -74,6 +75,7 @@ extern bool fastpass_debug;
 
 /* COMMON TO END_NODE AND CONTROLLER */
 #define FASTPASS_PKT_MAX_AREQ			10
+#define FASTPASS_PKT_MAX_AREQ_DATA		128
 #define FASTPASS_PKT_AREQ_LEN			(2 + 4 * FASTPASS_PKT_MAX_AREQ)
 
 #define FASTPASS_MAX_PAYLOAD		(FASTPASS_PKT_HDR_LEN + \
@@ -119,6 +121,10 @@ struct fpproto_emu_desc {
  * @reset_timestamp: timestamp of a reset, if applicable
  * @n_areq: number of filled in destinations for A-REQ
  * @areq: an array of allocation requests
+ * @areq_data_bytes: number of bytes of areq_data in use in this packet
+ * @areq_data_counts: for each areq, number of areq_data in this pkt
+ * @areq_data: additional data about abstract packets in emulation, arranged in
+ * 		an array of bytes
  * @alloc_tslot: number of allocs in this packet (always even)
  * @used_alloc_tslot: number of used allocs (equal to or one less than
  * 	alloc_tslot)
@@ -144,6 +150,13 @@ struct fpproto_pktdesc {
 	/* payload - allocation request totals (areq) */
 	u16							n_areq;
 	struct fpproto_areq_desc	areq[FASTPASS_PKT_MAX_AREQ];
+
+	/* payload - allocation request additional data */
+#if (defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT))
+	u16							areq_data_bytes;
+	u8							areq_data_counts[FASTPASS_PKT_MAX_AREQ];
+	u8							areq_data[FASTPASS_PKT_MAX_AREQ_DATA];
+#endif
 
 	/* payload - allocations */
 #ifdef FASTPASS_CONTROLLER

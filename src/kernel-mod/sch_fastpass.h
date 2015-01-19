@@ -24,6 +24,7 @@ struct fp_sched_stat {
 	__u64		request_with_empty_flowqueue;
 	__u64		queued_flow_already_acked;
 	__u64		data_queue_full;
+	__u64		areq_data_exceeded_pkt;
 
 	/* alloc-related */
 	__u64		alloc_too_late;

@@ -54,12 +54,17 @@ extern bool fastpass_debug;
 #define FASTPASS_PKT_HDR_LEN			8
 #define FASTPASS_PKT_RESET_LEN			8
 
-/* number of bytes used for each timeslot in an alloc payload */
+/* EMULATION SPECIFIC */
 #if defined(EMULATION_ALGO)
 #define ALLOC_BYTES_PER_TSLOT	3
+#define FASTPASS_PKT_MAX_AREQ_DATA		128
 #else
 #define ALLOC_BYTES_PER_TSLOT	1
+#define FASTPASS_PKT_MAX_AREQ_DATA		0
 #endif
+
+/* COMMON TO END_NODE AND CONTROLLER */
+#define FASTPASS_PKT_MAX_AREQ			10
 
 #ifdef FASTPASS_CONTROLLER
 /* CONTROLLER */
@@ -67,16 +72,14 @@ extern bool fastpass_debug;
 #define FASTPASS_PKT_ALLOC_LEN			(2 + 2 + 2 * 15 + \
 										FASTPASS_PKT_MAX_ALLOC_TSLOTS * \
 										ALLOC_BYTES_PER_TSLOT)
+#define FASTPASS_PKT_AREQ_LEN			(2 + 4 * FASTPASS_PKT_MAX_AREQ)
 #else
 /* END NODE */
 #define FASTPASS_PKT_MAX_ALLOC_TSLOTS	0
 #define FASTPASS_PKT_ALLOC_LEN			0
+#define FASTPASS_PKT_AREQ_LEN			(2 + 4 * FASTPASS_PKT_MAX_AREQ + \
+										FASTPASS_PKT_MAX_AREQ_DATA)
 #endif
-
-/* COMMON TO END_NODE AND CONTROLLER */
-#define FASTPASS_PKT_MAX_AREQ			10
-#define FASTPASS_PKT_MAX_AREQ_DATA		128
-#define FASTPASS_PKT_AREQ_LEN			(2 + 4 * FASTPASS_PKT_MAX_AREQ)
 
 #define FASTPASS_MAX_PAYLOAD		(FASTPASS_PKT_HDR_LEN + \
 									FASTPASS_PKT_RESET_LEN + \
@@ -89,6 +92,7 @@ extern bool fastpass_debug;
 #define FASTPASS_PTYPE_ALLOC		0x3
 #define FASTPASS_PTYPE_ACK			0x4
 #define	FASTPASS_PTYPE_EMU_ALLOC	0x5
+#define FASTPASS_PTYPE_EMU_AREQ		0x6
 
 /**
  * An allocation request (to the arbiter) or report (from the arbiter) for a

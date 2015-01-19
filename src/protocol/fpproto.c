@@ -533,6 +533,8 @@ static int process_areq(struct fpproto_conn *conn, u8 *data, u8 *data_end)
 	u8 *curp = data;
 	u32 n_dst;
 	u16 payload_type;
+	u16 n_req_data, i;
+	(void) n_req_data; (void) i;
 
 	if (curp + 2 > data_end)
 		goto incomplete;
@@ -547,6 +549,22 @@ static int process_areq(struct fpproto_conn *conn, u8 *data, u8 *data_end)
 		conn->ops->handle_areq(conn->ops_param, (u16 *)curp, n_dst);
 
 	curp += 4 * n_dst;
+
+#if defined(EMULATION_ALGO) && defined(FASTPASS_CONTROLLER)
+	if (emu_req_data_bytes() > 0) {
+		/* increment curp to account for additional request data counts */
+		n_req_data = 0;
+		for (i = 0; i < n_dst; i++)
+			n_req_data += *curp++;
+
+		if (n_dst & 1)
+			curp++; /* padded to an even number of counts */
+
+		/* increment curp to account for additional request data itself */
+		curp += emu_req_data_bytes() * n_req_data;
+	}
+#endif
+
 	return curp - data;
 
 incomplete:
@@ -742,6 +760,7 @@ handle_payload:
 		break;
 
 	case FASTPASS_PTYPE_AREQ:
+	case FASTPASS_PTYPE_EMU_AREQ:
 		payload_length = process_areq(conn, curp, data_end);
 
 		fp_debug("process_areq returned %d\n", payload_length);
@@ -861,6 +880,7 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 		__be32 saddr, __be32 daddr, u32 min_size)
 {
 	int i;
+	u16 areq_type;
 	struct fastpass_areq *areq;
 
 	u8 *curp = pkt;
@@ -935,7 +955,12 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 			return -3;
 
 		/* A-REQ type short */
-		*(__be16 *)curp = htons((FASTPASS_PTYPE_AREQ << 12) |
+#if defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT)
+		areq_type = FASTPASS_PTYPE_EMU_AREQ;
+#else
+		areq_type = FASTPASS_PTYPE_AREQ;
+#endif
+		*(__be16 *)curp = htons((areq_type << 12) |
 						  (pd->n_areq & 0x3F));
 		curp += 2;
 		remaining_len -= 2;
@@ -948,6 +973,24 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 			curp += 4;
 			remaining_len -= 4;
 		}
+
+#if defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT)
+		if (emu_req_data_bytes() > 0) {
+			/* additional A-REQ data */
+			memcpy(curp, &pd->areq_data_counts[0], pd->n_areq);
+			curp += pd->n_areq;
+			remaining_len -= pd->n_areq;
+			if (pd->n_areq & 1) {
+				curp++; /* pad to an even number of count bytes */
+				remaining_len--;
+			}
+			fp_debug("copying areq data of length %d", pd->areq_data_bytes);
+			memcpy(curp, &pd->areq_data[0], pd->areq_data_bytes);
+			fp_debug("areq data: %x %x", *curp, *(curp + 1));
+			curp += pd->areq_data_bytes;
+			remaining_len -= pd->areq_data_bytes;
+		}
+#endif
 	}
 
 	if (curp - pkt < min_size) {

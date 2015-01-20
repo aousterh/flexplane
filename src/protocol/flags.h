@@ -25,6 +25,7 @@
 #define AREQ_DATA_TYPE_NONE		0 /* no areq data used */
 #define AREQ_DATA_TYPE_UNSPEC	1 /* unspecified data type, assumes MAX_REQ_DATA_BYTES */
 
+#if defined(FASTPASS_CONTROLLER)
 /**
  * Return the number of bytes per request data sent from endpoints to the
  * arbiter.
@@ -40,6 +41,7 @@ static inline u16 emu_req_data_bytes(void) {
 
 	return req_data_bytes;
 }
+#endif
 
 /**
  * Return the type of areq data for this network scheme.

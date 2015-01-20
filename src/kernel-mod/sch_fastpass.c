@@ -200,8 +200,10 @@ struct fp_sched_data {
 	struct fp_sched_stat stat;
 
 	/* emulation-specific parameters */
-	u8		emu_areq_data_type; /* type of data to be sent in emu areqs */
-	u8		emu_areq_data_bytes; /* number of bytes per emu areq data */
+	u8		emu_areq_data_type;		/* type of data sent in emu areqs */
+	u8		emu_areq_data_bytes;	/* number of bytes per emu areq data */
+	u8		emu_alloc_data_type;	/* type of data sent in emu allocs */
+	u8		emu_alloc_data_bytes;	/* number of bytes per alloc data */
 };
 
 static struct tsq_qdisc_entry *fastpass_tsq_entry;
@@ -1073,7 +1075,8 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", miss_threshold %u", miss_threshold);
 	seq_printf(seq, ", max_preload %u", max_preload);
 #if defined(EMULATION_ALGO)
-	seq_printf(seq, ", algo emulation with scheme %s", emu_scheme);
+	seq_printf(seq, ", algo emulation with scheme %s (%d bytes per areq, %d per alloc)",
+			emu_scheme, q->emu_areq_data_bytes, q->emu_alloc_data_bytes);
 #elif defined(PIPELINED_ALGO)
 	seq_printf(seq, ", algo sequential");
 #endif
@@ -1197,6 +1200,8 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 #if defined(EMULATION_ALGO)
 	q->emu_areq_data_type	= areq_data_type_from_scheme(emu_scheme);
 	q->emu_areq_data_bytes	= areq_data_bytes_from_scheme(emu_scheme);
+	q->emu_alloc_data_type	= alloc_data_type_from_scheme(emu_scheme);
+	q->emu_alloc_data_bytes	= alloc_data_bytes_from_scheme(emu_scheme);
 #endif
 
 	spin_lock_init(&q->unreq_flows_lock);

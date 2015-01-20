@@ -86,4 +86,26 @@ static inline u8 areq_data_bytes_from_scheme(char *scheme) {
 		return MAX_REQ_DATA_BYTES;
 }
 
+/**
+ * Return the type of alloc data for this network scheme.
+ */
+static inline u8 alloc_data_type_from_scheme(char *scheme) {
+	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
+			strcmp(scheme, "dctcp") == 0)
+		return ALLOC_DATA_TYPE_NONE;
+	else
+		return ALLOC_DATA_TYPE_UNSPEC;
+}
+
+/**
+ * Return the number of bytes per alloc data for this network scheme.
+ */
+static inline u8 alloc_data_bytes_from_scheme(char *scheme) {
+	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
+			strcmp(scheme, "dctcp") == 0)
+		return 0;
+	else
+		return MAX_ALLOC_DATA_BYTES;
+}
+
 #endif /* FLAGS_H_ */

@@ -10,6 +10,9 @@ from dpdk import *
 sys.setdlopenflags(saved_flags)
 
 from fastpass import *
+import fastpass
+
+print dir(fastpass)
 
 import time
 
@@ -24,7 +27,6 @@ print "enabled_lcores:", enabled_cores
 pool = PacketPool("pktpool", 1024, 2048, 128, 0, 0, 0)
 
 rte_set_log_level(RTE_LOG_DEBUG)
-rte_openlog_stdout()
 print "cur log level", rte_log_cur_msg_loglevel()
 
 print "pci probe", rte_eal_pci_probe()
@@ -76,18 +78,13 @@ def launch_cores():
     benchmark_cost_of_get_time();
     #/* decide what the first time slot to be output is */
     now = fp_get_time_ns();
-    print now, dir(now)
-    print INIT_MAX_TIME_NS
     first_time_slot = ((now + INIT_MAX_TIME_NS) * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
-    CONTROL_INFO("now %lu first time slot will be %lu\n", now, first_time_slot);
-
-"""
+    print ("CONTROL: now %lu first time slot will be %lu" % (now, first_time_slot))
 
     #/*** LOGGING OUTPUT ***/
-#ifdef LOG_TO_STDOUT
-    rte_openlog_stream(stdout);
-#endif
+    rte_openlog_stdout()
 
+"""
     #/*** GLOBAL INIT ***/
     #/* initialize comm core global data */
     comm_init_global_structs(first_time_slot);

@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define fp_fprintf(f, ...)		fprintf(f, __VA_ARGS__)
+#define fp_fprintf(f, ...)		fprintf((FILE*)f, __VA_ARGS__)
 
 #ifdef __APPLE__
 #include <sys/types.h>

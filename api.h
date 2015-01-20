@@ -30,7 +30,7 @@ struct emu_state;
  */
 static inline
 struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
-		uint16_t dst, uint16_t flow, uint16_t id);
+		uint16_t dst, uint16_t flow, uint16_t id, uint8_t *areq_data);
 
 /**
  * Frees a packet when an emulation algorithm is done running.

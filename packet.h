@@ -28,16 +28,21 @@ struct emu_packet {
 };
 
 /**
- * Initialize a packet.
+ * Initialize a packet with @src, @dst, @flow, and @id. @areq_data provides
+ * additional information in an array of bytes. The use of this data varies by
+ * emulated scheme.
  */
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
-		uint16_t flow, uint16_t id) {
+		uint16_t flow, uint16_t id, uint8_t *areq_data) {
 	packet->src = src;
 	packet->dst = dst;
 	packet->flow = flow;
 	packet->id = id;
 	packet->flags = EMU_FLAGS_NONE; /* start with no flags */
+
+	/* TODO: add algo-specific fields to emu_packet and populate them from
+	 * areq_data, based on the algorithm used. */
 }
 
 /**

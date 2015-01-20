@@ -116,11 +116,11 @@ void emu_alloc_init(struct emu_state *state,
 
 /**
  * Add backlog from @src to @dst for @flow. Add @amount MTUs, with the first id
- * of @start_id.
+ * of @start_id. @areq_data provides additional information about each MTU.
  */
 static inline
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount, uint16_t start_id);
+		uint16_t flow, uint32_t amount, uint16_t start_id, u8* areq_data);
 
 /**
  * Reset the emulation state for a single sender @src.

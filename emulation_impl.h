@@ -16,6 +16,7 @@
 #include "packet.h"
 #include "../graph-algo/fp_ring.h"
 #include "../protocol/topology.h"
+#include "../protocol/flags.h"
 #include <assert.h>
 #include <inttypes.h>
 
@@ -24,7 +25,7 @@
 
 static inline
 void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount, uint16_t start_id) {
+		uint16_t flow, uint32_t amount, uint16_t start_id, u8* areq_data) {
 	uint32_t i, n_pkts;
 	struct emu_comm_state *comm_state;
 	struct fp_ring *q_epg_new_pkts;
@@ -41,8 +42,9 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		n_pkts = 0;
 		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
 			pkt_ptrs[n_pkts] = create_packet(state, src, dst, flow,
-					start_id++);
+					start_id++, areq_data);
 			n_pkts++;
+			areq_data += emu_req_data_bytes();
 		}
 
 		/* enqueue the packets to the correct endpoint group packet queue */

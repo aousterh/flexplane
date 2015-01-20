@@ -880,7 +880,6 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 		__be32 saddr, __be32 daddr, u32 min_size)
 {
 	int i;
-	u16 areq_type;
 	struct fastpass_areq *areq;
 
 	u8 *curp = pkt;
@@ -956,12 +955,13 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 
 		/* A-REQ type short */
 #if defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT)
-		areq_type = FASTPASS_PTYPE_EMU_AREQ;
+		*(__be16 *)curp = htons((FASTPASS_PTYPE_EMU_AREQ << 12) |
+				((pd->areq_data_type & 0x3F) << 6) | (pd->n_areq & 0x3F));
 #else
-		areq_type = FASTPASS_PTYPE_AREQ;
-#endif
-		*(__be16 *)curp = htons((areq_type << 12) |
+		*(__be16 *)curp = htons((FASTPASS_PTYPE_AREQ << 12) |
 						  (pd->n_areq & 0x3F));
+#endif
+
 		curp += 2;
 		remaining_len -= 2;
 
@@ -975,7 +975,7 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 		}
 
 #if defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT)
-		if (emu_req_data_bytes() > 0) {
+		if (pd->areq_data_bytes > 0) {
 			/* additional A-REQ data */
 			memcpy(curp, &pd->areq_data_counts[0], pd->n_areq);
 			curp += pd->n_areq;

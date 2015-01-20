@@ -739,6 +739,7 @@ static void send_request(struct fp_sched_data *q)
 	pd->n_areq = 0;
 #if defined(EMULATION_ALGO)
 	pd->areq_data_bytes = 0;
+	pd->areq_data_type = q->emu_areq_data_type;
 #endif
 
 	spin_lock_irq(&q->conn_lock);

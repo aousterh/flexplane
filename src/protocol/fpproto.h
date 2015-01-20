@@ -125,6 +125,7 @@ struct fpproto_emu_desc {
  * @reset_timestamp: timestamp of a reset, if applicable
  * @n_areq: number of filled in destinations for A-REQ
  * @areq: an array of allocation requests
+ * @areq_data_type: type of data conveyed with emu areqs (e.g. 0 indicates none)
  * @areq_data_bytes: number of bytes of areq_data in use in this packet
  * @areq_data_counts: for each areq, number of areq_data in this pkt
  * @areq_data: additional data about abstract packets in emulation, arranged in
@@ -157,6 +158,7 @@ struct fpproto_pktdesc {
 
 	/* payload - allocation request additional data */
 #if (defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT))
+	u8							areq_data_type;
 	u16							areq_data_bytes;
 	u8							areq_data_counts[FASTPASS_PKT_MAX_AREQ];
 	u8							areq_data[FASTPASS_PKT_MAX_AREQ_DATA];

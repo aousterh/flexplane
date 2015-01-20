@@ -18,7 +18,7 @@ struct tsq_ops {
 								u32 tslot_shift);
 	void		(* stop_qdisc)(void *priv);
 	void		(* add_timeslot)(void *priv, u64 src_dst_key,
-			u8 *request_data);
+			struct sk_buff *skb);
 };
 
 struct tsq_qdisc_entry {

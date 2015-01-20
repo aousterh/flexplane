@@ -1268,12 +1268,25 @@ static void fpq_stop_qdisc(void *priv) {
 	fastpass_proc_cleanup(q);
 }
 
-static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
+#if defined(EMULATION_ALGO)
+/*
+ * Copy data from @skb to @request_data, to be sent to the arbiter with the
+ * areq. Depends on emulated scheme.
+ */
+static void inline copy_request_data_from_pkt(struct fp_sched_data *q,
+		u8 *request_data, struct sk_buff *skb) {
+	/* TODO: fill in request data from packet, depending on scheme
+	 * (q->emu_areq_data_type specifies NONE, XCP, etc. as defined in
+	 * protocol/flags.h) */
+}
+#endif
+
+static void fpq_add_timeslot(void *priv, u64 dst_id, struct sk_buff *skb)
 {
 	struct fp_sched_data *q = (struct fp_sched_data *)priv;
 	struct fp_dst *dst = get_dst(q, dst_id);
 	struct request_data *req_data;
-	(void) request_data; (void) req_data;
+	(void) req_data;
 
 	flow_inc_demand(q, dst_id, dst, 1);
 
@@ -1296,7 +1309,7 @@ static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
 
 	/* there is space, copy request data to next entry in queue */
 	req_data = &dst->areq_data[dst->areq_data_tail % MAX_REQ_DATA_PER_DST];
-	memcpy(&req_data->data[0], request_data, q->emu_areq_data_bytes);
+	copy_request_data_from_pkt(q, &req_data->data[0], skb);
 	req_data->num_tslots = 1;
 	req_data->unreq_tslots = 1;
 	dst->areq_data_tail++;

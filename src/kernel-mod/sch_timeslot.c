@@ -40,7 +40,6 @@
 
 #include "sch_timeslot.h"
 #include "fastpass_proto.h"
-#include "../protocol/flags.h"
 #include "../protocol/platform.h"
 #include "../protocol/pacer.h"
 #include "../protocol/window.h"
@@ -483,15 +482,6 @@ static int tsq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 	return NET_XMIT_SUCCESS;
 }
 
-/*
- * Copy data from @skb to @request_data, to be sent to the arbiter with the
- * areq. Depends on emulated scheme.
- */
-static void inline copy_request_data_from_pkt(struct sk_buff *skb,
-		u8 *request_data) {
-	/* TODO: fill in request data from packet, depending on scheme */
-}
-
 static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 {
 	struct tsq_sched_data *q = qdisc_priv(sch);
@@ -500,7 +490,6 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 	s64 cost;
 	bool created_new_timeslot = false;
 	u64 src_dst_key;
-	u8 request_data[MAX_REQ_DATA_BYTES];
 
 	cost = (s64) psched_l2t_ns(&q->data_rate, qdisc_pkt_len(skb));
 
@@ -536,11 +525,6 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 				qdisc_pkt_len(skb));
 			q->stat.pkt_too_big++;
 		}
-
-#if defined(EMULATION_ALGO)
-		/* for emulation, get the data for the abstract packet */
-		copy_request_data_from_pkt(skb, &request_data[0]);
-#endif
 	} else {
 		timeslot_q = list_entry(dst->skb_qs.prev, struct timeslot_skb_q, list);
 	}
@@ -550,8 +534,7 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 	spin_unlock(&q->hash_tbl_lock);
 
 	if (created_new_timeslot) {
-		q->timeslot_ops->add_timeslot(sched_data_to_priv(q), src_dst_key,
-				&request_data[0]);
+		q->timeslot_ops->add_timeslot(sched_data_to_priv(q), src_dst_key, skb);
 	}
 
 	fp_debug("enqueued data packet of len %d to flow 0x%llX\n",

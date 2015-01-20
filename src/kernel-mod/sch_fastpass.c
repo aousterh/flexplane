@@ -120,6 +120,13 @@ module_param(max_preload, uint, 0444);
 MODULE_PARM_DESC(max_preload, "how futuristic can an allocation be and still be accepted");
 EXPORT_SYMBOL_GPL(max_preload);
 
+#if defined(EMULATION_ALGO)
+static char *emu_scheme = "drop_tail";
+module_param(emu_scheme, charp, 0444);
+MODULE_PARM_DESC(emu_scheme, "emulated scheme (drop_tail, red, dctcp)");
+EXPORT_SYMBOL_GPL(emu_scheme);
+#endif
+
 /**
  * Data to be sent along with an areq to the arbiter
  * @data: bytes of data, use varies by scheme
@@ -155,7 +162,7 @@ struct fp_dst {
  *
  */
 struct fp_sched_data {
-	/* configuration paramters */
+	/* configuration parameters */
 	u32		tslot_mul;					/* mul to calculate timeslot from nsec */
 	u32		tslot_shift;				/* shift to calculate timeslot from nsec */
 
@@ -191,6 +198,10 @@ struct fp_sched_data {
 
 	/* statistics */
 	struct fp_sched_stat stat;
+
+	/* emulation-specific parameters */
+	u8		emu_areq_data_type; /* type of data to be sent in emu areqs */
+	u8		emu_areq_data_bytes; /* number of bytes per emu areq data */
 };
 
 static struct tsq_qdisc_entry *fastpass_tsq_entry;
@@ -756,22 +767,22 @@ static void send_request(struct fp_sched_data *q)
 
 #if defined(EMULATION_ALGO)
 		pd->areq_data_counts[pd->n_areq] = 0;
-		if (emu_req_data_bytes() == 0 ||
+		if (q->emu_areq_data_bytes == 0 ||
 				new_requested == dst->requested_tslots)
 			goto finished_request_data;
 
 		/* add request data to the pktdesc, as long as there is more space */
-		while (pd->areq_data_bytes + emu_req_data_bytes() <=
+		while (pd->areq_data_bytes + q->emu_areq_data_bytes <=
 				FASTPASS_PKT_MAX_AREQ_DATA) {
 			req_data = &dst->areq_data[dst->areq_data_next_to_send %
 			                           MAX_REQ_DATA_PER_DST];
 
 			/* copy in one more request data for this areq dst */
 			memcpy(&pd->areq_data[pd->areq_data_bytes], &req_data->data[0],
-					emu_req_data_bytes());
+					q->emu_areq_data_bytes);
 			req_data->unreq_tslots--;
 			pd->areq_data_counts[pd->n_areq]++;
-			pd->areq_data_bytes += emu_req_data_bytes();
+			pd->areq_data_bytes += q->emu_areq_data_bytes;
 
 			if (likely(req_data->unreq_tslots == 0))
 				dst->areq_data_next_to_send++; /* move to next req_data */
@@ -804,7 +815,7 @@ finished_request_data:
 		pd->n_areq++;
 
 #if defined(EMULATION_ALGO)
-		if (pd->areq_data_bytes + emu_req_data_bytes() >
+		if (pd->areq_data_bytes + q->emu_areq_data_bytes >
 			FASTPASS_PKT_MAX_AREQ_DATA)
 			break; /* no more areq data space */
 #endif
@@ -1047,7 +1058,7 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", miss_threshold %u", miss_threshold);
 	seq_printf(seq, ", max_preload %u", max_preload);
 #if defined(EMULATION_ALGO)
-	seq_printf(seq, ", algo emulation");
+	seq_printf(seq, ", algo emulation with scheme %s", emu_scheme);
 #elif defined(PIPELINED_ALGO)
 	seq_printf(seq, ", algo sequential");
 #endif
@@ -1168,6 +1179,9 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 	q->tslot_mul		= tslot_mul;
 	q->tslot_shift		= tslot_shift;
 
+	q->emu_areq_data_type	= areq_data_type_from_scheme(emu_scheme);
+	q->emu_areq_data_bytes	= areq_data_bytes_from_scheme(emu_scheme);
+
 	spin_lock_init(&q->unreq_flows_lock);
 
 	for (i = 0; i < MAX_FLOWS; i++)
@@ -1281,7 +1295,7 @@ static void fpq_add_timeslot(void *priv, u64 dst_id, u8 *request_data)
 
 	/* there is space, copy request data to next entry in queue */
 	req_data = &dst->areq_data[dst->areq_data_tail % MAX_REQ_DATA_PER_DST];
-	memcpy(&req_data->data[0], request_data, emu_req_data_bytes());
+	memcpy(&req_data->data[0], request_data, q->emu_areq_data_bytes);
 	req_data->num_tslots = 1;
 	req_data->unreq_tslots = 1;
 	dst->areq_data_tail++;

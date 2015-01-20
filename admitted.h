@@ -24,6 +24,7 @@ struct emu_admitted_edge {
 	uint16_t	dst;
 	uint8_t		flags; /* only 4 lowest bits are used */
 	uint16_t	id; /* sequential id within this flow */
+	uint8_t		data[MAX_ALLOC_DATA_BYTES];
 };
 
 /**
@@ -50,6 +51,16 @@ void admitted_init(struct emu_admitted_traffic *admitted) {
 }
 
 /**
+ * For each algorithm, copy whatever data should be returned to the endpoint
+ * into the data field of the admitted edge.
+ */
+static inline
+void copy_alloc_data_to_admitted_edge(struct emu_packet *packet,
+		struct emu_admitted_edge *edge) {
+	/* TODO */
+}
+
+/**
  * Add an edge to the admitted struct
  */
 static inline __attribute__((always_inline))
@@ -69,6 +80,8 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted,
 	edge->dst = (packet->dst << FLOW_SHIFT) | (packet->flow & FLOW_MASK);
 	edge->flags = flags & FLAGS_MASK;
 	edge->id = packet->id;
+
+	copy_alloc_data_to_admitted_edge(packet, edge);
 }
 
 /**

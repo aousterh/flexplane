@@ -106,10 +106,10 @@ uint32_t run_experiment(struct request_info *requests, uint32_t start_time,
         	uint16_t start_id = next_packet_id[flow_index(current_request->src,
         			current_request->dst, 0)]++;
         	add_backlog(status, current_request->src, current_request->dst,
-                        current_request->backlog, start_id);
+                        current_request->backlog, start_id, NULL);
 #else
         	add_backlog(status, current_request->src, current_request->dst,
-                        current_request->backlog, 0);
+                        current_request->backlog, 0, NULL);
 #endif
             current_request++;
         }
@@ -165,10 +165,10 @@ void run_admissible(struct request_info *requests, uint32_t start_time, uint32_t
         	uint16_t start_id = next_packet_id[flow_index(current_request->src,
         			current_request->dst, 0)]++;
         	add_backlog(status, current_request->src, current_request->dst,
-                        current_request->backlog, start_id);
+                        current_request->backlog, start_id, NULL);
 #else
         	add_backlog(status, current_request->src, current_request->dst,
-                        current_request->backlog, 0);
+                        current_request->backlog, 0, NULL);
 #endif
             current_request++;
         }

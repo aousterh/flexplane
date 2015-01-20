@@ -314,8 +314,17 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	u32 node_id = en - end_nodes;
 	s32 demand_diff;
 	u32 num_increases = 0;
+	u8 *areq_data_counts, *areq_data;
+	(void) areq_data_counts; (void) areq_data;
 
 	COMM_DEBUG("handling A-REQ with %d destinations\n", n);
+
+#if defined(EMULATION_ALGO)
+	areq_data_counts = (u8 *) (dst_and_count + 2*n);
+	areq_data = areq_data_counts + n;
+	if (n & 1)
+		areq_data++; /* padded to even number */
+#endif
 
 	for (i = 0; i < n; i++) {
 		dst = rte_be_to_cpu_16(dst_and_count[2*i]);
@@ -336,9 +345,23 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 		demand_diff = (s32)demand - (s32)orig_demand;
 		if (demand_diff > 0) {
 			comm_log_demand_increased(node_id, dst, orig_demand, demand, demand_diff);
-			/* get the sequential ID from the demand */
+
+#if defined(EMULATION_ALGO)
+			if (emu_req_data_bytes() > 0 &&
+					*areq_data_counts != demand_diff) /* todo: handle lost areqs */
+				comm_log_areq_data_count_disagrees(node_id, dst,
+						*areq_data_counts, demand_diff);
+
+			/* get the sequential ID from the demand, also pass in areq data */
 			add_backlog(g_admissible_status(), node_id, dst, demand_diff,
-					orig_demand & 0xFFFF);
+					orig_demand & 0xFFFF, areq_data);
+			areq_data += emu_req_data_bytes() * demand_diff;
+			areq_data_counts++;
+#else
+			/* no need for sequential id or additional areq data */
+			add_backlog(g_admissible_status(), node_id, dst, demand_diff, 0,
+					NULL);
+#endif
 			en->demands[dst] = demand;
 			num_increases++;
 		} else {

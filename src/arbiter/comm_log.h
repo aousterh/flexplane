@@ -37,6 +37,7 @@ struct comm_log {
 	uint64_t rx_truncated_pkt;
 	uint64_t areq_invalid_src;
 	uint64_t areq_invalid_dst;
+	uint64_t areq_data_count_disagrees;
 	uint64_t demand_increased;
 	uint64_t demand_remained;
 	uint64_t triggered_send;
@@ -178,6 +179,14 @@ static inline void comm_log_areq_invalid_dst(uint32_t requesting_node,
 	CL->areq_invalid_dst++;
 	COMM_DEBUG("received A-REQ from node %u for invalid dst %u\n",
 			requesting_node, dest);
+}
+
+static inline void comm_log_areq_data_count_disagrees(uint32_t requesting_node,
+		uint16_t dst, uint8_t areq_count, int32_t demand_diff) {
+	(void)requesting_node; (void) dst; (void) areq_count; (void) demand_diff;
+	CL->areq_data_count_disagrees++;
+	COMM_DEBUG("A-REQ count %d disagrees with cumulative total %d (from %u to %u)\n",
+			areq_count, demand_diff, requesting_node, dst);
 }
 
 static inline void comm_log_demand_increased(uint32_t node_id,

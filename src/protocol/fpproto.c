@@ -943,6 +943,13 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 			curp += 2;
 			remaining_len -= 2;
 		}
+		/* after ids, copy in additional data per alloc */
+		for (i = 0; i < pd->alloc_tslot; i++) {
+			memcpy(curp, &pd->emu_tslot_desc[i].data[0],
+					emu_alloc_data_bytes());
+			curp += emu_alloc_data_bytes();
+			remaining_len -= emu_alloc_data_bytes();
+		}
 #endif
 	}
 	(void) i; (void) areq; (void)max_len; /* TODO, fix this better */

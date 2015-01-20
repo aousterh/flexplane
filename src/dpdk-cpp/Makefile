@@ -35,7 +35,7 @@ CFLAGS += -march=core2
 #CFLAGS += -DPIPELINED_ALGO
 CFLAGS += -DEMULATION_ALGO
 CFLAGS += $(CMD_LINE_CFLAGS)
-CFLAGS += -fvisibility=hidden
+#CFLAGS += -fvisibility=hidden
 
 CPPFLAGS = $(CFLAGS)
 

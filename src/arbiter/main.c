@@ -193,7 +193,7 @@ struct rte_mempool* tx_pktmbuf_pool[NB_SOCKETS];
 #define CMD_RING_SIZE 64
 
 // Allocated configuration structs
-struct lcore_conf lcore_conf[RTE_MAX_LCORE];
+struct lcore_conf_t lcore_conf[RTE_MAX_LCORE];
 
 // The number of enabled cores
 uint8_t n_enabled_lcore;
@@ -201,7 +201,7 @@ uint8_t n_enabled_lcore;
 uint8_t enabled_lcore[RTE_MAX_LCORE];
 
 // Allocated port configuration structs
-struct port_info port_info[MAX_PORTS];
+struct port_info_t port_info[MAX_PORTS];
 
 // The number of enabled ports
 uint8_t n_enabled_port;

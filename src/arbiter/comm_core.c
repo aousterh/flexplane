@@ -700,7 +700,7 @@ cleanup:
 /*
  * Read packets from RX queues
  */
-static inline bool do_rx_burst(struct lcore_conf* qconf)
+static inline bool do_rx_burst(struct lcore_conf_t* qconf)
 {
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	int i, j, nb_rx;
@@ -1059,7 +1059,7 @@ cleanup:
 void watchdog_loop(struct comm_core_cmd * cmd)
 {
 	const unsigned lcore_id = rte_lcore_id();
-	struct lcore_conf *	qconf = &lcore_conf[lcore_id];
+	struct lcore_conf_t *	qconf = &lcore_conf[lcore_id];
 	struct comm_core_state *core = &ccore_state[lcore_id];
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	int i, j, nb_rx;
@@ -1109,7 +1109,7 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 {
 	int i;
 	uint8_t portid, queueid;
-	struct lcore_conf *qconf;
+	struct lcore_conf_t *qconf;
 	const unsigned lcore_id = rte_lcore_id();
 	struct comm_core_state *core = &ccore_state[lcore_id];
 	struct list_head lst = LIST_HEAD_INIT(lst);

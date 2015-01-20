@@ -55,7 +55,7 @@ struct mbuf_table {
  *    information about input and output queues, core-specific transmit buffers,
  *    and other required structures.
  */
-struct lcore_conf {
+struct lcore_conf_t {
 	// Number of receive queues in rx_queue_list
 	uint16_t n_rx_queue;
 	// Receive queues (each struct contains port id and queue id)
@@ -67,12 +67,12 @@ struct lcore_conf {
 	struct mbuf_table tx_mbufs[MAX_PORTS];	/**< TX buffers */
 } __rte_cache_aligned;
 
-extern struct lcore_conf lcore_conf[RTE_MAX_LCORE];
+extern struct lcore_conf_t lcore_conf[RTE_MAX_LCORE];
 
 /**
  * \brief Configuration for a port
  */
-struct port_info {
+struct port_info_t {
 	uint8_t is_enabled;  /**< True if this port is enabled */
 	uint8_t n_rx_queue; /**< Number of RX queues */
 	uint8_t n_tx_queue; /**< Number of TX queues */
@@ -80,7 +80,7 @@ struct port_info {
 } __rte_cache_aligned;
 
 // Allocated port configuration structs
-extern struct port_info port_info[MAX_PORTS];
+extern struct port_info_t port_info[MAX_PORTS];
 
 // The number of enabled cores
 extern uint8_t n_enabled_lcore;
@@ -116,7 +116,7 @@ burst_single_packet(struct rte_mbuf *m, uint8_t port)
  */
 static inline int send_queued_packets(uint8_t port) {
 	uint32_t lcore_id = rte_lcore_id();
-	struct lcore_conf *qconf = &lcore_conf[lcore_id];
+	struct lcore_conf_t *qconf = &lcore_conf[lcore_id];
 	uint16_t queueid = qconf->enabled_ind;
 	struct rte_mbuf **m_table = (struct rte_mbuf **) qconf->tx_mbufs[port].m_table;;
 	uint16_t len = qconf->tx_mbufs[port].len;
@@ -153,7 +153,7 @@ static inline int send_packet_via_queue(struct rte_mbuf *m, uint8_t port)
 {
 	uint32_t lcore_id;
 	uint16_t len;
-	struct lcore_conf *qconf;
+	struct lcore_conf_t *qconf;
 
 	lcore_id = rte_lcore_id();
 

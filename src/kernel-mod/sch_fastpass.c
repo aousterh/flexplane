@@ -335,8 +335,11 @@ static void handle_reset(void *param)
 	struct fp_dst *dst;
 	u32 idx;
 	u32 dst_id;
+	u16 cur_req_data;
+	struct request_data *req_data;
 	u32 mask = MAX_FLOWS - 1;
 	u32 base_idx = jhash_1word((__be32)fp_monotonic_time_ns(), 0) & mask;
+	(void) cur_req_data; (void) req_data;
 
 	BUILD_BUG_ON_MSG(MAX_FLOWS & (MAX_FLOWS - 1), "MAX_FLOWS needs to be a power of 2");
 
@@ -366,6 +369,17 @@ static void handle_reset(void *param)
 		dst->acked_tslots = 0;
 		dst->requested_tslots = 0;
 		dst->used_tslots = 0;
+
+#if defined(EMULATION_ALGO)
+		/* reset sent counters so that all areq data will be resent to the arbiter */
+		for (cur_req_data = dst->areq_data_head;
+				cur_req_data < dst->areq_data_tail; cur_req_data++) {
+			/* get the request data currently at the head of the queue */
+			req_data = &dst->areq_data[cur_req_data % MAX_REQ_DATA_PER_DST];
+			req_data->unreq_tslots = req_data->num_tslots;
+		}
+		dst->areq_data_next_to_send = dst->areq_data_head;
+#endif
 
 		atomic_add(dst->demand_tslots, &q->demand_tslots);
 

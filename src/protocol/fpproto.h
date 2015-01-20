@@ -56,10 +56,10 @@ extern bool fastpass_debug;
 
 /* EMULATION SPECIFIC */
 #if defined(EMULATION_ALGO)
-#define ALLOC_BYTES_PER_TSLOT	3
+#define MAX_ALLOC_BYTES_PER_TSLOT		(3 + MAX_ALLOC_DATA_BYTES)
 #define FASTPASS_PKT_MAX_AREQ_DATA		128
 #else
-#define ALLOC_BYTES_PER_TSLOT	1
+#define MAX_ALLOC_BYTES_PER_TSLOT	1
 #define FASTPASS_PKT_MAX_AREQ_DATA		0
 #endif
 
@@ -71,7 +71,7 @@ extern bool fastpass_debug;
 #define FASTPASS_PKT_MAX_ALLOC_TSLOTS	64
 #define FASTPASS_PKT_ALLOC_LEN			(2 + 2 + 2 * 15 + \
 										FASTPASS_PKT_MAX_ALLOC_TSLOTS * \
-										ALLOC_BYTES_PER_TSLOT)
+										MAX_ALLOC_BYTES_PER_TSLOT)
 #define FASTPASS_PKT_AREQ_LEN			(2 + 4 * FASTPASS_PKT_MAX_AREQ)
 #else
 /* END NODE */
@@ -109,9 +109,11 @@ struct fpproto_areq_desc {
  * Additional information about each alloc used in emulation.
  * @id: the sequential id of the MTU the allocation is for (because allocs can
  * 	be generated out of order)
+ * @data: additional data, use/structure depends on the emulated scheme
  */
 struct fpproto_emu_desc {
 	u16	id;
+	u8	data[MAX_ALLOC_DATA_BYTES];
 };
 
 /**

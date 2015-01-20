@@ -10,8 +10,8 @@
 
 #include "platform/generic.h"
 
-/* This file contains information about encoding/decoding flags in Fastpass
- * control packets. */
+/* This file contains information about encoding/decoding flags and extra data
+ * in control packets used in emulation. */
 
 #define FLAGS_MASK	0xF
 
@@ -24,6 +24,11 @@
 #define MAX_REQ_DATA_BYTES		8 /* must be a multiple of two */
 #define AREQ_DATA_TYPE_NONE		0 /* no areq data used */
 #define AREQ_DATA_TYPE_UNSPEC	1 /* unspecified data type, assumes MAX_REQ_DATA_BYTES */
+
+/* parameters for alloc data */
+#define MAX_ALLOC_DATA_BYTES	2 /* must be a multiple of two */
+#define ALLOC_DATA_TYPE_NONE	0 /* only flags, no additional data */
+#define ALLOC_DATA_TYPE_UNSPEC	1 /* unspecified data type, assumes MAX_ALLOC_DATA_BYTES */
 
 #if defined(FASTPASS_CONTROLLER)
 /**
@@ -40,6 +45,22 @@ static inline u16 emu_req_data_bytes(void) {
 #endif
 
 	return req_data_bytes;
+}
+
+/**
+ * Return the number of additional bytes of data per alloc sent from the
+ * arbiter back to an endpoint.
+ */
+static inline u16 emu_alloc_data_bytes(void) {
+	u16 alloc_data_bytes;
+
+#if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP))
+	alloc_data_bytes = 0;
+#else
+	alloc_data_bytes = MAX_ALLOC_DATA_BYTES;
+#endif
+
+	return alloc_data_bytes;
 }
 #endif
 

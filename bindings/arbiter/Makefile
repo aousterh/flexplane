@@ -83,8 +83,11 @@ CPPFLAGS += -D__STDC_LIMIT_MACROS
 # linker settings to work with C++
 LD = g++
 LDFLAGS += -lstdc++
+LINK_USING_CC = 0
 
 # don't use KNI
 CONFIG_RTE_LIBRTE_KNI=n
+
+
 
 include $(RTE_SDK)/mk/rte.extshared.mk

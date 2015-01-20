@@ -75,7 +75,7 @@ make_watchdog(uint8_t port, uint32_t our_ip)
 	ipv4_hdr->type_of_service = 0;
 	ipv4_hdr->total_length = rte_cpu_to_be_16(sizeof(struct ipv4_hdr) + FP_WATCHDOG_HDR_LEN);
 	ipv4_hdr->packet_id = 0;
-	ipv4_hdr->fragment_offset = htons(0x4000);
+	ipv4_hdr->fragment_offset = rte_cpu_to_be_16(0x4000);
 	ipv4_hdr->time_to_live = 77;
 	ipv4_hdr->next_proto_id = IPPROTO_FASTPASS_WATCHDOG;
 	// ipv4_hdr->hdr_checksum will be calculated in HW

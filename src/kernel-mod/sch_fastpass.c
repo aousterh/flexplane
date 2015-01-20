@@ -1194,8 +1194,10 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 	q->tslot_mul		= tslot_mul;
 	q->tslot_shift		= tslot_shift;
 
+#if defined(EMULATION_ALGO)
 	q->emu_areq_data_type	= areq_data_type_from_scheme(emu_scheme);
 	q->emu_areq_data_bytes	= areq_data_bytes_from_scheme(emu_scheme);
+#endif
 
 	spin_lock_init(&q->unreq_flows_lock);
 

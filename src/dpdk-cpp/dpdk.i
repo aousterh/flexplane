@@ -103,6 +103,7 @@ void dump_pci_drivers() {
 %ignore rte_log;
 %ignore rte_vlog;
 %include <rte_log.h>
+%inline %{ int rte_openlog_stdout() { return rte_openlog_stream(stdout); } %}
 
 
 %include "util/getter_setter.h"

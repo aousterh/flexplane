@@ -49,6 +49,7 @@
  * @flags: additional information about this alloc (path, drop, mark, etc.),
  * 			only the 4 least significant bits are used
  * @id: sequential id of the packet the allocation is for (used only in emu)
+ * @data: additional data sent with this alloc, usage varies by emulated scheme
  */
 struct pending_alloc {
 	uint16_t	dst;
@@ -56,6 +57,7 @@ struct pending_alloc {
 	uint8_t		flags;
 #if defined(EMULATION_ALGO)
 	uint16_t	id;
+	uint8_t		data[MAX_ALLOC_DATA_BYTES];
 #endif
 };
 
@@ -785,6 +787,7 @@ void fill_algo_fields_in_alloc(struct pending_alloc *alloc,
 	struct emu_admitted_edge *edge;
 	edge = get_admitted_edge(admitted, index);
 	alloc->id = edge->id;
+	memcpy(&alloc->data[0], &edge->data[0], emu_alloc_data_bytes());
 #endif
 }
 
@@ -937,6 +940,8 @@ next_alloc:
 			(cur_alloc->flags & FLAGS_MASK);
 #if defined(EMULATION_ALGO)
 	pd->emu_tslot_desc[n_tslot].id = cur_alloc->id;
+	memcpy(&pd->emu_tslot_desc[n_tslot].data[0], &cur_alloc->data[0],
+			emu_alloc_data_bytes());
 #endif
 	n_tslot++;
 

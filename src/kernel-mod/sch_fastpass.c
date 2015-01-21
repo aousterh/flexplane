@@ -63,6 +63,8 @@
 
 #define PROC_FILENAME_MAX_SIZE				64
 
+#define ECN_CE	0x3
+
 enum {
 	FLOW_UNQUEUED,
 	FLOW_REQUEST_QUEUE,
@@ -200,8 +202,10 @@ struct fp_sched_data {
 	struct fp_sched_stat stat;
 
 	/* emulation-specific parameters */
-	u8		emu_areq_data_type; /* type of data to be sent in emu areqs */
-	u8		emu_areq_data_bytes; /* number of bytes per emu areq data */
+	u8		emu_areq_data_type;		/* type of data sent in emu areqs */
+	u8		emu_areq_data_bytes;	/* number of bytes per emu areq data */
+	u8		emu_alloc_data_type;	/* type of data sent in emu allocs */
+	u8		emu_alloc_data_bytes;	/* number of bytes per alloc data */
 };
 
 static struct tsq_qdisc_entry *fastpass_tsq_entry;
@@ -402,23 +406,24 @@ static void handle_reset(void *param)
  * timeslots handled (0 or 1).
  */
 static int inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
-		u8 flags, u16 id)
+		u8 flags, u16 id, u8 *data)
 {
 #if (defined(EMULATION_ALGO))
 	int ret;
 
 	switch (flags) {
 	case EMU_FLAGS_NONE:
-		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_BY_ID, id);
+		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_BY_ID, id, data);
 		q->stat.admitted_timeslots += ret;
 		return ret;
 	case EMU_FLAGS_DROP:
-		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id);
+		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_DROP_BY_ID, id, data);
 		q->stat.dropped_timeslots += ret;
 		return ret;
 	case EMU_FLAGS_ECN_MARK:
-		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_MARK_BY_ID, id);
-		q->stat.marked_timeslots += ret;
+	case EMU_FLAGS_MODIFY:
+		ret = tsq_handle_now(q, dst_id, TSLOT_ACTION_MODIFY_BY_ID, id, data);
+		q->stat.modified_timeslots += ret;
 		return ret;
 	}
 
@@ -427,7 +432,8 @@ static int inline handle_single_alloc(struct fp_sched_data *q, u16 dst_id,
 	q->stat.unrecognized_action++;
 	return 0;
 #else
-	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_HEAD, 0 /* ignored */);
+	tsq_handle_now(q, dst_id, TSLOT_ACTION_ADMIT_HEAD, 0 /* ignored */,
+			NULL /* ignored */);
 	q->stat.admitted_timeslots++;
 	return 1; /* always assume successful */
 #endif
@@ -450,10 +456,12 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 	u64 current_timeslot;
 	u16 id = 0;
 	int handled_tslots;
+	u16 *ids;
+	u8 *alloc_data;
+	(void) ids; (void) alloc_data;
 
-#if defined(EMULATION_ALGO)
-	u16 *ids = (u16 *) (tslots + n_tslots);
-#endif
+	ids = (u16 *) (tslots + n_tslots);
+	alloc_data = (u8 *) (ids + n_tslots);
 
 	/* every alloc should be ACKed */
 	trigger_tx(q);
@@ -526,9 +534,12 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			dst->alloc_tslots++;
 			release_dst(q, dst);
 
-			handled_tslots = handle_single_alloc(q, dst_id, flags, id);
+			handled_tslots = handle_single_alloc(q, dst_id, flags, id,
+					alloc_data);
 
 #if defined(EMULATION_ALGO)
+			alloc_data += q->emu_alloc_data_bytes;
+
 			if (unlikely(handled_tslots == 0)) {
 				/* no tslot was successfully handled - decrement the counters */
 				fp_debug("no tslot was successfully handled with id %d\n", id);
@@ -1073,7 +1084,8 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", miss_threshold %u", miss_threshold);
 	seq_printf(seq, ", max_preload %u", max_preload);
 #if defined(EMULATION_ALGO)
-	seq_printf(seq, ", algo emulation with scheme %s", emu_scheme);
+	seq_printf(seq, ", algo emulation with scheme %s (%d bytes per areq, %d per alloc)",
+			emu_scheme, q->emu_areq_data_bytes, q->emu_alloc_data_bytes);
 #elif defined(PIPELINED_ALGO)
 	seq_printf(seq, ", algo sequential");
 #endif
@@ -1094,9 +1106,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", acked %llu", q->acked_tslots);
 	seq_printf(seq, ", allocs %u", atomic_read(&q->alloc_tslots));
 	seq_printf(seq, ", used %llu", q->used_tslots);
-	seq_printf(seq, ", admitted (unmarked) %llu", scs->admitted_timeslots);
+	seq_printf(seq, ", admitted (unmodified) %llu", scs->admitted_timeslots);
 	seq_printf(seq, ", dropped %llu", scs->dropped_timeslots);
-	seq_printf(seq, ", marked %llu", scs->marked_timeslots);
+	seq_printf(seq, ", modified %llu", scs->modified_timeslots);
 
 	seq_printf(seq, "\n  %llu requests w/no a-req", scs->request_with_empty_flowqueue);
 	seq_printf(seq, "\n  %llu a-req data exceeded one ctrl pkt", scs->areq_data_exceeded_pkt);
@@ -1117,6 +1129,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->ack_delta_exceeds_data_queue)
 		seq_printf(seq, "\n  %llu times newly ACKed timeslots exceeded data in areq data queue",
 				scs->ack_delta_exceeds_data_queue);
+	if (scs->unsupported_alloc_data_type)
+		seq_printf(seq, "\n  %llu times received packets to be modified with unsupported alloc data type",
+				scs->unsupported_alloc_data_type);
 
 	fpproto_print_errors(&q->conn.stat, seq);
 	fpproto_print_socket_errors(q->ctrl_sock->sk, seq);
@@ -1197,6 +1212,8 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 #if defined(EMULATION_ALGO)
 	q->emu_areq_data_type	= areq_data_type_from_scheme(emu_scheme);
 	q->emu_areq_data_bytes	= areq_data_bytes_from_scheme(emu_scheme);
+	q->emu_alloc_data_type	= alloc_data_type_from_scheme(emu_scheme);
+	q->emu_alloc_data_bytes	= alloc_data_bytes_from_scheme(emu_scheme);
 #endif
 
 	spin_lock_init(&q->unreq_flows_lock);
@@ -1335,6 +1352,50 @@ release:
 	release_dst(q, dst);
 }
 
+/**
+ * Mark this packet with the ECN congestion encountered codepoint.
+ */
+static inline void mark_ecn(struct sk_buff *skb)
+{
+	__be16 proto = skb->protocol;
+	struct iphdr * iph;
+	__be16 old_word, new_word;
+
+	if (proto != __constant_htons(ETH_P_IP)) {
+		/* not IPv4. probably IPv6? */
+		fp_debug("cannot mark ecn in packet with protocol %u:\n",
+				skb->protocol);
+		return;
+	}
+
+	/* mark ECN Congestion Encountered in IPv4 packet */
+	iph = (struct iphdr *) skb_network_header(skb);
+	old_word = ((__be16 *) iph)[0];
+	iph->tos |= ECN_CE;
+
+    /* update checksum */
+	new_word = ((__be16 *) iph)[0];
+	csum_replace2(&iph->check, old_word, new_word);
+}
+
+/*
+ * Modify any packet headers in @skb as necessary before it is sent. @data is
+ * supplementary alloc data sent from the arbiter.
+ */
+static void fpq_prepare_to_send(void *priv, struct sk_buff *skb, u8 *data)
+{
+	struct fp_sched_data *q = (struct fp_sched_data *)priv;
+
+	if (q->emu_alloc_data_type == ALLOC_DATA_TYPE_NONE) {
+		/* only possible modification with no alloc data is ECN marking */
+		mark_ecn(skb);
+	} else {
+		fp_debug("fpq_prepare_to_send does not yet support alloc data type %d",
+				q->emu_alloc_data_type);
+		q->stat.unsupported_alloc_data_type++;
+	}
+}
+
 static struct tsq_ops fastpass_tsq_ops __read_mostly = {
 	.id		=	"fastpass",
 	.priv_size	=	sizeof(struct fp_sched_data),
@@ -1342,6 +1403,7 @@ static struct tsq_ops fastpass_tsq_ops __read_mostly = {
 	.new_qdisc = fpq_new_qdisc,
 	.stop_qdisc = fpq_stop_qdisc,
 	.add_timeslot = fpq_add_timeslot,
+	.prepare_to_send = fpq_prepare_to_send,
 };
 
 static int __init fastpass_module_init(void)

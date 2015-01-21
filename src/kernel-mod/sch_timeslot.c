@@ -49,8 +49,6 @@
 
 #define PROC_FILENAME_MAX_SIZE				64
 
-#define ECN_CE	0x3
-
 struct timeslot_skb_q {
 	struct list_head list;
 	struct sk_buff	*head;		/* list of skbs for this flow : first skb */
@@ -94,7 +92,7 @@ struct tsq_sched_stat {
 	u64		added_tslots;
 	u64		used_timeslots;
 	u64		dropped_timeslots;
-	u64		marked_timeslots;
+	u64		modified_timeslots;
 	/* alloc-related */
 	u64		unwanted_alloc;
 	u64		dst_not_found_handle_now;
@@ -722,33 +720,7 @@ done:
 }
 #endif
 
-/**
- * Mark this packet with the ECN congestion encountered codepoint.
- */
-static inline void mark_ecn(struct sk_buff *skb)
-{
-	__be16 proto = skb->protocol;
-	struct iphdr * iph;
-	__be16 old_word, new_word;
-
-	if (proto != __constant_htons(ETH_P_IP)) {
-		/* not IPv4. probably IPv6? */
-		fp_debug("cannot mark ecn in packet with protocol %u:\n",
-				skb->protocol);
-		return;
-	}
-
-	/* mark ECN Congestion Encountered in IPv4 packet */
-	iph = (struct iphdr *) skb_network_header(skb);
-	old_word = ((__be16 *) iph)[0];
-	iph->tos |= ECN_CE;
-
-    /* update checksum */
-	new_word = ((__be16 *) iph)[0];
-	csum_replace2(&iph->check, old_word, new_word);
-}
-
-int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
+int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id, u8 *data)
 {
 	struct tsq_sched_data *q = priv_to_sched_data(priv);
 	struct tsq_dst *dst;
@@ -783,7 +755,7 @@ int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id)
 		goto found_entry;
 	case TSLOT_ACTION_ADMIT_BY_ID:
 	case TSLOT_ACTION_DROP_BY_ID:
-	case TSLOT_ACTION_MARK_BY_ID:
+	case TSLOT_ACTION_MODIFY_BY_ID:
 		/* find the timeslot with the specified id */
 		list_for_each_entry(timeslot_q, &dst->skb_qs, list) {
 			if (timeslot_q->id == id)
@@ -818,8 +790,8 @@ found_entry:
 	/* log the action that will be performed on this tslot */
 	if (action == TSLOT_ACTION_DROP_BY_ID)
 		q->stat.dropped_timeslots++;
-	else if (action == TSLOT_ACTION_MARK_BY_ID)
-		q->stat.marked_timeslots++;
+	else if (action == TSLOT_ACTION_MODIFY_BY_ID)
+		q->stat.modified_timeslots++;
 	else
 		q->stat.used_timeslots++;
 
@@ -831,11 +803,13 @@ found_entry:
 			skb_next = skb->next;
 			qdisc_drop(skb, q->qdisc);
 		}
-	} else if (action == TSLOT_ACTION_MARK_BY_ID) {
-		/* mark the packets before they are transmitted */
+	} else if (q->timeslot_ops->prepare_to_send != NULL &&
+			(action == TSLOT_ACTION_MODIFY_BY_ID)) {
+		/* give sch_fastpass a chance to modify headers in all packets in this
+		 * timeslot */
 		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
 			skb_next = skb->next;
-			mark_ecn(skb);
+			q->timeslot_ops->prepare_to_send(sched_data_to_priv(q), skb, data);
         }
 	}
 
@@ -1370,9 +1344,9 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 
 	/* timeslot statistics */
 	seq_printf(seq, ", %llu added timeslots", scs->added_tslots);
-	seq_printf(seq, ", %llu used (umarked)", scs->used_timeslots);
+	seq_printf(seq, ", %llu used (unmodified)", scs->used_timeslots);
 	seq_printf(seq, ", %llu dropped", scs->dropped_timeslots);
-	seq_printf(seq, ", %llu marked", scs->marked_timeslots);
+	seq_printf(seq, ", %llu modified", scs->modified_timeslots);
 
 	/* egress packet statistics */
 	seq_printf(seq, "\n  enqueued %llu ctrl", scs->ctrl_pkts);

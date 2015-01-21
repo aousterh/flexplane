@@ -234,6 +234,11 @@ struct fpproto_ops {
 	 */
 	int		(*cancel_timer)(void *param);
 
+	/**
+	 * Number of bytes per alloc payload per tslot.
+	 */
+	int alloc_bytes_per_tslot;
+
 };
 
 #define FASTPASS_PROTOCOL_STATS_VERSION 2

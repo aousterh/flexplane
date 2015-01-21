@@ -38,6 +38,7 @@
 #include "sch_timeslot.h"
 #include "fastpass_proto.h"
 #include "../protocol/flags.h"
+#include "../protocol/fpproto.h"
 #include "../protocol/platform.h"
 #include "../protocol/pacer.h"
 #include "../protocol/window.h"
@@ -967,15 +968,16 @@ void ctrl_rcv_handler(void *priv, u8 *pkt, u32 len, __be32 saddr, __be32 daddr)
 }
 
 struct fpproto_ops fastpass_sch_proto_ops = {
-	.handle_reset		= &handle_reset,
-	.handle_alloc		= &handle_alloc,
-	.handle_ack			= &handle_ack,
-	.handle_neg_ack		= &handle_neg_ack,
-	.handle_skipped_ack	= NULL, /* unused */
-	.handle_areq		= &handle_areq,
-	.trigger_request	= &trigger_tx_voidp,
-	.set_timer			= &set_retrans_timer,
-	.cancel_timer		= &cancel_retrans_timer,
+	.handle_reset			= &handle_reset,
+	.handle_alloc			= &handle_alloc,
+	.handle_ack				= &handle_ack,
+	.handle_neg_ack			= &handle_neg_ack,
+	.handle_skipped_ack		= NULL, /* unused */
+	.handle_areq			= &handle_areq,
+	.trigger_request		= &trigger_tx_voidp,
+	.set_timer				= &set_retrans_timer,
+	.cancel_timer			= &cancel_retrans_timer,
+	.alloc_bytes_per_tslot	= MAX_ALLOC_BYTES_PER_TSLOT,
 };
 
 /* reconnects the control socket to the controller */
@@ -1214,6 +1216,7 @@ static int fpq_new_qdisc(void *priv, struct net *qdisc_net, u32 tslot_mul,
 	q->emu_areq_data_bytes	= areq_data_bytes_from_scheme(emu_scheme);
 	q->emu_alloc_data_type	= alloc_data_type_from_scheme(emu_scheme);
 	q->emu_alloc_data_bytes	= alloc_data_bytes_from_scheme(emu_scheme);
+	fastpass_sch_proto_ops.alloc_bytes_per_tslot = 3 + q->emu_alloc_data_bytes;
 #endif
 
 	spin_lock_init(&q->unreq_flows_lock);

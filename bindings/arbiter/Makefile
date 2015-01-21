@@ -17,10 +17,6 @@ WRAP_H_DEPS = $(ARBITER_DIR)/control.h \
 			  $(ARBITER_DIR)/log_core.h \
 			  $(ARBITER_DIR)/stress_test_core.h			  
 
-%_wrap.cc: %.i $(WRAP_H_DEPS)
-	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -I$(ARBITER_DIR) -o $@ $< 
-CPPFLAGS_fastpass_wrap_cc.o = -I /usr/include/python2.7/ 
-
 SRCS-y := $(ARBITER_DIR)/main.c \
           $(ARBITER_DIR)/control.c \
           $(ARBITER_DIR)/comm_core.c \
@@ -49,36 +45,45 @@ SRCS-y := $(ARBITER_DIR)/main.c \
 
 CFLAGS += -O3
 #CFLAGS += $(WERROR_FLAGS)
-CFLAGS += -DFASTPASS_CONTROLLER
-#CFLAGS += -DCONFIG_IP_FASTPASS_DEBUG
-CFLAGS += -DLOG_TO_STDOUT
-CFLAGS += -DPRINT_CONN_LOG_TO_STDOUT
-CFLAGS += -DNO_HW_CHECKSUM
-#CFLAGS += -DINTEL_NICS
-#CFLAGS += -DPIM_SINGLE_ADMISSION_CORE
-#CFLAGS += -DNO_ATOMIC
 CFLAGS += -I${ARBITER_DIR} 
 CFLAGS += -I${EMU_DIR}
 #CFLAGS += -g -O1
 CFLAGS += -g
-CFLAGS += -DNDEBUG
 CFLAGS += -march=core2
-#CFLAGS += -DPARALLEL_ALGO
-#CFLAGS += -DPIPELINED_ALGO
-CFLAGS += -DEMULATION_ALGO
-#CCFLAGS += -DEMU_NO_BATCH_CALLS
 CFLAGS += $(CMD_LINE_CFLAGS)
+
+CDEFINES = 
+CDEFINES += -DFASTPASS_CONTROLLER
+#CDEFINES += -DCONFIG_IP_FASTPASS_DEBUG
+CDEFINES += -DLOG_TO_STDOUT
+CDEFINES += -DPRINT_CONN_LOG_TO_STDOUT
+CDEFINES += -DNO_HW_CHECKSUM
+#CDEFINES += -DINTEL_NICS
+#CDEFINES += -DPIM_SINGLE_ADMISSION_CORE
+#CDEFINES += -DNO_ATOMIC
+CDEFINES += -DNDEBUG
+#CDEFINES += -DPARALLEL_ALGO
+#CDEFINES += -DPIPELINED_ALGO
+CDEFINES += -DEMULATION_ALGO
+#CCDEFINES += -DEMU_NO_BATCH_CALLS
 
 # use drop tail if nothing else is specified
 ifeq ($(EMU_RTR_FLAGS),)
-	CFLAGS += -DDROP_TAIL
+	CDEFINES += -DDROP_TAIL
 else
-	CFLAGS += $(EMU_RTR_FLAGS)
+	CDEFINES += $(EMU_RTR_FLAGS)
 endif
+
+CFLAGS += $(CDEFINES)
 
 # C++ flags
 CPPFLAGS += $(CFLAGS)
 CPPFLAGS += -D__STDC_LIMIT_MACROS
+
+%_wrap.cc: %.i $(WRAP_H_DEPS)
+	swig -c++ -python $(CDEFINES) -I$(RTE_SDK)/$(RTE_TARGET)/include -I$(ARBITER_DIR) -o $@ $< 
+CPPFLAGS_fastpass_wrap_cc.o = -I /usr/include/python2.7/ 
+
 
 # linker settings to work with C++
 LD = g++

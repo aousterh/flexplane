@@ -18,6 +18,7 @@ namespace std {
 #include <rte_pci.h>
 #include <rte_ethdev.h>
 #include <rte_log.h>
+#include <rte_cycles.h>
 #include <string.h>
 
 #include "EthernetDevice.h"
@@ -28,6 +29,7 @@ namespace std {
 #define __attribute__(x)
 #define __rte_cache_aligned
 
+/** rte_config.h */
 %include <rte_config.h>
 
 /** rte_eal.h */
@@ -51,6 +53,7 @@ int rte_eal_init(const std::vector<std::string> &args) {
 }
 %}
 
+/** rte_lcore.h */
 %include <rte_lcore.h>
 
 /** rte_mbuf.h */
@@ -104,6 +107,9 @@ void dump_pci_drivers() {
 %ignore rte_vlog;
 %include <rte_log.h>
 %inline %{ int rte_openlog_stdout() { return rte_openlog_stream(stdout); } %}
+
+/** rte_cycles.h */
+%include <rte_cycles.h>
 
 
 %include "util/getter_setter.h"

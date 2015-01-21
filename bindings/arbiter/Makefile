@@ -15,7 +15,9 @@ WRAP_H_DEPS = $(ARBITER_DIR)/control.h \
 			  $(ARBITER_DIR)/admission_core_common.h \
 			  $(ARBITER_DIR)/path_sel_core.h \
 			  $(ARBITER_DIR)/log_core.h \
-			  $(ARBITER_DIR)/stress_test_core.h			  
+			  $(ARBITER_DIR)/stress_test_core.h \
+			  $(GRAPH_ALGO_DIR)/algo_config.h \
+			  $(GRAPH_ALGO_DIR)/admissible.h
 
 SRCS-y := $(ARBITER_DIR)/main.c \
           $(ARBITER_DIR)/control.c \

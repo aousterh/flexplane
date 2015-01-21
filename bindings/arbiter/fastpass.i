@@ -13,7 +13,10 @@ namespace std {
 extern "C" {
 #include <rte_ip.h>
 #include "../protocol/platform/generic.h"
+#include "../graph-algo/algo_config.h"
+#include "../graph-algo/admissible.h"
 #include "main.h"
+#include "control.h"
 #include "comm_core.h"
 #include "admission_core.h"
 #include "admission_core_common.h"
@@ -30,7 +33,14 @@ extern "C" {
 
 #define _RTE_IP_H_ /* for platform/generic.h */
 %include "../protocol/platform/generic.h"
+%include "../graph-algo/algo_config.h"
+
+%rename($ignore, %$isfunction) ""; 	// Ignore all functions
+%include "../graph-algo/admissible.h"
+%rename("%s") "";	// turn off whitelist mode
+
 %include "main.h"
+%include "control.h"
 %include "comm_core.h"
 %include "admission_core.h"
 %include "admission_core_common.h"

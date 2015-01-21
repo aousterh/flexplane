@@ -5,8 +5,16 @@ compile DPDK with -fPIC, CONFIG_RTE_BUILD_COMBINE_LIBS=y and -fvisibility=hidden
 This should build libintel_dpdk.a.
 
 for DPDK 1.7.1:
-make install T=x86_64-native-linuxapp-gcc CONFIG_RTE_BUILD_COMBINE_LIBS=y EXTRA_CFLAGS="-fPIC -fvisibility=hidden" -j 4
+make install T=x86_64-native-linuxapp-gcc CONFIG_RTE_BUILD_COMBINE_LIBS=y EXTRA_CFLAGS="-fPIC" -j8
+
+Ideally, we would also put "-fvisibility=hidden" in the EXTRA_CFLAGS, but other PMDs need the visibility.
 
 (thanks to libtrace for figuring out flags for PIC, https://github.com/wanduow/libtrace/wiki/DPDK-Notes---Experimental)
 
-for pcap support compile DPDK with CONFIG_RTE_LIBRTE_PMD_PCAP=y
+
+With PCAP support:
+for pcap support compile DPDK also with CONFIG_RTE_LIBRTE_PMD_PCAP=y i.e.,
+
+make install T=x86_64-native-linuxapp-gcc CONFIG_RTE_BUILD_COMBINE_LIBS=y CONFIG_RTE_LIBRTE_PMD_PCAP=y EXTRA_CFLAGS="-fPIC" -j8
+
+

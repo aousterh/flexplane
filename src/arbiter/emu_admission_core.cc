@@ -104,6 +104,9 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 	struct dctcp_args dctcp_args;
     dctcp_args.q_capacity = 512;
     dctcp_args.K_threshold = 64;
+	RTE_LOG(INFO, ADMISSION,
+			"Using DCTCP routers with q_capacity %d and K threshold %d\n",
+			dctcp_args.q_capacity, dctcp_args.K_threshold);
 
     rtype = R_DCTCP;
     rtr_args = &dctcp_args;
@@ -113,12 +116,18 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
     red_params.max_th = 250;
     red_params.max_p = 0.1;
     red_params.wq_shift = 9;
+	RTE_LOG(INFO, ADMISSION,
+			"Using RED routers with min_th %d, max_th %d, max_p %f, wq_shift %d\n",
+			red_params.min_th, red_params.max_th, red_params.max_p,
+			red_params.wq_shift);
 
     rtype = R_RED;
     rtr_args = &red_params;
 #elif defined(DROP_TAIL)
     struct drop_tail_args dt_args;
     dt_args.q_capacity = 500;
+	RTE_LOG(INFO, ADMISSION, "Using DropTail routers with q_capacity %d\n",
+			dt_args.q_capacity);
 
     rtype = R_DropTail;
     rtr_args = &dt_args;

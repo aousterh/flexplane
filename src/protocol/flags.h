@@ -19,6 +19,7 @@
 #define EMU_FLAGS_NONE		0
 #define EMU_FLAGS_DROP		1
 #define EMU_FLAGS_ECN_MARK	2
+#define EMU_FLAGS_MODIFY	3 /* modify headers in some other way */
 
 /* parameters for areq data */
 #define MAX_REQ_DATA_BYTES		8 /* must be a multiple of two */

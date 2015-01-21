@@ -12,7 +12,7 @@ struct fp_sched_stat {
 	/* dequeue-related */
 	__u64		admitted_timeslots;
 	__u64		dropped_timeslots;
-	__u64		marked_timeslots;
+	__u64		modified_timeslots;
 	__u64		early_enqueue;
 	__u64		late_enqueue1;
 	__u64		late_enqueue2;
@@ -32,6 +32,7 @@ struct fp_sched_stat {
 	__u64		unwanted_alloc;
 	__u64		unrecognized_action;
 	__u64		handle_tslots_unsuccessful;
+	__u64		unsupported_alloc_data_type;
 
 	/* alloc report-related */
 	__u64		alloc_report_larger_than_requested;

@@ -7,7 +7,7 @@
 #define	TSLOT_ACTION_ADMIT_HEAD		0x0
 #define TSLOT_ACTION_ADMIT_BY_ID	0x1
 #define	TSLOT_ACTION_DROP_BY_ID		0x2
-#define TSLOT_ACTION_MARK_BY_ID		0x3
+#define TSLOT_ACTION_MODIFY_BY_ID	0x3
 
 #define MAX_REQ_DATA_PER_DST	256
 
@@ -19,6 +19,7 @@ struct tsq_ops {
 	void		(* stop_qdisc)(void *priv);
 	void		(* add_timeslot)(void *priv, u64 src_dst_key,
 			struct sk_buff *skb);
+	void		(* prepare_to_send)(void *priv, struct sk_buff *skb, u8 *data);
 };
 
 struct tsq_qdisc_entry {
@@ -54,9 +55,10 @@ void tsq_schedule(void *priv, u64 src_dst_key, u64 timeslot);
 /**
  * Handles a timeslot from a flow (specified by src_dst_key) right now. This
  * involves admitting, marking, or dropping, according to the action. Returns
- * the number of timeslots handled (0 or 1).
+ * the number of timeslots handled (0 or 1). @data provides supplemental data
+ * to be used to handle this packet.
  */
-int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id);
+int tsq_handle_now(void *priv, u64 src_dst_key, u8 action, u16 id, u8 *data);
 
 /**
  * Reset the ids of a flow (identified by @src_dst_key), to begin with 0 and

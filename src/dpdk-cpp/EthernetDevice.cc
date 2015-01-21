@@ -44,8 +44,9 @@ void dpdk::EthernetDevice::tx_queue_setup(uint16_t tx_queue_id,
 
 	if (ret != 0) {
 		std::stringstream msg;
-		msg << "tx_queue_setup port=" << m_port_id << " queue="<< tx_queue_id
-			<< "failed with ret=" << ret;
+		msg << "tx_queue_setup port=" << int(m_port_id)
+			<< " queue="<< int(tx_queue_id)
+			<< " failed with ret=" << ret;
 		throw std::runtime_error(msg.str());
 	}
 }
@@ -60,8 +61,9 @@ void dpdk::EthernetDevice::rx_queue_setup(uint16_t rx_queue_id, uint16_t nb_rx_d
 
 	if (ret != 0) {
 		std::stringstream msg;
-		msg << "rx_queue_setup port=" << m_port_id << " queue="<< rx_queue_id
-			<< "failed with ret=" << ret;
+		msg << "rx_queue_setup port=" << int(m_port_id)
+			<< " queue="<< int(rx_queue_id)
+			<< " failed with ret=" << ret;
 		throw std::runtime_error(msg.str());
 	}
 }
@@ -72,7 +74,7 @@ void dpdk::EthernetDevice::start()
 
 	if (ret != 0) {
 		std::stringstream msg;
-		msg << "rte_eth_dev_start port=" << m_port_id
+		msg << "rte_eth_dev_start port=" << int(m_port_id)
 			<< "failed with ret=" << ret;
 		throw std::runtime_error(msg.str());
 	}

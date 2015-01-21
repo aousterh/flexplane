@@ -16,6 +16,13 @@ echo 2129920 > /proc/sys/net/core/wmem_default
 
 ./del_tc.sh
 
+if [ "$#" -ne 1 ]; then
+    EMU_SCHEME="drop_tail"
+else
+    EMU_SCHEME="$1"
+fi
+echo "inserting module with emu scheme $EMU_SCHEME"
+
 sudo insmod fastpass.ko fastpass_debug=0 ctrl_addr=$CONTROLLER_IP req_cost=20000 req_bucketlen=40000 retrans_timeout_ns=2000000 req_min_gap=1000
 
 echo -- lsmod after --

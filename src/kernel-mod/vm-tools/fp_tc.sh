@@ -10,7 +10,14 @@ TC="/sbin/tc"
 
 ./del_tc.sh
 
-insmod fastpass.ko fastpass_debug=1 req_cost=1000000 req_bucketlen=1000000 ctrl_addr=$CONTROLLER_IP update_timer_ns=2048000 retrans_timeout_ns=3000000
+if [ "$#" -ne 1 ]; then
+    EMU_SCHEME="drop_tail"
+else
+    EMU_SCHEME="$1"
+fi
+echo "inserting module with emu scheme $EMU_SCHEME"
+
+insmod fastpass.ko fastpass_debug=1 req_cost=1000000 req_bucketlen=1000000 ctrl_addr=$CONTROLLER_IP update_timer_ns=2048000 retrans_timeout_ns=3000000 emu_scheme=$EMU_SCHEME
 
 echo -- lsmod after --
 lsmod | grep fastpass

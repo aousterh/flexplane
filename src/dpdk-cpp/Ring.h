@@ -14,7 +14,6 @@
 #include <stdexcept>
 #include <string>
 
-template<typename T>
 class Ring {
 public:
 	Ring(const std::string &name, unsigned count, int socket_id,
@@ -25,10 +24,10 @@ public:
 	 */
 	inline struct rte_ring *get();
 
-	inline int enqueue(T elem);
-	inline int enqueue_bulk(T *elems, unsigned n);
-	inline int dequeue(T *obj_p);
-	inline int dequeue_burst(T *elems, unsigned n);
+	inline int enqueue(void *elem);
+	inline int enqueue_bulk(void **elems, unsigned n);
+	inline int dequeue(void **obj_p);
+	inline int dequeue_burst(void **elems, unsigned n);
 
 	inline int empty();
 
@@ -38,8 +37,7 @@ private:
 
 /** implementation */
 
-template<typename T>
-inline Ring<T>::Ring(const std::string& name, unsigned count, int socket_id,
+inline Ring::Ring(const std::string& name, unsigned count, int socket_id,
 		unsigned flags)
 {
 	/* Try to allocate the ring */
@@ -51,44 +49,38 @@ inline Ring<T>::Ring(const std::string& name, unsigned count, int socket_id,
 	}
 }
 
-template<typename T>
 inline struct rte_ring* __attribute__((always_inline))
-Ring<T>::get()
+Ring::get()
 {
 	return m_ring;
 }
 
-template<typename T>
 inline int __attribute__((always_inline))
-Ring<T>::enqueue(T elem)
+Ring::enqueue(void *elem)
 {
 	return rte_ring_enqueue(m_ring, (void *)elem);
 }
 
-template<typename T>
 inline int __attribute__((always_inline))
-Ring<T>::enqueue_bulk(T* elems, unsigned n)
+Ring::enqueue_bulk(void **elems, unsigned n)
 {
 	return rte_ring_enqueue_bulk(m_ring, (void **)elems, n);
 }
 
-template<typename T>
 inline int __attribute__((always_inline))
-Ring<T>::dequeue(T* obj_p)
+Ring::dequeue(void **obj_p)
 {
 	return rte_ring_dequeue(m_ring, (void **)obj_p);
 }
 
-template<typename T>
 inline int __attribute__((always_inline))
-Ring<T>::dequeue_burst(T* elems, unsigned n)
+Ring::dequeue_burst(void **elems, unsigned n)
 {
 	return rte_ring_dequeue_burst(m_ring, (void **)elems, n);
 }
 
-template<typename T>
 inline int __attribute__((always_inline))
-Ring<T>::empty() {
+Ring::empty() {
 	return rte_ring_empty(m_ring);
 }
 

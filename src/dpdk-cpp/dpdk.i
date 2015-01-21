@@ -19,6 +19,7 @@ namespace std {
 #include <rte_ethdev.h>
 #include <rte_log.h>
 #include <rte_cycles.h>
+#include <rte_launch.h>
 #include <string.h>
 
 #include "EthernetDevice.h"
@@ -110,6 +111,9 @@ void dump_pci_drivers() {
 
 /** rte_cycles.h */
 %include <rte_cycles.h>
+
+/** rte_launch.h */
+%include <rte_launch.h>
 
 
 %include "util/getter_setter.h"

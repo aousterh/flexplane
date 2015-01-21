@@ -13,12 +13,11 @@
 #include <stdexcept>
 
 dpdk::PacketPool::PacketPool(const std::string &name, unsigned n,
-		unsigned elt_size, unsigned cache_size, unsigned private_data_size,
-		int socket_id, unsigned flags)
+		unsigned elt_size, unsigned cache_size, int socket_id, unsigned flags)
 {
 	/* Try to allocate the ring */
 	m_mempool = rte_mempool_create(name.c_str(), n, elt_size, cache_size,
-		private_data_size,
+		sizeof(struct rte_pktmbuf_pool_private),
 		rte_pktmbuf_pool_init, NULL,
 		rte_pktmbuf_init, NULL,
 		socket_id, flags);

@@ -20,8 +20,7 @@ namespace dpdk {
 class PacketPool {
 public:
 	PacketPool(const std::string &name, unsigned n, unsigned elt_size,
-			   unsigned cache_size, unsigned private_data_size,
-			   int socket_id, unsigned flags);
+			   unsigned cache_size, int socket_id, unsigned flags);
 
 	uint32_t count(); /* note, expensive operation, only use to debug */
 

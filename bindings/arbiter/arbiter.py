@@ -11,20 +11,23 @@ sys.setdlopenflags(saved_flags)
 
 from fastpass import *
 import fastpass
+import dpdk
 
 print dir(fastpass)
+print dir(dpdk)
 
 import time
+from copy import copy
 
 
-params = ["pytest", "-c", "6", "-n", "2", "--no-huge"]
+params = ["pytest", "-c", "e", "-n", "2", "-m", "512"]
 params += ["--vdev", "eth_pcap0,iface=eth0"]
 print "eal init:", rte_eal_init(params) #, "--no-pci"])
 
 enabled_cores = [i for i in xrange(RTE_MAX_LCORE) if rte_lcore_is_enabled(i)]
 print "enabled_lcores:", enabled_cores
 
-pool = PacketPool("pktpool", 1024, 2048, 128, 0, 0, 0)
+pool = PacketPool("pktpool", 1024, 2048, 128, 0, 0)
 
 rte_set_log_level(RTE_LOG_DEBUG)
 print "cur log level", rte_log_cur_msg_loglevel()
@@ -84,90 +87,98 @@ def launch_cores():
     #/*** LOGGING OUTPUT ***/
     rte_openlog_stdout()
 
-"""
     #/*** GLOBAL INIT ***/
     #/* initialize comm core global data */
     comm_init_global_structs(first_time_slot);
 
     #/* create q_admitted_out */
-    q_admitted = rte_ring_create("q_admitted",
-            2 * ADMITTED_TRAFFIC_MEMPOOL_SIZE, 0, 0);
-    if (q_admitted == NULL)
-        rte_exit(EXIT_FAILURE,
-                "Cannot init q_admitted: %s\n", rte_strerror(rte_errno));
+    q_admitted = Ring("q_admitted", 2 * 128, 0, 0);
 
     #/* create q_path_selected_out */
-    q_path_selected = rte_ring_create("q_path_selected",
-            2 * ADMITTED_TRAFFIC_MEMPOOL_SIZE, 0, 0);
-    if (q_path_selected == NULL)
-        rte_exit(EXIT_FAILURE,
-                "Cannot init q_path_selected: %s\n", rte_strerror(rte_errno));
+    q_path_selected = Ring("q_path_selected", 2 * 128, 0, 0);
 
     #/* initialize admission core global data */
-    admission_init_global(q_admitted);
+    admission_init_global(q_admitted.get());
 
     #// Calculate start and end times
-    start_time = rte_get_timer_cycles() + sec_to_hpet(0.2); /* start after last end */
+    start_time = rte_get_timer_cycles() + sec_to_hpet(0.2); #/* start after last end */
     end_time = start_time + sec_to_hpet(100*1000*1000);
 
-    #/*** PATH_SELECTION CORES ***/
-    #/* set commands */
-    path_sel_cmd.q_admitted = q_admitted;
-    path_sel_cmd.q_path_selected = q_path_selected;
+    remaining_cores = copy(enabled_cores)
+    remaining_cores = [x for x in enabled_cores if x != rte_lcore_id()]
 
-    #/* launch admission core */
-    if (N_PATH_SEL_CORES > 0)
-        rte_eal_remote_launch(exec_path_sel_core, &path_sel_cmd,
-                enabled_lcore[FIRST_PATH_SEL_CORE]);
+#     #/*** PATH_SELECTION CORES ***/
+#     #/* set commands */
+#     path_sel_cmd.q_admitted = q_admitted;
+#     path_sel_cmd.q_path_selected = q_path_selected;
+# 
+#     #/* launch admission core */
+#     if (N_PATH_SEL_CORES > 0)
+#         rte_eal_remote_launch(exec_path_sel_core, &path_sel_cmd,
+#                 enabled_lcore[FIRST_PATH_SEL_CORE]);
 
     #/*** ADMISSION CORES ***/
     #/* initialize core structures */
-    for (i = 0; i < N_ADMISSION_CORES; i++) {
-        uint16_t lcore_id = enabled_lcore[FIRST_ADMISSION_CORE + i];
-        admission_init_core(lcore_id);
-    }
+    admission_cores = remaining_cores[:N_ADMISSION_CORES]
+    remaining_cores = remaining_cores[N_ADMISSION_CORES:]
+    
+    for lcore_id in admission_cores:
+        admission_init_core(lcore_id)
 
-    for (i = 0; i < N_ADMISSION_CORES; i++) {
-        uint16_t lcore_id = enabled_lcore[FIRST_ADMISSION_CORE + i];
-
+    admission_cmds = []
+    for i, lcore_id in enumerate(admission_cores):
+        cmd = admission_core_cmd()
+        
         #/* set commands */
-        admission_cmd[i].start_time = start_time;
-        admission_cmd[i].end_time = end_time;
-        admission_cmd[i].admission_core_index = i;
-        admission_cmd[i].start_timeslot = first_time_slot + i * BATCH_SIZE;
+        cmd.start_time = start_time;
+        cmd.end_time = end_time;
+        cmd.admission_core_index = i;
+        cmd.start_timeslot = first_time_slot + i * BATCH_SIZE;
 
         #/* launch admission core */
-        rte_eal_remote_launch(exec_admission_core, &admission_cmd[i], lcore_id);
-    }
+        rte_eal_remote_launch(exec_admission_core_funcptr, cmd, lcore_id);
+        
+        # save commands. if garbage collector gets hold of them we're in trouble
+        admission_cmds.append(cmd)
 
     #/*** LOG CORE ***/
-    log_cmd.log_gap_ticks = (uint64_t)(LOG_GAP_SECS * rte_get_timer_hz());
-    log_cmd.q_log_gap_ticks = (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz());
+    log_cmd = log_core_cmd()
     log_cmd.start_time = start_time;
     log_cmd.end_time = end_time;
+    log_cmd.log_gap_ticks = int(LOG_GAP_SECS * rte_get_timer_hz());
+    log_cmd.q_log_gap_ticks = int(Q_LOG_GAP_SECS * rte_get_timer_hz());
 
     #/* launch log core */
-    if (N_LOG_CORES > 0)
-        rte_eal_remote_launch(exec_log_core, &log_cmd,
-                enabled_lcore[FIRST_LOG_CORE]);
+    if (N_LOG_CORES > 0):
+        rte_eal_remote_launch(exec_log_core, log_cmd, remaining_cores.pop(0))
 
     #/*** COMM/STRESS_TEST CORES ***/
-    if (IS_STRESS_TEST) {
+    if (IS_STRESS_TEST):
         launch_stress_test_cores(start_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
-                                         end_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
-                                         first_time_slot, q_path_selected, q_admitted);
-    } else {
-        launch_comm_cores(start_time, end_time, first_time_slot, q_path_selected,
-                q_admitted);
-    }
+                                 end_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
+                                 first_time_slot, q_path_selected.get(), q_admitted.get());
+    else:
+        comm_cmd = comm_core_cmd()
+    
+        # Set commands
+        comm_cmd.start_time = start_time;
+        comm_cmd.end_time = end_time;
+        if (N_PATH_SEL_CORES > 0):
+            comm_cmd.q_allocated = q_path_selected.get()
+        else: 
+            comm_cmd.q_allocated = q_admitted.get();
+    
+        #/* initialize comm core on this core */
+        comm_init_core(rte_lcore_id(), first_time_slot);
+    
+        #/** Run the controller on this core */
+        exec_comm_core(comm_cmd);
 
-    printf("waiting for all cores..\n");
+    print "waiting for all cores.."
     #/** Wait for all cores */
     rte_eal_mp_wait_lcore();
 
     rte_exit(EXIT_SUCCESS, "Done");
-}
 
-"""
 
 launch_cores()

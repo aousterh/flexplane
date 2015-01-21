@@ -31,6 +31,14 @@ extern "C" {
 #define __attribute__(x)
 #define __rte_cache_aligned
 
+/* Callback functions, intended for rte_eal_remote_launch */
+%callback("%s_funcptr");
+int exec_admission_core(void*);
+int exec_log_core(void*);
+%nocallback;
+%ignore exec_admission_core(void*);
+%ignore exec_log_core(void*);
+
 #define _RTE_IP_H_ /* for platform/generic.h */
 %include "../protocol/platform/generic.h"
 %include "../graph-algo/algo_config.h"

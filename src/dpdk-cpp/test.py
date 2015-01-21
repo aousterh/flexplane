@@ -25,7 +25,7 @@ print "lcore_id", rte_lcore_id()
 print "core 2 is on socket %d" % rte_lcore_to_socket_id(2)
 
 
-pool = PacketPool("pktpool", 1024, 2048, 128, 0, 0, 0)
+pool = PacketPool("pktpool", 1024, 2048, 128, 0, 0)
 
 print "pool count:", pool.count()
 print "allocated packet:", pool.alloc()

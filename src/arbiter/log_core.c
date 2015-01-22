@@ -361,7 +361,7 @@ int exec_log_core(void *void_cmd_p)
 #endif
 		}
 
-		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
+		print_comm_log(cmd->comm_lcore);
 		print_global_admission_log();
 
 		for (i = 0; i < N_ADMISSION_CORES; i++)

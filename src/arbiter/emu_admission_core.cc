@@ -160,6 +160,10 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 #error "Unrecognized router type"
 #endif
 
+	RTE_LOG(INFO, ADMISSION,
+			"admitted_traffic_pool=%p q_admitted_out=%p packet_mempool=%p\n",
+			admitted_traffic_pool[0], q_admitted_out, packet_mempool);
+
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
             (fp_ring **) packet_queues, rtype, rtr_args, E_Simple, NULL);

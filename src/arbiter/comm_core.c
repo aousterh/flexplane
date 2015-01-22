@@ -1140,8 +1140,9 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 	tx_queue = cmd->tx_queue_id;
 	pktmbuf_pool = cmd->tx_pktmbuf_pool;
 
-	RTE_LOG(INFO, BENCHAPP, "comm_core -- lcoreid=%u portid=%hhu rx_queue=%hhu tx_queue=%hhu tx_pktmbuf_pool=%p\n",
-			rte_lcore_id(), portid, rx_queue, tx_queue, pktmbuf_pool);
+	RTE_LOG(INFO, BENCHAPP, "comm_core -- lcoreid=%u portid=%hhu rx_queue=%hhu tx_queue=%hhu tx_pktmbuf_pool=%p q_admitted=%p\n",
+			rte_lcore_id(), portid, rx_queue, tx_queue, pktmbuf_pool,
+			cmd->q_allocated);
 	send_gratuitous_arp(pktmbuf_pool, portid, tx_queue, controller_ip());
 
 	while (rte_get_timer_cycles() < cmd->start_time);

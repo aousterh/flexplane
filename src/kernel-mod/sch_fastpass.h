@@ -19,6 +19,9 @@ struct fp_sched_stat {
 	__u64		late_enqueue3;
 	__u64		late_enqueue4;
 
+	/* prepare to send related */
+	__u64		marked_packets;
+
 	/* request-related */
 	__u64		req_alloc_errors;
 	__u64		request_with_empty_flowqueue;

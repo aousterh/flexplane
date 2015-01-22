@@ -1114,6 +1114,10 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", dropped %llu", scs->dropped_timeslots);
 	seq_printf(seq, ", modified %llu", scs->modified_timeslots);
 
+	/* packet stats */
+	seq_printf(seq, "\n  since reset, packets: ");
+	seq_printf(seq, "ecn marked %llu", scs->marked_packets);
+
 	seq_printf(seq, "\n  %llu requests w/no a-req", scs->request_with_empty_flowqueue);
 	seq_printf(seq, "\n  %llu a-req data exceeded one ctrl pkt", scs->areq_data_exceeded_pkt);
 
@@ -1364,7 +1368,7 @@ release:
 /**
  * Mark this packet with the ECN congestion encountered codepoint.
  */
-static inline void mark_ecn(struct sk_buff *skb)
+static inline void mark_ecn(struct fp_sched_data *q, struct sk_buff *skb)
 {
 	__be16 proto = skb->protocol;
 	struct iphdr * iph;
@@ -1385,6 +1389,8 @@ static inline void mark_ecn(struct sk_buff *skb)
     /* update checksum */
 	new_word = ((__be16 *) iph)[0];
 	csum_replace2(&iph->check, old_word, new_word);
+
+	q->stat.marked_packets++;
 }
 
 /*
@@ -1397,7 +1403,7 @@ static void fpq_prepare_to_send(void *priv, struct sk_buff *skb, u8 *data)
 
 	if (q->emu_alloc_data_type == ALLOC_DATA_TYPE_NONE) {
 		/* only possible modification with no alloc data is ECN marking */
-		mark_ecn(skb);
+		mark_ecn(q, skb);
 	} else {
 		fp_debug("fpq_prepare_to_send does not yet support alloc data type %d",
 				q->emu_alloc_data_type);

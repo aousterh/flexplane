@@ -517,7 +517,8 @@ pacer_next_event(&en->tx_pacer), (pacer_next_event(&en->tx_pacer)-now));
  * and IPv4 headers, and returns the packet.
  */
 static inline struct rte_mbuf *
-make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
+make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd,
+		struct ether_addr *src_mac_addr, struct rte_mempool* pktmbuf_pool)
 {
 	const unsigned int socket_id = rte_socket_id();
 	struct rte_mbuf *m;
@@ -528,7 +529,7 @@ make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
 	int32_t data_len;
 
 	// Allocate packet on the current socket
-	m = rte_pktmbuf_alloc(tx_pktmbuf_pool[socket_id]);
+	m = rte_pktmbuf_alloc(pktmbuf_pool);
 	if(m == NULL) {
 		comm_log_tx_cannot_allocate_mbuf(en->dst_ip);
 		return NULL;
@@ -545,7 +546,7 @@ make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
 	/* dst addr according to destination */
 	ether_addr_copy(&en->dst_ether, &eth_hdr->d_addr);
 	/* src addr according to output port*/
-	ether_addr_copy(&port_info[en->dst_port].eth_addr, &eth_hdr->s_addr);
+	ether_addr_copy(src_mac_addr, &eth_hdr->s_addr);
 	/* ethernet payload is IPv4 */
 	eth_hdr->ether_type = rte_cpu_to_be_16(ETHER_TYPE_IPv4);
 
@@ -597,7 +598,8 @@ make_packet(struct end_node_state *en, struct fpproto_pktdesc *pd)
  * @param portid: the port out of which to send the packet
  */
 static inline bool
-comm_rx(struct rte_mbuf *m, uint8_t portid)
+comm_rx(struct rte_mempool* pktmbuf_pool, struct rte_mbuf *m, uint8_t portid,
+		uint8_t tx_queue)
 {
 	struct ether_hdr *eth_hdr;
 	struct ipv4_hdr *ipv4_hdr;
@@ -621,7 +623,7 @@ comm_rx(struct rte_mbuf *m, uint8_t portid)
 
 	if (unlikely(ether_type == ETHER_TYPE_ARP)) {
 		print_arp(m, portid);
-		send_gratuitous_arp(portid, controller_ip());
+		send_gratuitous_arp(pktmbuf_pool, portid, tx_queue, controller_ip());
 		goto cleanup; // Disregard ARP
 	}
 
@@ -702,12 +704,11 @@ cleanup:
 /*
  * Read packets from RX queues
  */
-static inline bool do_rx_burst(struct lcore_conf_t* qconf)
+static inline bool do_rx_burst(struct lcore_conf_t* qconf, uint8_t portid,
+		uint8_t rx_queue, uint8_t tx_queue, struct rte_mempool* pktmbuf_pool)
 {
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	int i, j, nb_rx;
-	uint8_t portid;
-	uint8_t queueid;
 	uint64_t rx_time;
 	uint64_t deadline_monotonic;
 	bool saw_watchdog = false;
@@ -715,40 +716,36 @@ static inline bool do_rx_burst(struct lcore_conf_t* qconf)
 
 	deadline_monotonic = rte_get_timer_cycles() + RX_BURST_DEADLINE_SEC * rte_get_timer_hz();
 
-	for (i = 0; i < qconf->n_rx_queue; ++i) {
-		portid = qconf->rx_queue_list[i].port_id;
-		queueid = qconf->rx_queue_list[i].queue_id;
-		nb_rx = rte_eth_rx_burst(portid, queueid, pkts_burst, MAX_PKT_BURST);
-		rx_time = fp_get_time_ns();
+	nb_rx = rte_eth_rx_burst(portid, rx_queue, pkts_burst, MAX_PKT_BURST);
+	rx_time = fp_get_time_ns();
 
-
-		/* Prefetch first packets */
-		for (j = 0; j < PREFETCH_OFFSET && j < nb_rx; j++) {
-			rte_prefetch0(rte_pktmbuf_mtod(pkts_burst[j], void *));
-		}
-
-		/* Prefetch and handle already prefetched packets */
-		for (j = 0; j < (nb_rx - PREFETCH_OFFSET); j++) {
-			rte_prefetch0(
-					rte_pktmbuf_mtod(pkts_burst[ j + PREFETCH_OFFSET], void *));
-			if (rte_get_timer_cycles() < deadline_monotonic) {
-				res = comm_rx(pkts_burst[j], portid);
-				saw_watchdog = saw_watchdog || res;
-			} else {
-				/* deadline passed, drop on the floor */
-				rte_pktmbuf_free(pkts_burst[j]);
-				comm_log_dropped_rx_passed_deadline();
-			}
-		}
-
-		/* handle remaining prefetched packets */
-		for (; j < nb_rx; j++) {
-			res = saw_watchdog || comm_rx(pkts_burst[j], portid);
-			saw_watchdog = saw_watchdog || res;
-		}
-
-		comm_log_processed_batch(nb_rx, rx_time);
+	/* Prefetch first packets */
+	for (j = 0; j < PREFETCH_OFFSET && j < nb_rx; j++) {
+		rte_prefetch0(rte_pktmbuf_mtod(pkts_burst[j], void *));
 	}
+
+	/* Prefetch and handle already prefetched packets */
+	for (j = 0; j < (nb_rx - PREFETCH_OFFSET); j++) {
+		rte_prefetch0(
+				rte_pktmbuf_mtod(pkts_burst[ j + PREFETCH_OFFSET], void *));
+		if (rte_get_timer_cycles() < deadline_monotonic) {
+			res = comm_rx(pktmbuf_pool, pkts_burst[j], portid, tx_queue);
+			saw_watchdog = saw_watchdog || res;
+		} else {
+			/* deadline passed, drop on the floor */
+			rte_pktmbuf_free(pkts_burst[j]);
+			comm_log_dropped_rx_passed_deadline();
+		}
+	}
+
+	/* handle remaining prefetched packets */
+	for (; j < nb_rx; j++) {
+		res = saw_watchdog || comm_rx(pktmbuf_pool, pkts_burst[j], portid,
+										tx_queue);
+		saw_watchdog = saw_watchdog || res;
+	}
+
+	comm_log_processed_batch(nb_rx, rx_time);
 
 	return saw_watchdog;
 }
@@ -981,7 +978,9 @@ out:
 /**
  * Transmit a report of allocations and ACKs to the endpoint @en.
  */
-static inline void tx_end_node(struct end_node_state *en)
+static inline void tx_end_node(struct end_node_state *en, uint8_t portid,
+		uint8_t tx_queue, struct ether_addr *src_mac_addr,
+		struct rte_mempool* pktmbuf_pool)
 {
 	const unsigned lcore_id = rte_lcore_id();
 	struct comm_core_state *core = &ccore_state[lcore_id];
@@ -1016,7 +1015,7 @@ static inline void tx_end_node(struct end_node_state *en)
 	fpproto_commit_packet(&en->conn, pd, now);
 
 	/* make the packet */
-	out_pkt = make_packet(en, pd);
+	out_pkt = make_packet(en, pd, src_mac_addr, pktmbuf_pool);
 	if (unlikely(out_pkt == NULL))
 		return; /* pd committed, will get retransmitted on timeout */
 
@@ -1024,7 +1023,7 @@ static inline void tx_end_node(struct end_node_state *en)
 	comm_log_tx_pkt(node_ind, now, rte_pktmbuf_data_len(out_pkt));
 
 	/* send on port */
-	send_packet_via_queue(out_pkt, en->dst_port);
+	send_packet_via_queue(out_pkt, portid, tx_queue);
 }
 
 /* handles reception; returns true if packet is watchdog, false otherwise */
@@ -1070,27 +1069,29 @@ void watchdog_loop(struct comm_core_cmd * cmd)
 	int i, j, nb_rx;
 	uint64_t now;
 	uint8_t portid;
-	uint8_t queueid;
+	uint8_t rx_queue, tx_queue;
+	struct rte_mempool* pktmbuf_pool;
 
     now = rte_get_timer_cycles();
     core->last_rx_watchdog = now;
 
+    portid = cmd->port_id;
+	rx_queue = cmd->rx_queue_id;
+	tx_queue = cmd->tx_queue_id;
+	pktmbuf_pool = cmd->tx_pktmbuf_pool;
+
     while (core->last_rx_watchdog - now < WATCHDOG_TRIGGER_THRESHOLD_SEC * rte_get_timer_hz()) {
         now = rte_get_timer_cycles();
 
-    	for (i = 0; i < qconf->n_rx_queue; ++i) {
-    		portid = qconf->rx_queue_list[i].port_id;
-    		queueid = qconf->rx_queue_list[i].queue_id;
-    		nb_rx = rte_eth_rx_burst(portid, queueid, pkts_burst, MAX_PKT_BURST);
+		nb_rx = rte_eth_rx_burst(portid, rx_queue, pkts_burst, MAX_PKT_BURST);
 
-    		/* Prefetch and handle already prefetched packets */
-    		for (j = 0; j < nb_rx; j++) {
-    			if (watchdog_rx(pkts_burst[j], portid) == true)
-    				core->last_rx_watchdog = rte_get_timer_cycles();
-    		}
+		/* Prefetch and handle already prefetched packets */
+		for (j = 0; j < nb_rx; j++) {
+			if (watchdog_rx(pkts_burst[j], portid) == true)
+				core->last_rx_watchdog = rte_get_timer_cycles();
+		}
 
-    		comm_log_processed_batch(nb_rx, now);
-    	}
+		comm_log_processed_batch(nb_rx, now);
 
     	/* Still need to process newly allocated timeslots, which would be empty */
 		process_allocated_traffic(core, cmd->q_allocated);
@@ -1098,13 +1099,13 @@ void watchdog_loop(struct comm_core_cmd * cmd)
 		/* send IGMP */
 		if (now - core->last_igmp > IGMP_SEND_INTERVAL_SEC * rte_get_timer_hz()) {
 			core->last_igmp = now;
-			send_gratuitous_arp(portid, controller_ip());
-			send_igmp(portid, controller_ip());
+			send_gratuitous_arp(pktmbuf_pool, portid, tx_queue, controller_ip());
+			send_igmp(pktmbuf_pool, portid, tx_queue, controller_ip());
 		}
 
 		/* Flush queued packets */
 		for (i = 0; i < n_enabled_port; i++)
-			send_queued_packets(enabled_port[i]);
+			send_queued_packets(portid, tx_queue);
     }
 
     /* no watchdog too long - watchdog should fire! */
@@ -1113,7 +1114,7 @@ void watchdog_loop(struct comm_core_cmd * cmd)
 void exec_comm_core(struct comm_core_cmd * cmd)
 {
 	int i;
-	uint8_t portid, queueid;
+	uint8_t portid, rx_queue, tx_queue;
 	struct lcore_conf_t *qconf;
 	const unsigned lcore_id = rte_lcore_id();
 	struct comm_core_state *core = &ccore_state[lcore_id];
@@ -1122,38 +1123,32 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 	uint64_t now;
 	struct fp_timer *tim;
 	bool saw_watchdog;
-    core->last_igmp = rte_get_timer_cycles();
-    core->last_tx_watchdog = rte_get_timer_cycles();
+	struct rte_mempool* pktmbuf_pool;
 
+	core->last_igmp = rte_get_timer_cycles();
+    core->last_tx_watchdog = rte_get_timer_cycles();
 
 	qconf = &lcore_conf[lcore_id];
 
 	comm_log_init(&comm_core_logs[lcore_id]);
 
-	if (qconf->n_rx_queue == 0) {
-		RTE_LOG(INFO, BENCHAPP, "lcore %u has nothing to do\n", rte_lcore_id());
-		while(1);
-	}
-
 	COMM_DEBUG("starting, on lcore %d, current timeslot %lu\n", rte_lcore_id(),
 			core->latest_timeslot[0]);
 
-	for (i = 0; i < qconf->n_rx_queue; i++) {
-		portid = qconf->rx_queue_list[i].port_id;
-		queueid = qconf->rx_queue_list[i].queue_id;
-		RTE_LOG(INFO, BENCHAPP, "comm_core -- lcoreid=%u portid=%hhu rxqueueid=%hhu\n",
-				rte_lcore_id(), portid, queueid);
-		send_gratuitous_arp(portid, controller_ip());
-	}
+	portid = cmd->port_id;
+	rx_queue = cmd->rx_queue_id;
+	tx_queue = cmd->tx_queue_id;
+	pktmbuf_pool = cmd->tx_pktmbuf_pool;
+
+	RTE_LOG(INFO, BENCHAPP, "comm_core -- lcoreid=%u portid=%hhu rx_queue=%hhu tx_queue=%hhu tx_pktmbuf_pool=%p\n",
+			rte_lcore_id(), portid, rx_queue, tx_queue, pktmbuf_pool);
+	send_gratuitous_arp(pktmbuf_pool, portid, tx_queue, controller_ip());
 
 	while (rte_get_timer_cycles() < cmd->start_time);
 
-	for (i = 0; i < qconf->n_rx_queue; i++) {
-		portid = qconf->rx_queue_list[i].port_id;
-		send_gratuitous_arp(portid, controller_ip());
-		if (RUN_WITH_BACKUP)
-			send_igmp(portid, controller_ip());
-	}
+	send_gratuitous_arp(pktmbuf_pool, portid, tx_queue, controller_ip());
+	if (RUN_WITH_BACKUP)
+		send_igmp(pktmbuf_pool, portid, tx_queue, controller_ip());
 
 	fp_init_timers(&core->timeout_timers, rte_get_timer_cycles());
 	fp_init_timers(&core->tx_timers, rte_get_timer_cycles());
@@ -1161,7 +1156,8 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 	/* MAIN LOOP */
 	while (1) {
 		/* read packets from RX queues */
-		saw_watchdog = do_rx_burst(qconf);
+		saw_watchdog = do_rx_burst(qconf, portid, rx_queue, tx_queue,
+									pktmbuf_pool);
 		if (saw_watchdog && !I_AM_MASTER) {
 			watchdog_loop(cmd);
 			continue;
@@ -1199,28 +1195,27 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 			en = container_of(tim, struct end_node_state, tx_timer);
 
 			/* do the TX */
-			tx_end_node(en);
+			tx_end_node(en, portid, tx_queue, &cmd->eth_addr, pktmbuf_pool);
 		}
 
 		/* send IGMP if using a backup */
 		if (RUN_WITH_BACKUP &&
 		    now - core->last_igmp > IGMP_SEND_INTERVAL_SEC * rte_get_timer_hz()) {
 			core->last_igmp = now;
-			send_igmp(portid, controller_ip());
+			send_igmp(pktmbuf_pool, portid, tx_queue, controller_ip());
 		}
 
 		/* send watchdog if using an arbiter*/
 		if (RUN_WITH_BACKUP &&
 		    now - core->last_tx_watchdog > WATCHDOG_PACKET_GAP_SEC * rte_get_timer_hz()) {
-			send_watchdog(portid, controller_ip());
+			send_watchdog(pktmbuf_pool, portid, tx_queue, controller_ip());
 			core->last_tx_watchdog = now;
 			comm_log_sent_watchdog();
 		}
 
 
         /* Flush queued packets */
-		for (i = 0; i < n_enabled_port; i++)
-			send_queued_packets(enabled_port[i]);
+		send_queued_packets(portid, tx_queue);
 
 	}
 }

@@ -93,13 +93,11 @@ extern uint8_t enabled_port[MAX_PORTS];
 
 /* Immediately sends given packet */
 static inline int
-burst_single_packet(struct rte_mbuf *m, uint8_t port)
+burst_single_packet(struct rte_mbuf *m, uint8_t port, uint8_t tx_queue)
 {
-	uint16_t queueid;
 	int ret;
 
-	queueid = lcore_conf[rte_lcore_id()].enabled_ind;
-	ret = rte_eth_tx_burst(port, queueid, &m, 1);
+	ret = rte_eth_tx_burst(port, tx_queue, &m, 1);
 
 	if (unlikely(ret < 1)) {
 		rte_pktmbuf_free(m);
@@ -114,10 +112,9 @@ burst_single_packet(struct rte_mbuf *m, uint8_t port)
  *
  * Packets that are not sent successfully are dropped (their memory is freed)
  */
-static inline int send_queued_packets(uint8_t port) {
+static inline int send_queued_packets(uint8_t port, uint8_t tx_queue) {
 	uint32_t lcore_id = rte_lcore_id();
 	struct lcore_conf_t *qconf = &lcore_conf[lcore_id];
-	uint16_t queueid = qconf->enabled_ind;
 	struct rte_mbuf **m_table = (struct rte_mbuf **) qconf->tx_mbufs[port].m_table;;
 	uint16_t len = qconf->tx_mbufs[port].len;
 	int ret;
@@ -134,7 +131,7 @@ static inline int send_queued_packets(uint8_t port) {
 //	}
 	qconf->tx_mbufs[port].len = 0;
 
-	ret = rte_eth_tx_burst(port, queueid, m_table, len);
+	ret = rte_eth_tx_burst(port, tx_queue, m_table, len);
 
 	if (unlikely(ret < len)) {
 		int n_unsent = len - ret;
@@ -149,7 +146,8 @@ static inline int send_queued_packets(uint8_t port) {
 }
 
 /* Enqueue a single packet, and send burst if queue is filled */
-static inline int send_packet_via_queue(struct rte_mbuf *m, uint8_t port)
+static inline int send_packet_via_queue(struct rte_mbuf *m, uint8_t port,
+		uint8_t tx_queue)
 {
 	uint32_t lcore_id;
 	uint16_t len;
@@ -165,7 +163,7 @@ static inline int send_packet_via_queue(struct rte_mbuf *m, uint8_t port)
 
 	/* enough pkts to be sent */
 	if (unlikely(len == MAX_PKT_BURST)) {
-		return send_queued_packets(port);
+		return send_queued_packets(port, tx_queue);
 	}
 
 	return 0;

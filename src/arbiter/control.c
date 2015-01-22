@@ -57,12 +57,24 @@ void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 		struct rte_ring* q_admitted)
 {
 	struct comm_core_cmd comm_cmd;
+	unsigned lcore_id = rte_lcore_id();
+	unsigned socket = rte_lcore_to_socket_id(lcore_id);
+
+	if (lcore_conf[lcore_id].n_rx_queue != 1)
+		rte_exit(EXIT_FAILURE,
+				"comm core supports 1 queue, %d were configured\n",
+				lcore_conf[rte_lcore_id()].n_rx_queue);
 
 	// Set commands
 	comm_cmd.start_time = start_time;
 	comm_cmd.end_time = end_time;
 	comm_cmd.q_allocated =
 			((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
+	comm_cmd.rx_queue_id = lcore_conf[lcore_id].rx_queue_list[0].queue_id;
+	comm_cmd.tx_queue_id = lcore_conf[lcore_id].enabled_ind;
+	comm_cmd.port_id = lcore_conf[lcore_id].rx_queue_list[0].port_id;
+	rte_eth_macaddr_get(comm_cmd.port_id, &comm_cmd.eth_addr);
+	comm_cmd.tx_pktmbuf_pool = tx_pktmbuf_pool[socket];
 
 	/* initialize comm core on this core */
 	comm_init_core(rte_lcore_id(), first_time_slot);
@@ -187,7 +199,10 @@ void launch_cores(void)
 	/*** LOG CORE ***/
 	log_cmd.log_gap_ticks = (uint64_t)(LOG_GAP_SECS * rte_get_timer_hz());
 	log_cmd.q_log_gap_ticks = (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz());
-	log_cmd.comm_lcore = rte_lcore_id(); /* this core */
+	log_cmd.comm.n = 1;
+	log_cmd.comm.lcore_id[0] = rte_lcore_id(); /* this core */
+	log_cmd.admission.n = 1;
+	log_cmd.admission.lcore_id[0] = enabled_lcore[FIRST_ADMISSION_CORE];
 	log_cmd.start_time = start_time;
 	log_cmd.end_time = end_time;
 

@@ -36,7 +36,7 @@ struct fp_watchdog_hdr {
 
 
 static inline struct rte_mbuf *
-make_watchdog(uint8_t port, uint32_t our_ip)
+make_watchdog(struct rte_mempool* pktmbuf_pool, uint8_t port, uint32_t our_ip)
 {
 	const unsigned int socket_id = rte_socket_id();
 	struct rte_mbuf *m;
@@ -45,7 +45,7 @@ make_watchdog(uint8_t port, uint32_t our_ip)
 	struct fp_watchdog_hdr *watchdog_hdr;
 
 	// Allocate packet on the current socket
-	m = rte_pktmbuf_alloc(tx_pktmbuf_pool[socket_id]);
+	m = rte_pktmbuf_alloc(pktmbuf_pool);
 	if(m == NULL) {
 		WATCHDOG_INFO("core %d could not allocate TX mbuf for watchdog!\n",
                         rte_lcore_id());
@@ -94,20 +94,22 @@ make_watchdog(uint8_t port, uint32_t our_ip)
 	return m;
 }
 
-static void send_watchdog(uint8_t port, uint32_t our_ip) {
+static void send_watchdog(struct rte_mempool* pktmbuf_pool, uint8_t port,
+		uint8_t tx_queue, uint32_t our_ip)
+{
 	struct rte_mbuf *mbuf;
 	int res;
 
 try_sending:
 	/* make the packet */
-	mbuf = make_watchdog(port, our_ip);
+	mbuf = make_watchdog(pktmbuf_pool, port, our_ip);
 	if (mbuf == NULL) {
 		comm_log_failed_to_allocate_watchdog();
 		goto try_sending;
 	}
 
 	/* send to NIC queues */
-	res = burst_single_packet(mbuf, port);
+	res = burst_single_packet(mbuf, port, tx_queue);
 	if (res != 0) {
 		 comm_log_failed_to_burst_watchdog();
 		 goto try_sending;

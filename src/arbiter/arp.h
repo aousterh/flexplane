@@ -43,7 +43,8 @@ struct arp_ipv4_hdr {
 
 
 static inline struct rte_mbuf *
-make_arp(uint8_t src_port, uint8_t oper, struct ether_addr *sha, uint32_t spa,
+make_arp(struct rte_mempool* pktmbuf_pool, uint8_t src_port, uint8_t oper,
+		struct ether_addr *sha, uint32_t spa,
 		struct ether_addr *tha, uint32_t tpa)
 {
 	const unsigned int socket_id = rte_socket_id();
@@ -54,7 +55,7 @@ make_arp(uint8_t src_port, uint8_t oper, struct ether_addr *sha, uint32_t spa,
 	struct arp_ipv4_hdr *arp_hdr;
 
 	// Allocate packet on the current socket
-	m = rte_pktmbuf_alloc(tx_pktmbuf_pool[socket_id]);
+	m = rte_pktmbuf_alloc(pktmbuf_pool);
 	if(m == NULL) {
 		RTE_LOG(ERR, BENCHAPP, "core %d could not allocate TX mbuf for ARP SPA="
 				"0x%"PRIx32" TPA=0x%"PRIx32"\n",rte_lcore_id(), spa, tpa);
@@ -97,21 +98,24 @@ make_arp(uint8_t src_port, uint8_t oper, struct ether_addr *sha, uint32_t spa,
  * 		in network byte order
  */
 static inline struct rte_mbuf *
-make_gratuitous_arp(uint8_t src_port, uint32_t src_ip)
+make_gratuitous_arp(struct rte_mempool* pktmbuf_pool, uint8_t src_port,
+		uint32_t src_ip)
 {
 	/* SPA=TPA=src_ip, SPA=src_mac, TPA=zeros */
 	struct ether_addr zero_mac = {.addr_bytes = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-	return make_arp(src_port, ARP_OP_REQUEST,
+	return make_arp(pktmbuf_pool, src_port, ARP_OP_REQUEST,
 			&port_info[src_port].eth_addr, src_ip,
 			&zero_mac, src_ip);
 }
 
-static void send_gratuitous_arp(uint16_t port, uint32_t ip) {
+static void send_gratuitous_arp(struct rte_mempool* pktmbuf_pool, uint16_t port,
+		uint16_t tx_queue, uint32_t ip)
+{
 	struct rte_mbuf *mbuf;
 	int res;
 	do {
-		mbuf = make_gratuitous_arp(port, ip);
-		res = burst_single_packet(mbuf, port);
+		mbuf = make_gratuitous_arp(pktmbuf_pool, port, ip);
+		res = burst_single_packet(mbuf, port, tx_queue);
 	} while (res != 0);
 
 	ARP_INFO("core %u sent gratuitous ARP for IP 0x%"PRIx32" on port %u\n",

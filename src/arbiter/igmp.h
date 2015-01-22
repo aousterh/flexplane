@@ -42,7 +42,8 @@ static struct ether_addr fp_igmp_group_mac = { // 01:00:5E:01:01:01
 
 
 static inline struct rte_mbuf *
-make_igmp(uint8_t src_port, uint32_t controller_ip)
+make_igmp(struct rte_mempool* pktmbuf_pool, uint8_t src_port,
+		uint32_t controller_ip)
 {
 	const unsigned int socket_id = rte_socket_id();
 	struct rte_mbuf *m;
@@ -51,7 +52,7 @@ make_igmp(uint8_t src_port, uint32_t controller_ip)
 	struct igmp_ipv4_hdr *igmp_hdr;
 
 	// Allocate packet on the current socket
-	m = rte_pktmbuf_alloc(tx_pktmbuf_pool[socket_id]);
+	m = rte_pktmbuf_alloc(pktmbuf_pool);
 	if(m == NULL) {
 		RTE_LOG(ERR, BENCHAPP, "core %d could not allocate TX mbuf for IGMP\n",
                         rte_lcore_id());
@@ -106,12 +107,14 @@ make_igmp(uint8_t src_port, uint32_t controller_ip)
 	return m;
 }
 
-static void send_igmp(uint8_t port, uint32_t controller_ip) {
+static void send_igmp(struct rte_mempool* pktmbuf_pool, uint8_t port,
+		uint8_t tx_queue, uint32_t controller_ip)
+{
 	struct rte_mbuf *mbuf;
 	int res;
 	do {
-		mbuf = make_igmp(port, controller_ip);
-		res = burst_single_packet(mbuf, port);
+		mbuf = make_igmp(pktmbuf_pool, port, controller_ip);
+		res = burst_single_packet(mbuf, port, tx_queue);
 	} while (res != 0);
 
 	IGMP_INFO("core %u sent igmp from IP 0x%"PRIx32" on port %u\n",

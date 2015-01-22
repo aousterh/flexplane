@@ -59,6 +59,12 @@ struct comm_core_cmd {
 	uint32_t tslot_offset; /**< How many offsets in the future the controller allocates */
 
 	struct rte_ring *q_allocated;
+
+	uint8_t port_id; /**< port to read/write packets from/to */
+	uint8_t rx_queue_id; /**< queue to read packets from */
+	uint8_t tx_queue_id; /**< queue to write packets to */
+	struct ether_addr eth_addr; /**< mac addr to send packets from */
+	struct rte_mempool* tx_pktmbuf_pool; /**< TX memory pool for packets */
 };
 
 /*

@@ -36,7 +36,7 @@ void print_comm_log(uint16_t lcore_id)
 {
 	struct comm_log *cl = &comm_core_logs[lcore_id];
 	struct comm_log *sv = &saved_comm_log;
-	struct comm_core_state *ccs = &ccore_state[enabled_lcore[0]];
+	struct comm_core_state *ccs = &ccore_state[lcore_id];
 	u64 now_real = fp_get_time_ns();
 	u64 now_timeslot = (now_real * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
 
@@ -336,7 +336,7 @@ int exec_log_core(void *void_cmd_p)
 	}
 
 	/* copy baseline statistics */
-	memcpy(&saved_comm_log, &comm_core_logs[enabled_lcore[FIRST_COMM_CORE]],
+	memcpy(&saved_comm_log, &comm_core_logs[cmd->comm.lcore_id[0]],
 			sizeof(saved_comm_log));
 	save_admission_stats();
 	for (i = 0; i < N_ADMISSION_CORES; i++)
@@ -361,11 +361,11 @@ int exec_log_core(void *void_cmd_p)
 #endif
 		}
 
-		print_comm_log(cmd->comm_lcore);
+		print_comm_log(cmd->comm.lcore_id[0]);
 		print_global_admission_log();
 
-		for (i = 0; i < N_ADMISSION_CORES; i++)
-			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
+		for (i = 0; i < cmd->admission.n; i++)
+			print_admission_core_log(cmd->admission.lcore_id[i], i);
 		fflush(stdout);
 
 		/* save admission core stats */

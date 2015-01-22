@@ -19,4 +19,4 @@ else
     exit
 fi
 
-sudo $FAST -c 7 -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1
+sudo $FAST -c 7 -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1 > arbiter_log.txt

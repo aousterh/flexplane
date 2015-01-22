@@ -37,6 +37,7 @@ void print_global_admission_log_emulation() {
 			D(endpoint_sent_packet), D(router_sent_packet));
 	printf("\n  algo dropped %lu from endpoints, %lu from routers",
 			D(endpoint_dropped_packet), D(router_dropped_packet));
+	printf("\n  algo marked %lu from routers", D(router_marked_packet));
 	printf("\n");
 #undef D
 
@@ -47,6 +48,7 @@ void print_global_admission_log_emulation() {
 			st->endpoint_sent_packet, st->router_sent_packet);
 	printf("\n  algo dropped %lu from endpoints, %lu from routers",
 			st->endpoint_dropped_packet, st->router_dropped_packet);
+	printf("\n  algo marked %lu from routers", st->router_marked_packet);
 
 	printf("\n errors:");
 	if (st->admitted_struct_overflow)

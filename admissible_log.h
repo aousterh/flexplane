@@ -46,6 +46,7 @@ struct emu_admission_statistics {
 	uint64_t router_sent_packet;
 	uint64_t endpoint_dropped_packet;
 	uint64_t router_dropped_packet;
+	uint64_t router_marked_packet;
 };
 
 /*
@@ -150,6 +151,13 @@ void adm_log_emu_router_dropped_packet (
 		struct emu_admission_statistics *st) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->router_dropped_packet++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_router_marked_packet (
+		struct emu_admission_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->router_marked_packet++;
 }
 
 #endif /* EMU_ADMISSIBLE_LOG_H__ */

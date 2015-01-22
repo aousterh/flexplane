@@ -89,6 +89,7 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
     } else {
         /* mark the ECN bit */
       //        printf("RED marking pkt\n");
+		adm_log_emu_router_marked_packet(&g_state->stat);
         packet_mark_ecn(pkt);
         return RED_ACCEPTMARKED;
      }

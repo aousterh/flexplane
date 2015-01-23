@@ -5,8 +5,8 @@
  *      Author: yonch
  */
 
-#ifndef ADMITTED_H_
-#define ADMITTED_H_
+#ifndef GRAPH_ALGO_ADMITTED_H_
+#define GRAPH_ALGO_ADMITTED_H_
 
 #include "platform.h"
 #include "../protocol/topology.h"
@@ -121,4 +121,4 @@ uint16_t get_size(struct admitted_traffic *admitted) {
 	return admitted->size;
 }
 
-#endif /* ADMITTED_H_ */
+#endif /* GRAPH_ALGO_ADMITTED_H_ */

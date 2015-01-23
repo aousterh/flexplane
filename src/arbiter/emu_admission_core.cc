@@ -31,7 +31,6 @@
 
 struct emu_state g_emu_state;
 
-struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
 
@@ -39,7 +38,8 @@ struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
 #define NSEC_PER_SEC (1000*1000*1000)
 #endif
 
-void emu_admission_init_global(struct rte_ring *q_admitted_out)
+void emu_admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	int i;
 	char s[64];
@@ -66,27 +66,6 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 		RTE_LOG(INFO, ADMISSION,
 				"Allocated packet mempool on socket %d - %lu bufs\n", socketid,
 				(uint64_t) PACKET_MEMPOOL_SIZE);
-
-	/* allocate admitted_traffic_mempool */
-	pool_index = 0;
-	if (admitted_traffic_pool[pool_index] == NULL) {
-		snprintf(s, sizeof(s), "admitted_traffic_pool_%d", pool_index);
-		admitted_traffic_pool[pool_index] =
-				rte_mempool_create(s,
-						ADMITTED_TRAFFIC_MEMPOOL_SIZE, /* num elements */
-						sizeof(struct emu_admitted_traffic), /* element size */
-						ADMITTED_TRAFFIC_CACHE_SIZE, /* cache size */
-						0, NULL, NULL, NULL, NULL, /* custom init, disabled */
-						socketid, 0);
-		if (admitted_traffic_pool[pool_index] == NULL)
-			rte_exit(EXIT_FAILURE,
-					"Cannot init admitted traffic pool on socket %d: %s\n",
-					socketid, rte_strerror(rte_errno));
-		else
-			RTE_LOG(INFO, ADMISSION,
-					"Allocated admitted traffic pool on socket %d - %lu bufs\n",
-					socketid, (uint64_t) ADMITTED_TRAFFIC_MEMPOOL_SIZE);
-	}
 
 	/* init log */
 	for (i = 0; i < RTE_MAX_LCORE; i++)
@@ -161,10 +140,10 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 #endif
 
 	RTE_LOG(INFO, ADMISSION,
-			"admitted_traffic_pool=%p q_admitted_out=%p packet_mempool=%p\n",
-			admitted_traffic_pool[0], q_admitted_out, packet_mempool);
+			"admitted_traffic_mempool=%p q_admitted_out=%p packet_mempool=%p\n",
+			admitted_traffic_mempool, q_admitted_out, packet_mempool);
 
-	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_pool[0],
+	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_mempool,
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
             (fp_ring **) packet_queues, rtype, rtr_args, E_Simple, NULL);
 

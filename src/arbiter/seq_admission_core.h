@@ -25,7 +25,8 @@
 /* admissible status */
 extern struct seq_admissible_status g_seq_admissible_status;
 
-void seq_admission_init_global(struct rte_ring *q_admitted_out);
+void seq_admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool);
 
 /**
  * Initializes a single core to be a comm core

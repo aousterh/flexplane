@@ -24,7 +24,8 @@ extern struct emu_state g_emu_state;
 extern "C" {
 #endif
 
-void emu_admission_init_global(struct rte_ring *q_admitted_out);
+void emu_admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool);
 
 /**
  * Runs the admission core

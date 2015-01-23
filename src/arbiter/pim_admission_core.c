@@ -20,12 +20,12 @@
 
 struct pim_state g_pim_state;
 
-struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 struct rte_ring *q_new_demands[N_ADMISSION_CORES];
 struct rte_ring *q_ready_partitions[N_ADMISSION_CORES];
 
-void pim_admission_init_global(struct rte_ring *q_admitted_out)
+void pim_admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	int i;
 	char s[64];
@@ -49,26 +49,6 @@ void pim_admission_init_global(struct rte_ring *q_admitted_out)
 	else
 		RTE_LOG(INFO, ADMISSION, "Allocated bin mempool on socket %d - %lu bufs\n",
 				socketid, (uint64_t)BIN_MEMPOOL_SIZE);
-
-	/* allocate admitted_traffic_mempool */
-	pool_index = 0;
-	if (admitted_traffic_pool[pool_index] == NULL) {
-		snprintf(s, sizeof(s), "admitted_traffic_pool_%d", pool_index);
-		admitted_traffic_pool[pool_index] =
-			rte_mempool_create(s,
-				ADMITTED_TRAFFIC_MEMPOOL_SIZE, /* num elements */
-				sizeof(struct admitted_traffic), /* element size */
-				ADMITTED_TRAFFIC_CACHE_SIZE, /* cache size */
-				0, NULL, NULL, NULL, NULL, /* custom initialization, disabled */
-				socketid, 0);
-		if (admitted_traffic_pool[pool_index] == NULL)
-			rte_exit(EXIT_FAILURE,
-					"Cannot init admitted traffic pool on socket %d: %s\n", socketid,
-					rte_strerror(rte_errno));
-		else
-			RTE_LOG(INFO, ADMISSION, "Allocated admitted traffic pool on socket %d - %lu bufs\n",
-					socketid, (uint64_t)ADMITTED_TRAFFIC_MEMPOOL_SIZE);
-	}
 
 	/* init log */
 	for (i = 0; i < RTE_MAX_LCORE; i++)
@@ -96,7 +76,7 @@ void pim_admission_init_global(struct rte_ring *q_admitted_out)
 
 	/* init pim_state */
 	pim_init_state(&g_pim_state, q_new_demands, q_admitted_out,
-                       bin_mempool, admitted_traffic_pool[0], q_ready_partitions);
+                       bin_mempool, admitted_traffic_mempool, q_ready_partitions);
 }
 
 void pim_admission_init_core(uint16_t lcore_id)

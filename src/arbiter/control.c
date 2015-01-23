@@ -54,7 +54,8 @@ int control_do_queue_allocation(void)
 
 void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 		uint64_t first_time_slot, struct rte_ring* q_path_selected,
-		struct rte_ring* q_admitted)
+		struct rte_ring* q_admitted,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	struct comm_core_cmd comm_cmd;
 	unsigned lcore_id = rte_lcore_id();
@@ -70,6 +71,7 @@ void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 	comm_cmd.end_time = end_time;
 	comm_cmd.q_allocated =
 			((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
+	comm_cmd.admitted_traffic_mempool = admitted_traffic_mempool;
 	comm_cmd.rx_queue_id = lcore_conf[lcore_id].rx_queue_list[0].queue_id;
 	comm_cmd.tx_queue_id = lcore_conf[lcore_id].enabled_ind;
 	comm_cmd.port_id = lcore_conf[lcore_id].rx_queue_list[0].port_id;
@@ -86,7 +88,8 @@ void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 void launch_stress_test_cores(uint64_t start_time,
 		uint64_t end_time, uint64_t first_time_slot,
 		struct rte_ring* q_path_selected,
-		struct rte_ring* q_admitted)
+		struct rte_ring* q_admitted,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	struct stress_test_core_cmd cmd;
 	uint64_t hz = rte_get_timer_hz();
@@ -102,10 +105,40 @@ void launch_stress_test_cores(uint64_t start_time,
 	cmd.initial_flow_size = STRESS_TEST_INITIAL_FLOW_SIZE;
 	cmd.q_allocated =
 			((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
+	cmd.admitted_traffic_mempool = admitted_traffic_mempool;
 
 
 	/** Run the controller on this core */
 	exec_stress_test_core(&cmd, first_time_slot);
+}
+
+struct rte_mempool *allocate_admitted_traffic_mempool(int socketid)
+{
+	struct rte_mempool *pool;
+	int elem_size;
+
+#ifdef EMULATION_ALGO
+	elem_size = sizeof(struct emu_admitted_traffic);
+#else
+	elem_size = sizeof(struct admitted_traffic);
+#endif
+
+	pool =
+		rte_mempool_create("admitted_traffic_pool",
+			ADMITTED_TRAFFIC_MEMPOOL_SIZE, /* num elements */
+			elem_size, /* element size */
+			ADMITTED_TRAFFIC_CACHE_SIZE, /* cache size */
+			0, NULL, NULL, NULL, NULL, /* custom initialization, disabled */
+			socketid, 0);
+	if (pool == NULL)
+		rte_exit(EXIT_FAILURE,
+				"Cannot init admitted traffic pool on socket %d: %s\n", socketid,
+				rte_strerror(rte_errno));
+
+	CONTROL_INFO("Allocated admitted traffic pool on socket %d - %lu bufs\n",
+			socketid, (uint64_t)ADMITTED_TRAFFIC_MEMPOOL_SIZE);
+
+	return pool;
 }
 
 
@@ -128,6 +161,7 @@ void launch_cores(void)
 	uint64_t now;
 	struct rte_ring *q_admitted;
 	struct rte_ring *q_path_selected;
+	struct rte_mempool *admitted_traffic_mempool;
 
 	benchmark_cost_of_get_time();
 
@@ -159,8 +193,11 @@ void launch_cores(void)
 		rte_exit(EXIT_FAILURE,
 				"Cannot init q_path_selected: %s\n", rte_strerror(rte_errno));
 
+	/* create admitted_traffic_mempool */
+	admitted_traffic_mempool = allocate_admitted_traffic_mempool(0);
+
 	/* initialize admission core global data */
-	admission_init_global(q_admitted);
+	admission_init_global(q_admitted, admitted_traffic_mempool);
 
 	// Calculate start and end times
 	start_time = rte_get_timer_cycles() + sec_to_hpet(0.2); /* start after last end */
@@ -215,10 +252,11 @@ void launch_cores(void)
 	if (IS_STRESS_TEST) {
 		launch_stress_test_cores(start_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
                                          end_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
-                                         first_time_slot, q_path_selected, q_admitted);
+                                         first_time_slot, q_path_selected, q_admitted,
+										 admitted_traffic_mempool);
 	} else {
 		launch_comm_cores(start_time, end_time, first_time_slot, q_path_selected,
-				q_admitted);
+				q_admitted, admitted_traffic_mempool);
 	}
 
 	printf("waiting for all cores..\n");

@@ -17,8 +17,10 @@
 #include "../grant-accept/pim.h"
 
 static inline
-void admission_init_global(struct rte_ring *q_admitted_out) {
-	pim_admission_init_global(q_admitted_out);
+void admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
+{
+	pim_admission_init_global(q_admitted_out, admitted_traffic_mempool);
 }
 
 static inline
@@ -59,8 +61,10 @@ struct admission_statistics *g_admission_stats(void) {
 #include "../graph-algo/admissible_structures.h"
 
 static inline
-void admission_init_global(struct rte_ring *q_admitted_out) {
-	seq_admission_init_global(q_admitted_out);
+void admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
+{
+	seq_admission_init_global(q_admitted_out, admitted_traffic_mempool);
 }
 
 static inline
@@ -101,8 +105,10 @@ struct admission_statistics *g_admission_stats(void) {
 #include "../emulation/emulation.h"
 
 static inline
-void admission_init_global(struct rte_ring *q_admitted_out) {
-	emu_admission_init_global(q_admitted_out);
+void admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
+{
+	emu_admission_init_global(q_admitted_out, admitted_traffic_mempool);
 }
 
 static inline

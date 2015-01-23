@@ -19,7 +19,8 @@
 /* pim state */
 extern struct pim_state g_pim_state;
 
-void pim_admission_init_global(struct rte_ring *q_admitted_out);
+void pim_admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool);
 
 /**
  * Initializes a single core to be a pim admission core

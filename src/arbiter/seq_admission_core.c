@@ -17,8 +17,6 @@
 
 struct seq_admissible_status g_seq_admissible_status;
 
-struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
-
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 
 struct rte_ring *q_head;
@@ -28,7 +26,8 @@ struct rte_ring *q_bin[2 * N_ADMISSION_CORES];
 #define NSEC_PER_SEC (1000*1000*1000)
 #endif
 
-void seq_admission_init_global(struct rte_ring *q_admitted_out)
+void seq_admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	int i;
 	char s[64];
@@ -73,26 +72,6 @@ void seq_admission_init_global(struct rte_ring *q_admitted_out)
 		RTE_LOG(INFO, ADMISSION, "Allocated bin mempool on socket %d - %lu bufs\n",
 				socketid, (uint64_t)BIN_MEMPOOL_SIZE);
 
-	/* allocate admitted_traffic_pool */
-	pool_index = 0;
-	if (admitted_traffic_pool[pool_index] == NULL) {
-		snprintf(s, sizeof(s), "admitted_traffic_pool_%d", pool_index);
-		admitted_traffic_pool[pool_index] =
-			rte_mempool_create(s,
-				ADMITTED_TRAFFIC_MEMPOOL_SIZE, /* num elements */
-				sizeof(struct admitted_traffic), /* element size */
-				ADMITTED_TRAFFIC_CACHE_SIZE, /* cache size */
-				0, NULL, NULL, NULL, NULL, /* custom initialization, disabled */
-				socketid, 0);
-		if (admitted_traffic_pool[pool_index] == NULL)
-			rte_exit(EXIT_FAILURE,
-					"Cannot init admitted traffic pool on socket %d: %s\n", socketid,
-					rte_strerror(rte_errno));
-		else
-			RTE_LOG(INFO, ADMISSION, "Allocated admitted traffic pool on socket %d - %lu bufs\n",
-					socketid, (uint64_t)ADMITTED_TRAFFIC_MEMPOOL_SIZE);
-	}
-
 	/* init log */
 	for (i = 0; i < RTE_MAX_LCORE; i++)
 		admission_log_init(&admission_core_logs[i]);
@@ -111,8 +90,7 @@ void seq_admission_init_global(struct rte_ring *q_admitted_out)
 	seq_init_admissible_status(&g_seq_admissible_status, OVERSUBSCRIBED,
 				   INTER_RACK_CAPACITY, OUT_OF_BOUNDARY_CAPACITY,
 				   NUM_NODES, q_head, q_admitted_out, q_spent, bin_mempool,
-				   admitted_traffic_pool[0], &q_bin[0]);
-
+				   admitted_traffic_mempool, &q_bin[0]);
 }
 
 void seq_admission_init_core(uint16_t lcore_id)

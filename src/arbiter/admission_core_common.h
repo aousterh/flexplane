@@ -14,9 +14,6 @@
 
 #define		ALLOWED_TIMESLOT_LAG		4
 
-/* admitted_traffic pool */
-extern struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
-
 /* Specifications for controller thread */
 struct admission_core_cmd {
 	uint64_t start_time;

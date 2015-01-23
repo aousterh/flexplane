@@ -793,7 +793,8 @@ void fill_algo_fields_in_alloc(struct pending_alloc *alloc,
  * source endpoint that got a new allocation.
  */
 static inline void process_allocated_traffic(struct comm_core_state *core,
-		struct rte_ring *q_admitted)
+		struct rte_ring *q_admitted,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	int rc;
 	int i, j;
@@ -857,7 +858,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 		}
 	}
 	/* free memory */
-	rte_mempool_put_bulk(admitted_traffic_pool[0], (void **) admitted, rc);
+	rte_mempool_put_bulk(admitted_traffic_mempool, (void **) admitted, rc);
 }
 
 /* check statically that the window is not too long, because fill_packet_alloc
@@ -1071,6 +1072,7 @@ void watchdog_loop(struct comm_core_cmd * cmd)
 	uint8_t portid;
 	uint8_t rx_queue, tx_queue;
 	struct rte_mempool* pktmbuf_pool;
+	struct rte_mempool* admitted_traffic_mempool;
 
     now = rte_get_timer_cycles();
     core->last_rx_watchdog = now;
@@ -1079,6 +1081,7 @@ void watchdog_loop(struct comm_core_cmd * cmd)
 	rx_queue = cmd->rx_queue_id;
 	tx_queue = cmd->tx_queue_id;
 	pktmbuf_pool = cmd->tx_pktmbuf_pool;
+	admitted_traffic_mempool = cmd->admitted_traffic_mempool;
 
     while (core->last_rx_watchdog - now < WATCHDOG_TRIGGER_THRESHOLD_SEC * rte_get_timer_hz()) {
         now = rte_get_timer_cycles();
@@ -1094,7 +1097,8 @@ void watchdog_loop(struct comm_core_cmd * cmd)
 		comm_log_processed_batch(nb_rx, now);
 
     	/* Still need to process newly allocated timeslots, which would be empty */
-		process_allocated_traffic(core, cmd->q_allocated);
+		process_allocated_traffic(core, cmd->q_allocated,
+				admitted_traffic_mempool);
 
 		/* send IGMP */
 		if (now - core->last_igmp > IGMP_SEND_INTERVAL_SEC * rte_get_timer_hz()) {
@@ -1124,6 +1128,7 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 	struct fp_timer *tim;
 	bool saw_watchdog;
 	struct rte_mempool* pktmbuf_pool;
+	struct rte_mempool* admitted_traffic_mempool;
 
 	core->last_igmp = rte_get_timer_cycles();
     core->last_tx_watchdog = rte_get_timer_cycles();
@@ -1139,10 +1144,11 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 	rx_queue = cmd->rx_queue_id;
 	tx_queue = cmd->tx_queue_id;
 	pktmbuf_pool = cmd->tx_pktmbuf_pool;
+	admitted_traffic_mempool = cmd->admitted_traffic_mempool;
 
-	RTE_LOG(INFO, BENCHAPP, "comm_core -- lcoreid=%u portid=%hhu rx_queue=%hhu tx_queue=%hhu tx_pktmbuf_pool=%p q_admitted=%p\n",
+	RTE_LOG(INFO, BENCHAPP, "comm_core -- lcoreid=%u portid=%hhu rx_queue=%hhu tx_queue=%hhu tx_pktmbuf_pool=%p q_admitted=%p admitted_traffic_mempool=%p\n",
 			rte_lcore_id(), portid, rx_queue, tx_queue, pktmbuf_pool,
-			cmd->q_allocated);
+			cmd->q_allocated, admitted_traffic_mempool);
 	send_gratuitous_arp(pktmbuf_pool, portid, tx_queue, controller_ip());
 
 	while (rte_get_timer_cycles() < cmd->start_time);
@@ -1179,7 +1185,7 @@ void exec_comm_core(struct comm_core_cmd * cmd)
 		}
 
 		/* Process newly allocated timeslots */
-		process_allocated_traffic(core, cmd->q_allocated);
+		process_allocated_traffic(core, cmd->q_allocated, admitted_traffic_mempool);
 
 		/* Process the spent demands, launching a new demand for demands where
 		 * backlog increased while the original demand was being allocated */

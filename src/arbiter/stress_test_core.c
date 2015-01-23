@@ -46,7 +46,8 @@ static inline void stress_test_log_got_admitted_tslot(uint16_t size, uint64_t ti
 }
 
 static inline void process_allocated_traffic(struct comm_core_state *core,
-		struct rte_ring *q_admitted)
+		struct rte_ring *q_admitted,
+		struct rte_mempool *admitted_traffic_mempool)
 {
 	int rc;
 	int i;
@@ -75,7 +76,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 #endif
 	}
 	/* free memory */
-	rte_mempool_put_bulk(admitted_traffic_pool[0], (void **) admitted, rc);
+	rte_mempool_put_bulk(admitted_traffic_mempool, (void **) admitted, rc);
 }
 
 /**
@@ -226,7 +227,8 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		comm_log_processed_batch(n_processed_requests, now);
 
 		/* Process newly allocated timeslots */
-		process_allocated_traffic(core, cmd->q_allocated);
+		process_allocated_traffic(core, cmd->q_allocated,
+				cmd->admitted_traffic_mempool);
 
 		/* Process the spent demands, launching a new demand for demands where
 		 * backlog increased while the original demand was being allocated */

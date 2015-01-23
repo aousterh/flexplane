@@ -7,7 +7,7 @@ EMU_DIR = ../../../fastpass-private/src/emulation
 APP = fast
 
 SRCS-y := main.c \
-          control.c \
+          control.cc \
           comm_core.c \
           seq_admission_core.c \
           path_sel_core.c \

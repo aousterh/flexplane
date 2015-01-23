@@ -25,10 +25,14 @@ namespace std {
 #include "EthernetDevice.h"
 #include "Ring.h"
 #include "PacketPool.h"
+#include "MemPool.h"
 %}
 
 #define __attribute__(x)
 #define __rte_cache_aligned
+
+%include "MemPool.h"
+
 
 /** rte_config.h */
 %include <rte_config.h>
@@ -121,7 +125,6 @@ void dump_pci_drivers() {
 %include "Ring.h"
 %include "PacketPool.h"
 
-
 %inline %{
 inline void rx_burst(uint8_t port_id, uint16_t queue_id,
 		std::vector<struct rte_mbuf *> &vec)
@@ -131,3 +134,4 @@ inline void rx_burst(uint8_t port_id, uint16_t queue_id,
 	printf("rx_burst %d packets\n", n);
 }
 %}
+

@@ -5,13 +5,20 @@ include $(RTE_SDK)/mk/rte.vars.mk
 # binary name
 SHARED = _dpdk.so
 
-%_wrap.cc: %.i EthernetDevice.h
+WRAP_H_DEPS = EthernetDevice.h \
+			  MemPool.h \
+			  PacketPool.h \
+			  Power.h \
+			  Ring.h
+
+%_wrap.cc: %.i $(WRAP_H_DEPS)
 	swig -c++ -python -I$(RTE_SDK)/$(RTE_TARGET)/include -o $@ $< 
 CPPFLAGS_dpdk_wrap_cc.o = -I /usr/include/python2.7/
 
 
 SRCS-y := EthernetDevice.cc 	\
 	PacketPool.cc				\
+	MemPool.cc				\
 	dpdk_wrap.cc
 
 #CFLAGS += -std=c++11

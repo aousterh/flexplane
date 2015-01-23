@@ -179,12 +179,14 @@ int exec_emu_admission_core(void *void_cmd_p)
 			  rte_lcore_id(), core_ind);
                           }*/
 
-	ADMISSION_DEBUG("core %d admission %d starting allocations\n",
-			rte_lcore_id(), core_ind);
-
 	/* do allocation loop */
 	time_now = fp_get_time_ns();
 	tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+
+	RTE_LOG(INFO, ADMISSION,
+			"core %d admission %d starting allocations, first tslot %lu current %lu\n",
+			rte_lcore_id(), core_ind, cmd->start_timeslot, tslot);
+
 	while (1) {
 		/* check if we're behind */
 /*		timeslots_behind = tslot - logical_timeslot +

@@ -13,6 +13,9 @@
 #include "watchdog.h"
 #include "control.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 /* The maximum number of admitted time-slots to process in a batch before
  *   sending and receiving packets */
@@ -106,5 +109,9 @@ void exec_comm_core(struct comm_core_cmd * cmd);
 void benchmark_cost_of_get_time(void);
 
 void comm_dump_stat(uint16_t node_id, struct conn_log_struct *conn_log);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* CONTROLLER_H_ */

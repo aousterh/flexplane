@@ -12,6 +12,10 @@
 
 #include "main.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define		ALLOWED_TIMESLOT_LAG		4
 
 /* Specifications for controller thread */
@@ -23,5 +27,9 @@ struct admission_core_cmd {
 
 	uint32_t admission_core_index; /* the index among admission cores of this one */
 };
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* ADMISSION_CORE_COMMON_H */

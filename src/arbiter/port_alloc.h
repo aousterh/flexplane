@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /**
  * \brief Allocates an RX queue for portid on lcore.
  *
@@ -28,5 +32,8 @@ int conf_alloc_rx_queue(uint16_t lcore, uint8_t portid);
  */
 int conf_alloc_tx_queue(uint16_t lcore, uint8_t portid);
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* PORT_ALLOC_H_ */

@@ -12,6 +12,10 @@
 #include <rte_ethdev.h>
 #include <rte_mempool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define RTE_LOGTYPE_BENCHAPP RTE_LOGTYPE_USER1
 
 #define NB_SOCKETS 8
@@ -168,5 +172,9 @@ static inline int send_packet_via_queue(struct rte_mbuf *m, uint8_t port,
 
 	return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* MAIN_H_ */

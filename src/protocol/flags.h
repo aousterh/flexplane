@@ -13,6 +13,10 @@
 /* This file contains information about encoding/decoding flags and extra data
  * in control packets used in emulation. */
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define FLAGS_MASK	0xF
 
 /* flags for emulation */
@@ -108,5 +112,9 @@ static inline u8 alloc_data_bytes_from_scheme(char *scheme) {
 	else
 		return MAX_ALLOC_DATA_BYTES;
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* FLAGS_H_ */

@@ -5,6 +5,10 @@
 #include "fpproto.h"
 #include "platform/generic.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define CONN_LOG_STRUCT_VERSION		3
 
 struct conn_log_struct {
@@ -109,5 +113,9 @@ static inline void fpproto_print_warnings(struct fp_proto_stat* sps, void *file)
 	if (sps->seqno_before_inwnd)
 		fp_fprintf(file, "\n  %llu major reordering events", sps->seqno_before_inwnd);
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* STAT_PRINT_H_ */

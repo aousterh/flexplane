@@ -15,6 +15,10 @@
 #include <rte_mbuf.h>
 #include <rte_byteorder.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 struct igmp_ipv4_hdr {
     uint8_t type;
     uint8_t max_resp_time;
@@ -121,5 +125,8 @@ static void send_igmp(struct rte_mempool* pktmbuf_pool, uint8_t port,
 			rte_lcore_id(), controller_ip, port);
 }
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* FASTPASS_IGMP_H_ */

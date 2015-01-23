@@ -3,6 +3,10 @@
 
 #include "../protocol/topology.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /* to use a non-multiple-of-8 PARTITION_N_NODES, modify the packing of
  * bitmasks specified by macros in pim.h */
 #define PARTITION_N_NODES	128
@@ -32,5 +36,9 @@ uint16_t last_in_partition(uint16_t partition) {
         return (partition == N_PARTITIONS - 1) ? (MAX_NODES - 1)
                 : (first_in_partition(partition + 1) - 1);
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* PARTITIONING_H_ */

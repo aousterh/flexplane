@@ -21,6 +21,10 @@
 #include "platform/debug.h"
 #include "window.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /* FASTPASS_PR_DEBUG defined in platform.h */
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 extern bool fastpass_debug;
@@ -388,5 +392,9 @@ void fpproto_commit_packet(struct fpproto_conn *conn,
  */
 int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *data, u32 max_len,
 		__be32 saddr, __be32 daddr, u32 min_size);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* FPPROTO_H_ */

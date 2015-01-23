@@ -11,10 +11,15 @@
 #include <rte_ring.h>
 #include "../graph-algo/algo_config.h"
 
+
 #ifdef PARALLEL_ALGO
 /* parallel algo, e.g. pim */
 #include "pim_admission_core.h"
 #include "../grant-accept/pim.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 static inline
 void admission_init_global(struct rte_ring *q_admitted_out,
@@ -53,12 +58,20 @@ struct admission_statistics *g_admission_stats(void) {
 	return &g_pim_state.stat;
 }
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 #endif
 
 #ifdef PIPELINED_ALGO
 /* pipelined algo */
 #include "seq_admission_core.h"
 #include "../graph-algo/admissible_structures.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 static inline
 void admission_init_global(struct rte_ring *q_admitted_out,
@@ -97,12 +110,20 @@ struct admission_statistics *g_admission_stats(void) {
 	return &g_seq_admissible_status.stat;
 }
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 #endif
 
 #ifdef EMULATION_ALGO
 /* emulation algo */
 #include "emu_admission_core.h"
 #include "../emulation/emulation.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 static inline
 void admission_init_global(struct rte_ring *q_admitted_out,
@@ -137,6 +158,11 @@ struct admission_statistics *g_admission_stats(void) {
 	return (struct admission_statistics *) &g_emu_state.stat;
 }
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 #endif
+
 
 #endif /* ADMISSION_CORE_H */

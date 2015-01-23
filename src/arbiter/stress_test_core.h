@@ -6,7 +6,11 @@
 #include <rte_ip.h>
 #include "../graph-algo/admissible.h"
 
-#define MAX_ENQUEUES_PER_LOOP					1024
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+#define MAX_ENQUEUES_PER_LOOP		1024
 #define STRESS_TEST_MAX_ADMITTED_PER_LOOP		(32*BATCH_SIZE)
 
 /* The buffer size when writing to q_head */
@@ -41,5 +45,8 @@ struct stress_test_core_cmd {
 void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		uint64_t first_time_slot);
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* STRESS_TEST_CORE_H_ */

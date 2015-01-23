@@ -18,6 +18,10 @@
 #include "../protocol/platform.h"
 #include "dpdk-time.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /**
  * logged information for a core
  */
@@ -389,5 +393,9 @@ static inline void comm_log_stress_test_increase_factor(double increase_factor) 
 }
 
 #undef CL
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* COMM_LOG_H_ */

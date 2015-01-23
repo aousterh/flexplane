@@ -22,7 +22,7 @@ extern struct emu_state g_emu_state;
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif /* __cplusplus */
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool);
@@ -34,7 +34,7 @@ int exec_emu_admission_core(void *void_cmd_p);
 
 #ifdef __cplusplus
 }
-#endif
+#endif /* __cplusplus */
 
 
 #endif /* EMU_ADMISSION_CORE_H */

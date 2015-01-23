@@ -18,6 +18,10 @@
 #include "igmp.h"
 #include "comm_log.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 struct fp_watchdog_hdr {
     uint64_t timestamp;
 } __attribute__((__packed__));
@@ -119,5 +123,8 @@ try_sending:
 			rte_lcore_id(), our_ip, port);
 }
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* IGMP_H_ */

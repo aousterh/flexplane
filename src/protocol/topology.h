@@ -4,6 +4,10 @@
 
 #include "platform/generic.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 //#define MAX_NODES 1024
 //#define FP_NODES_SHIFT 10  // 2^FP_NODES_SHIFT = MAX_NODES
 #define NUM_NODES 64
@@ -79,5 +83,9 @@ static inline
 uint16_t fp_rack_from_node_id(uint16_t id) {
     return id >> TOR_SHIFT;
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* FASTPASS_TOPOLOGY_H_ */

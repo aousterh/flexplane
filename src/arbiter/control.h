@@ -9,6 +9,10 @@
 #include <stdint.h>
 #include "../graph-algo/algo_config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define I_AM_MASTER			1
 #define IS_STRESS_TEST			0
 #define RUN_WITH_BACKUP			0
@@ -99,5 +103,8 @@ int control_do_queue_allocation(void);
  */
 void launch_cores(void);
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* CONTROL_H_ */

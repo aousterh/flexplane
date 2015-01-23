@@ -10,6 +10,10 @@
 
 #include <rte_lcore.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 struct logged_lcores {
 	uint32_t n;
 	uint8_t lcore_id[RTE_MAX_LCORE];
@@ -33,5 +37,9 @@ struct log_core_cmd {
  * Runs the log core
  */
 int exec_log_core(void *void_cmd_p);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* LOG_CORE_H_ */

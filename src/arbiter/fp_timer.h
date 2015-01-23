@@ -4,6 +4,10 @@
 
 #include <ccan/list/list.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define MAX_TIMER_SLOTS		1024
 #define TIMER_GRANULARITY	(16*1024)
 #define TIMER_NOT_SET_TIME	(~0UL)
@@ -123,5 +127,9 @@ void fp_timer_get_expired(struct fp_timers *timers, uint64_t now,
 	 * gets newly reset timers within that same timeslot */
 	timers->head = now;
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* FP_TIMER_H_ */

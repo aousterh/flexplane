@@ -12,6 +12,7 @@ sudo ethtool -K $DEV gso off tso off
 
 # disable TCP small queues
 echo 1310720 > /proc/sys/net/ipv4/tcp_limit_output_bytes
+echo 2129920 > /proc/sys/net/core/wmem_max
 echo 2129920 > /proc/sys/net/core/wmem_default
 
 ./del_tc.sh

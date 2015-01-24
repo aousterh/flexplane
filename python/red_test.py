@@ -22,7 +22,7 @@ dropper = Dropper(emu_output, state.queue_bank_stats)
 # make router
 red_params = red_args()
 red_params.q_capacity = 400;
-red_params.ecn = False;
+red_params.ecn = True;
 red_params.min_th = 20; # 200 microseconds
 red_params.max_th = 200; # 2 milliseconds
 red_params.max_p = 0.05;

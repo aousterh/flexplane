@@ -215,8 +215,7 @@ int exec_emu_admission_core(void *void_cmd_p)
 						(real_tslot - rdtsc_tslot);
 			}
 
-			admission_log_allocation_begin(logical_timeslot,
-						       start_time_first_timeslot);
+			admission_log_allocation_begin(logical_timeslot);
 
 			/* perform allocation on this core */
 			core->step();

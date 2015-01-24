@@ -112,7 +112,6 @@ int exec_seq_admission_core(void *void_cmd_p)
 	/* int traffic_pool_socketid = rte_lcore_to_socket_id(rte_lcore_id()); */
 	int traffic_pool_socketid = 0;
 	int rc;
-	uint64_t start_time_first_timeslot;
 	/* calculate shift and mul for the rdtsc */
 	double tslot_len_seconds = ((double)(1 << TIMESLOT_SHIFT)) / ((double)TIMESLOT_MUL * NSEC_PER_SEC);
     double tslot_len_rdtsc_cycles = tslot_len_seconds * rte_get_timer_hz();
@@ -134,8 +133,7 @@ int exec_seq_admission_core(void *void_cmd_p)
 		uint64_t rdtsc_tslot = (rdtsc_time * rdtsc_mul) >> rdtsc_shift;
 
 		/* perform allocation */
-		admission_log_allocation_begin(logical_timeslot,
-				start_time_first_timeslot);
+		admission_log_allocation_begin(logical_timeslot);
 		seq_get_admissible_traffic(&g_seq_admissible_status, core_ind,
 					   logical_timeslot + (rdtsc_tslot - real_tslot),
 					   rdtsc_mul, rdtsc_shift);

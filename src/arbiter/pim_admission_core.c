@@ -94,7 +94,6 @@ int exec_pim_admission_core(void *void_cmd_p)
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
 	uint64_t logical_timeslot = cmd->start_timeslot;
-	uint64_t start_time_first_timeslot;
 
 	ADMISSION_DEBUG("core %d admission %d starting allocations\n",
 			rte_lcore_id(), core_ind);
@@ -104,8 +103,7 @@ int exec_pim_admission_core(void *void_cmd_p)
 		/* TODO: skip timeslots */
 		
 		/* perform allocation */
-		admission_log_allocation_begin(logical_timeslot,
-				start_time_first_timeslot);
+		admission_log_allocation_begin(logical_timeslot);
 
                 /* reset per-timeslot state */
                 pim_prepare(&g_pim_state, core_ind);

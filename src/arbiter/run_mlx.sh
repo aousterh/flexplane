@@ -19,4 +19,7 @@ else
     exit
 fi
 
+# clear switch logs
+rm -fr ./log/queues-*.csv
+
 sudo $FAST -c 7 -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1 > arbiter_log.txt

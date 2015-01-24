@@ -193,7 +193,6 @@ struct admissible_state *setup_state(bool oversubscribed,
     struct admissible_state *status;
     struct fp_ring *q_head;
     struct fp_ring *q_spent;
-    struct fp_ring *q_new_demands[NUM_BIN_RINGS];
     struct fp_ring *q_ready_partitions[NUM_BIN_RINGS];
 
     /* init queues */
@@ -205,8 +204,6 @@ struct admissible_state *setup_state(bool oversubscribed,
     *admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
                                                  get_admitted_struct_size());
     for (i = 0; i < NUM_BIN_RINGS; i++) {
-            q_new_demands[i] = fp_ring_create("", 1 << BIN_RING_SHIFT, 0, 0);
-            if (!q_new_demands[i]) exit(-1);
             q_ready_partitions[i] = fp_ring_create("", 1 << READY_PARTITIONS_Q_SIZE, 0, 0);
             if (!q_ready_partitions[i]) exit(-1);
     }
@@ -218,7 +215,7 @@ struct admissible_state *setup_state(bool oversubscribed,
     status = create_admissible_state(false, 0, 0, 0, q_head, *q_admitted_out,
                                      q_spent, *bin_mempool,
                                      *admitted_traffic_mempool,
-                                     q_bin, &q_new_demands[0],
+                                     q_bin, (1 << BIN_RING_SHIFT),
                                      &q_ready_partitions[0], R_DropTail,
                                      (void *) &r_args, E_Simple,
 									 (void *) &e_args);

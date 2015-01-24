@@ -14,7 +14,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define I_AM_MASTER			1
-#define IS_STRESS_TEST			0
+#define IS_STRESS_TEST			1
 #define RUN_WITH_BACKUP			0
 #define USE_10_US_TIMESLOTS		0
 #define USE_1_US_TIMESLOTS		1

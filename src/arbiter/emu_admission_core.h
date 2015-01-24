@@ -15,8 +15,6 @@
 
 #define		PACKET_MEMPOOL_CACHE_SIZE		256
 
-#define		PACKET_Q_SIZE                           (0x1 << PACKET_Q_LOG_SIZE)
-
 /* emu state */
 extern struct emu_state g_emu_state;
 
@@ -35,6 +33,5 @@ int exec_emu_admission_core(void *void_cmd_p);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-
 
 #endif /* EMU_ADMISSION_CORE_H */

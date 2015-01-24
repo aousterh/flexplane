@@ -33,7 +33,6 @@
 struct emu_state g_emu_state;
 
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
-struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
 
 #ifndef NSEC_PER_SEC
 #define NSEC_PER_SEC (1000*1000*1000)
@@ -71,14 +70,6 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 	/* init log */
 	for (i = 0; i < RTE_MAX_LCORE; i++)
 		admission_log_init(&admission_core_logs[i]);
-
-	/* init packet_queues */
-	for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
-		snprintf(s, sizeof(s), "packet_q_%d", i);
-		packet_queues[i] = make_ring(s, PACKET_Q_SIZE, 0, RING_F_SC_DEQ);
-	}
-	RTE_LOG(INFO, ADMISSION, "Initialized %d packet queues of size %d\n",
-			EMU_NUM_PACKET_QS, PACKET_Q_SIZE);
 
 	/* init emu_state */
 	enum RouterType rtype;
@@ -142,7 +133,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 
 	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_mempool,
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
-            (fp_ring **) packet_queues, rtype, rtr_args, E_Simple, NULL);
+			(1 << PACKET_Q_LOG_SIZE), rtype, rtr_args, E_Simple, NULL);
 
 
 }

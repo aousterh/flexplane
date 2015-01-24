@@ -112,20 +112,22 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
     rtr_args = &dctcp_args;
 #elif defined(RED)
     struct red_args red_params;
-    red_params.min_th = 150;
+    red_params.q_capacity = 512;
+    red_params.ecn = true;
+    red_params.min_th = 50;
     red_params.max_th = 250;
     red_params.max_p = 0.1;
     red_params.wq_shift = 9;
 	RTE_LOG(INFO, ADMISSION,
-			"Using RED routers with min_th %d, max_th %d, max_p %f, wq_shift %d\n",
-			red_params.min_th, red_params.max_th, red_params.max_p,
-			red_params.wq_shift);
+			"Using RED routers with q_capacity %d, ecn %d, min_th %d, max_th %d, max_p %f, wq_shift %d\n",
+			red_params.q_capacity, red_params.ecn, red_params.min_th,
+			red_params.max_th, red_params.max_p, red_params.wq_shift);
 
     rtype = R_RED;
     rtr_args = &red_params;
 #elif defined(DROP_TAIL)
     struct drop_tail_args dt_args;
-    dt_args.q_capacity = 500;
+    dt_args.q_capacity = 512;
 	RTE_LOG(INFO, ADMISSION, "Using DropTail routers with q_capacity %d\n",
 			dt_args.q_capacity);
 

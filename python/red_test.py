@@ -23,9 +23,9 @@ dropper = Dropper(emu_output, state.queue_bank_stats)
 red_params = red_args()
 red_params.q_capacity = 400;
 red_params.ecn = True;
-red_params.min_th = 20; # 200 microseconds
+red_params.min_th = 2; # 200 microseconds
 red_params.max_th = 200; # 2 milliseconds
-red_params.max_p = 0.05;
+red_params.max_p = 0.1;
 red_params.wq_shift = 3;
 
 rtr = REDRouter(0, red_params, dropper, state.queue_bank_stats)

@@ -70,9 +70,9 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
         }
 
 	uint16_t randint = random_int(&random_state, RAND_RANGE);
-	printf("p_b %.6f p_a %.6f p_a*RAND_RANGE %d\n", p_b, p_a, p_a*RAND_RANGE);
+	printf("p_b %.6f p_a %.6f p_a*RAND_RANGE %d randint %d\n", p_b, p_a, (uint16_t) (p_a*RAND_RANGE), randint);
         // mark_or_drop with probability p_a
-        if (p_a*RAND_RANGE <= randint) {
+        if (randint <= (uint16_t)(p_a*RAND_RANGE)) {
             accept = mark_or_drop(pkt, false, port);
         }
     } 

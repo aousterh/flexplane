@@ -64,7 +64,7 @@ void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
 	}
 	fprintf(fp, "\n%llu,occupancies", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
-		fprintf(fp, ",%llu", lst.port_enqueues[port] - lst.port_dequeues[port]);
+		fprintf(fp, ",%lld", lst.port_enqueues[port] - lst.port_dequeues[port]);
 	}
 	fprintf(fp, "\n%llu,drops", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {

@@ -28,10 +28,10 @@ void REDQueueManager::enqueue(struct emu_packet *pkt,
                                      uint32_t port, uint32_t queue)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
-    //    printf("RED qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
+    printf("RED qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
     if (qlen >= m_red_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-      //      printf("REDenq: force drop qlen %d capacity%d\n", qlen, m_red_params.q_capacity);
+        printf("REDenq: force drop qlen %d capacity%d\n", qlen, m_red_params.q_capacity);
         mark_or_drop(pkt, RED_FORCEDROP, port);
 	return;
     } else {
@@ -52,7 +52,7 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
         q_avg -= (q_avg - qlen) >> m_red_params.wq_shift;      
     }
 
-    //    printf("red_rules: qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
+    printf("red_rules: qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
 
     float p_a, p_b;
     bool  accept=true;
@@ -63,13 +63,16 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
         accept = mark_or_drop(pkt, 0, port);
     } else if (q_avg > m_red_params.min_th) { // in (q_min, q_max]: probabilistic drop/mark
         p_b = m_red_params.max_p * (float)(q_avg - m_red_params.min_th)/(m_red_params.max_th - m_red_params.min_th);
+	printf("p_b %f\n", p_b);
         p_a = p_b / (1 - count_since_last * p_b);
         if (p_a > 1.0 || p_a < 0.0) {
             p_a = 1;
         }
 
+	uint16_t randint = random_int(&random_state, RAND_RANGE);
+	printf("p_b %.6f p_a %.6f p_a*RAND_RANGE %d\n", p_b, p_a, p_a*RAND_RANGE);
         // mark_or_drop with probability p_a
-        if (p_a*RAND_RANGE  <= random_int(&random_state, RAND_RANGE)) {
+        if (p_a*RAND_RANGE <= randint) {
             accept = mark_or_drop(pkt, false, port);
         }
     } 

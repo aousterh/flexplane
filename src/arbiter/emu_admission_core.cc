@@ -24,6 +24,7 @@
 #include "../emulation/queue_managers/hull.h"
 #include "../emulation/packet.h"
 #include "../emulation/router.h"
+#include "../emulation/util/make_ring.h"
 #include "../graph-algo/algo_config.h"
 
 #define TIMESLOTS_PER_ONE_WAY_DELAY 4
@@ -74,11 +75,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 	/* init packet_queues */
 	for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
 		snprintf(s, sizeof(s), "packet_q_%d", i);
-		packet_queues[i] = rte_ring_create(s, PACKET_Q_SIZE, 0,
-				RING_F_SC_DEQ);
-		if (packet_queues[i] == NULL)
-			rte_exit(EXIT_FAILURE, "Cannot init packet_queues[%d]: %s\n", i,
-					rte_strerror(rte_errno));
+		packet_queues[i] = make_ring(s, PACKET_Q_SIZE, 0, RING_F_SC_DEQ);
 	}
 	RTE_LOG(INFO, ADMISSION, "Initialized %d packet queues of size %d\n",
 			EMU_NUM_PACKET_QS, PACKET_Q_SIZE);

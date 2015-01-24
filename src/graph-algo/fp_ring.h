@@ -14,6 +14,7 @@
 #define		fp_ring_enqueue_bulk	rte_ring_enqueue_bulk
 #define		fp_ring_dequeue			rte_ring_dequeue
 #define		fp_ring_dequeue_burst	rte_ring_dequeue_burst
+#define		fp_ring_create			rte_ring_create
 
 #else
 

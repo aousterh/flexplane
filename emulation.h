@@ -108,7 +108,7 @@ struct emu_state {
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-		struct fp_ring **packet_queues, enum RouterType r_type, void *r_args,
+		uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
 		enum EndpointType e_type, void *e_args);
 
 /**

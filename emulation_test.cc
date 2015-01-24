@@ -25,7 +25,6 @@ class EmulationTest {
 public:
     EmulationTest(enum RouterType rtype)
         : packet_mempool(fp_mempool_create(PACKET_MEMPOOL_SIZE, EMU_ALIGN(sizeof(struct emu_packet)))),
-          q_new_packets(fp_ring_create("", 1 << PACKET_Q_LOG_SIZE, 0, 0)),
           admitted_traffic_mempool(fp_mempool_create(ADMITTED_MEMPOOL_SIZE,
                                                      sizeof(struct emu_admitted_traffic))),
           q_admitted_out(fp_ring_create("",1 << ADMITTED_Q_LOG_SIZE, 0, 0))
@@ -60,15 +59,9 @@ public:
 
 
             /* setup emulation state */
-            struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
-
-            for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
-                packet_queues[i] = fp_ring_create("", 1 << PACKET_Q_LOG_SIZE, 0, 0);
-            }
-            packet_queues[1] = q_new_packets;
-
             emu_init_state(&state, admitted_traffic_mempool, q_admitted_out,
-                           packet_mempool, packet_queues, rtype, rtr_args,
+                           packet_mempool, (1 << PACKET_Q_LOG_SIZE),
+						   rtype, rtr_args,
                            E_Simple, NULL); /* use default endpoint args */
 	}
 
@@ -95,7 +88,6 @@ public:
     struct emu_state state;
 private:
     struct fp_mempool *packet_mempool;
-    struct fp_ring *q_new_packets;
     struct fp_mempool *admitted_traffic_mempool;
     struct fp_ring *q_admitted_out;
 };

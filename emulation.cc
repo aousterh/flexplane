@@ -14,12 +14,14 @@
 #include "drivers/EndpointDriver.h"
 #include "drivers/RouterDriver.h"
 #include "output.h"
+#include "util/make_ring.h"
 #include "../protocol/topology.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
 #include <assert.h>
 #include <stdexcept>
+#include <stdio.h>
 
 emu_state *g_state; /* global emulation state */
 
@@ -350,18 +352,26 @@ inline void assign_components_to_cores(struct emu_state *state,
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-	    struct fp_ring **packet_queues, RouterType r_type, void *r_args,
+	    uint32_t packet_ring_size, RouterType r_type, void *r_args,
 		EndpointType e_type, void *e_args) {
 	uint32_t i, pq;
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
 	EmulationOutput *out;
 	Dropper *dropper;
+	char s[64];
+	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
 
 	g_state = state;
 
-	/* initialize global emulation state */
+	/* init packet_queues */
 	pq = 0;
+	for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
+		snprintf(s, sizeof(s), "packet_q_%d", i);
+		packet_queues[i] = make_ring(s, packet_ring_size, 0, RING_F_SC_DEQ);
+	}
+
+	/* initialize global emulation state */
 	state->admitted_traffic_mempool = admitted_traffic_mempool;
 	state->q_admitted_out = q_admitted_out;
 	state->packet_mempool = packet_mempool;
@@ -445,22 +455,8 @@ void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
 	if (packet_mempool == NULL)
 		throw std::runtime_error("couldn't allocate packet_mempool");
 
-	struct fp_ring *q_new_packets = fp_ring_create("q_new_packets",
-			packet_ring_size, 0, 0);
-	if (q_new_packets == NULL)
-		throw std::runtime_error("couldn't allocate q_new_packets");
-
-	struct fp_ring *q_resets = fp_ring_create("q_resets", packet_ring_size, 0,
-			0);
-	if (q_resets == NULL)
-		throw std::runtime_error("couldn't allocate q_resets");
-
-	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
-	packet_queues[2] = q_new_packets;
-	packet_queues[3] = q_resets;
-
 	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_queues, R_DropTail, NULL,
+			packet_mempool, packet_ring_size, R_DropTail, NULL,
 			E_Simple, NULL);
 }
 #endif

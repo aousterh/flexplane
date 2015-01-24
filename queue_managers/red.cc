@@ -63,7 +63,6 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
         accept = mark_or_drop(pkt, 0, port);
     } else if (q_avg > m_red_params.min_th) { // in (q_min, q_max]: probabilistic drop/mark
         p_b = m_red_params.max_p * (float)(q_avg - m_red_params.min_th)/(m_red_params.max_th - m_red_params.min_th);
-	printf("p_b %f\n", p_b);
         p_a = p_b / (1 - count_since_last * p_b);
         if (p_a > 1.0 || p_a < 0.0) {
             p_a = 1;

@@ -1,12 +1,12 @@
 /*
- * dctcp.h
+ * probdrop.h
  *
- *  Created on: December 29, 2014
+ *  Created on: January 25, 2015
  *      Author: hari
  */
 
-#ifndef DCTCP_H_
-#define DCTCP_H_
+#ifndef PROBDROP_H_
+#define PROBDROP_H_
 
 #include "api.h"
 #include "config.h"
@@ -21,15 +21,15 @@
 
 struct packet_queue;
 
-struct dctcp_args {
+struct probdrop_args {
     uint16_t q_capacity;
-    uint32_t K_threshold;
+    float    p_drop;
 };
 
 
-class DCTCPQueueManager : public QueueManager {
+class ProbDropQueueManager : public QueueManager {
 public:
-    DCTCPQueueManager(PacketQueueBank *bank, struct dctcp_args *dctcp_params, Dropper &dropper);
+    ProbDropQueueManager(PacketQueueBank *bank, struct probdrop_args *probdrop_params, Dropper &dropper);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -38,28 +38,31 @@ private:
     /** the means to drop packets */
     Dropper m_dropper;
 
-    struct dctcp_args m_dctcp_params;    
+    struct probdrop_args m_probdrop_params;    
+
+    /** Other state **/
+    uint32_t random_state; // for random packet drop
 };
 
-typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManager, SingleQueueScheduler>
-	DCTCPRouterBase;
+typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, ProbDropQueueManager, SingleQueueScheduler>
+	ProbDropRouterBase;
 
 /**
- * A simple DCTCP router.
+ * A simple ProbDrop router.
  * @output_queue: a queue of packets for each output port
  */
-class DCTCPRouter : public DCTCPRouterBase {
+class ProbDropRouter : public ProbDropRouterBase {
 public:
-    DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params, Dropper &dropper,
+    ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params, Dropper &dropper,
     		struct queue_bank_stats *stats);
-    virtual ~DCTCPRouter();
+    virtual ~ProbDropRouter();
 
 private:
     PacketQueueBank m_bank;
     TorRoutingTable m_rt;
     SingleQueueClassifier m_cla;
-    DCTCPQueueManager m_qm;
+    ProbDropQueueManager m_qm;
     SingleQueueScheduler m_sch;
 };
 
-#endif /* DCTCP_H_ */
+#endif /* PROBDROP_H_ */

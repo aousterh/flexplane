@@ -28,10 +28,10 @@ void REDQueueManager::enqueue(struct emu_packet *pkt,
                                      uint32_t port, uint32_t queue)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
-//    printf("RED qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
+    //    printf("RED qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
     if (qlen >= m_red_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-//        printf("REDenq: force drop qlen %d capacity%d\n", qlen, m_red_params.q_capacity);
+      //        printf("REDenq: force drop qlen %d capacity%d\n", qlen, m_red_params.q_capacity);
         mark_or_drop(pkt, RED_FORCEDROP, port);
 	return;
     } else {
@@ -41,7 +41,6 @@ void REDQueueManager::enqueue(struct emu_packet *pkt,
     }
 }
 
-#define RAND_RANGE (1<<16)-1
 uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
 		uint32_t port)
 {
@@ -52,7 +51,7 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
         q_avg -= (q_avg - qlen) >> m_red_params.wq_shift;      
     }
 
-//    printf("red_rules: qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
+    //    printf("red_rules: qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
 
     float p_a, p_b;
     bool  accept=true;
@@ -68,10 +67,10 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
             p_a = 1;
         }
 
-	uint16_t randint = random_int(&random_state, RAND_RANGE);
-//	printf("p_b %.6f p_a %.6f p_a*RAND_RANGE %d randint %d\n", p_b, p_a, (uint16_t) (p_a*RAND_RANGE), randint);
+	uint16_t randint = random_int(&random_state, RANDRANGE_16);
+	//	printf("p_b %.6f p_a %.6f p_a*RANDRANGE_16 %d randint %d\n", p_b, p_a, (uint16_t) (p_a*RANDRANGE_16), randint);
         // mark_or_drop with probability p_a
-        if (randint <= (uint16_t)(p_a*RAND_RANGE)) {
+        if (randint <= (uint16_t)(p_a*RANDRANGE_16)) {
             accept = mark_or_drop(pkt, false, port);
         }
     } 
@@ -90,7 +89,7 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
 	return RED_DROPPKT;
     } else {
         /* mark the ECN bit */
- //       printf("RED marking pkt\n");
+      //        printf("RED marking pkt\n");
 	adm_log_emu_router_marked_packet(&g_state->stat);
         packet_mark_ecn(pkt);
         return RED_ACCEPTMARKED;

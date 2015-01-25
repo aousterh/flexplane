@@ -4,6 +4,10 @@
 
 #include <rte_cycles.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 static inline __attribute__((always_inline))
 u64 fp_get_time_ns(void)
 {
@@ -20,5 +24,8 @@ static inline u64 fp_monotonic_time_ns(void)
 	return rte_get_timer_cycles();
 }
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* CONTROLLER_DPDK_TIME_H_ */

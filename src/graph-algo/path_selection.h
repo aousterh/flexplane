@@ -10,6 +10,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 /* uppermost 2 bits encode the path, remaining bits encode dst id */
 #define NUM_PATHS 4  // if not 4, NUM_GRAPHS and related code must be modified
@@ -35,5 +39,9 @@ void select_paths(struct admitted_traffic *admitted, uint8_t num_racks);
 
 // Returns true if the assignment of paths is valid; false otherwise
 bool paths_are_valid(struct admitted_traffic *admitted, uint8_t num_racks);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* PATH_SELECTION_H_ */

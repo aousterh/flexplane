@@ -4,6 +4,10 @@
 #ifndef BIGMAP_H_
 #define BIGMAP_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #define BIGMAP_MAX_LEN		MAX_NODES
 #if MAX_NODES > (64*64)
 #error "MAX_NODES too big for bigmap (which supports up to 4096 bits)"
@@ -53,5 +57,9 @@ static inline uint32_t bigmap_find(struct bigmap *map)
 	uint32_t offset = __ffs(map->mask[word]);
 	return (word << 6) + offset;
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* BIGMAP_H_ */

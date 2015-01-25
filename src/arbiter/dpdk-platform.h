@@ -8,6 +8,10 @@
 #include "main.h"
 #include "dpdk-time.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 extern struct rte_mempool* pktdesc_pool[NB_SOCKETS];
 
 #define RTE_LOGTYPE_ARBITER RTE_LOGTYPE_USER1
@@ -40,5 +44,9 @@ void fpproto_pktdesc_free(struct fpproto_pktdesc *pd)
 	int socketid = rte_lcore_to_socket_id(rte_lcore_id());
 	rte_mempool_put(pktdesc_pool[socketid], pd);
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* CONTROLLER_DPDK_PLATFORM_H_ */

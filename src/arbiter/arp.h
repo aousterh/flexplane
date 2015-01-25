@@ -14,6 +14,10 @@
 #include <rte_mbuf.h>
 #include <rte_byteorder.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 struct arp_ipv4_hdr {
 	uint16_t htype;			/**< Hardware type (HTYPE) */
 	uint16_t ptype;			/**< Protocol type (PTYPE) */
@@ -185,5 +189,9 @@ static void print_arp(struct rte_mbuf *m, uint16_t portid) {
 			sha[0], sha[1], sha[2], sha[3], sha[4], sha[5], rte_be_to_cpu_32(arp_hdr->spa),
 			tha[0], tha[1], tha[2], tha[3], tha[4], tha[5], rte_be_to_cpu_32(arp_hdr->tpa));
 }
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* ARP_H_ */

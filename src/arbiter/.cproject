@@ -25,6 +25,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/dpdk/x86_64-native-linuxapp-gcc/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/emulation}&quot;"/>
 								</option>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.94984892" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="EMULATION_ALGO"/>
+									<listOptionValue builtIn="false" value="FASTPASS_CONTROLLER"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.258910650" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.559111878" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
@@ -51,7 +55,7 @@
 								</inputType>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1985024324" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.1983375108" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+								<option id="gnu.both.asm.option.include.paths.1983375108" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/emulation}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1647490782" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>

@@ -3,6 +3,8 @@
 	<name>arbiter-bindings</name>
 	<comment></comment>
 	<projects>
+		<project>arbiter</project>
+		<project>dpdk-cpp</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

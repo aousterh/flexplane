@@ -5,6 +5,7 @@
 	<projects>
 		<project>dpdk-include</project>
 		<project>linux-stable-3.18</project>
+		<project>protocol</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

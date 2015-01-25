@@ -11,7 +11,7 @@ SRCS-y := main.c \
           comm_core.c \
           seq_admission_core.c \
           path_sel_core.c \
-          log_core.c \
+          log_core.cc \
           stress_test_core.c \
           ../protocol/fpproto.c \
           ../graph-algo/admissible_traffic.c \

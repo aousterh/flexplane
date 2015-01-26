@@ -300,9 +300,22 @@ void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
 
 }
 
-int exec_log_core(void *void_cmd_p)
+LogCore::LogCore(uint64_t log_gap_ticks, uint64_t q_log_gap_ticks)
+	: m_log_gap_ticks(log_gap_ticks), m_q_log_gap_ticks(q_log_gap_ticks)
+{}
+
+void LogCore::add_comm_lcore(uint8_t lcore)
 {
-	struct log_core_cmd *cmd = (struct log_core_cmd *) void_cmd_p;
+	m_comm_lcores.push_back(lcore);
+}
+
+void LogCore::add_admission_lcore(uint8_t lcore)
+{
+	m_admission_lcores.push_back(lcore);
+}
+
+int LogCore::exec()
+{
 	uint64_t next_ticks = rte_get_timer_cycles();
 	uint64_t q_next_ticks = rte_get_timer_cycles();
 	int i, j;
@@ -336,7 +349,7 @@ int exec_log_core(void *void_cmd_p)
 	}
 
 	/* copy baseline statistics */
-	memcpy(&saved_comm_log, &comm_core_logs[cmd->comm.lcore_id[0]],
+	memcpy(&saved_comm_log, &comm_core_logs[m_comm_lcores[0]],
 			sizeof(saved_comm_log));
 	save_admission_stats();
 	for (i = 0; i < N_ADMISSION_CORES; i++)
@@ -355,17 +368,18 @@ int exec_log_core(void *void_cmd_p)
 
 			struct emu_state *state = (struct emu_state *) g_admissible_status();
 			print_queue_bank_log_to_file(fp_queues, &state->queue_bank_stats, time);
-			q_next_ticks += cmd->q_log_gap_ticks;
+			q_next_ticks += m_q_log_gap_ticks;
 #else
 			rte_pause();
 #endif
 		}
 
-		print_comm_log(cmd->comm.lcore_id[0]);
+		print_comm_log(m_comm_lcores[0]);
 		print_global_admission_log();
 
-		for (i = 0; i < cmd->admission.n; i++)
-			print_admission_core_log(cmd->admission.lcore_id[i], i);
+        /* just print one admission core log for now */
+		for (i = 0; i < m_admission_lcores.size(); i++)
+			print_admission_core_log(m_admission_lcores[i], i);
 		fflush(stdout);
 
 		/* save admission core stats */
@@ -395,8 +409,18 @@ int exec_log_core(void *void_cmd_p)
 		fflush(fp);
 		fflush(fp_queues);
 
-		next_ticks += cmd->log_gap_ticks;
+		next_ticks += m_log_gap_ticks;
 	}
 
 	return 0;
+}
+
+static int exec_log_core(void *log_core)
+{
+	return ((LogCore *)log_core)->exec();
+}
+
+void LogCore::remote_launch(unsigned lcore)
+{
+	rte_eal_remote_launch(exec_log_core, this, lcore);
 }

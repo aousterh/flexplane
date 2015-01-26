@@ -9,37 +9,32 @@
 #define LOG_CORE_H_
 
 #include <rte_lcore.h>
+#include <vector>
+#include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+class LogCore {
+public:
+	LogCore(uint64_t log_gap_ticks,	uint64_t q_log_gap_ticks);
 
-struct logged_lcores {
-	uint32_t n;
-	uint8_t lcore_id[RTE_MAX_LCORE];
+	/* instruct log core to log these objects */
+	void add_comm_lcore(uint8_t lcore);
+	void add_admission_lcore(uint8_t lcore);
+
+	/**
+	 * Runs on the current lcore
+	 */
+	int exec();
+
+	/**
+	 * Launches the core on the given lcore
+	 */
+	void remote_launch(unsigned lcore);
+
+private:
+	uint64_t m_log_gap_ticks;
+	uint64_t m_q_log_gap_ticks;
+	std::vector<uint8_t> m_comm_lcores;
+	std::vector<uint8_t> m_admission_lcores;
 };
-
-/* Specifications for controller thread */
-struct log_core_cmd {
-	uint64_t start_time;
-	uint64_t end_time;
-
-	uint64_t log_gap_ticks;
-	uint64_t q_log_gap_ticks;
-
-	uint8_t comm_lcore;
-
-	struct logged_lcores comm;
-	struct logged_lcores admission;
-};
-
-/**
- * Runs the log core
- */
-int exec_log_core(void *void_cmd_p);
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 #endif /* LOG_CORE_H_ */

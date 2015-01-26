@@ -156,12 +156,12 @@ void launch_cores(void)
 	int i; (void)i;
 	struct admission_core_cmd admission_cmd[N_ADMISSION_CORES];
 	struct path_sel_core_cmd path_sel_cmd;
-	struct log_core_cmd log_cmd;
 	uint64_t first_time_slot;
 	uint64_t now;
 	struct rte_ring *q_admitted;
 	struct rte_ring *q_path_selected;
 	struct rte_mempool *admitted_traffic_mempool;
+	LogCore *log_core;
 
 	benchmark_cost_of_get_time();
 
@@ -234,19 +234,14 @@ void launch_cores(void)
 	}
 
 	/*** LOG CORE ***/
-	log_cmd.log_gap_ticks = (uint64_t)(LOG_GAP_SECS * rte_get_timer_hz());
-	log_cmd.q_log_gap_ticks = (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz());
-	log_cmd.comm.n = 1;
-	log_cmd.comm.lcore_id[0] = rte_lcore_id(); /* this core */
-	log_cmd.admission.n = 1;
-	log_cmd.admission.lcore_id[0] = enabled_lcore[FIRST_ADMISSION_CORE];
-	log_cmd.start_time = start_time;
-	log_cmd.end_time = end_time;
+	log_core = new LogCore((uint64_t)(LOG_GAP_SECS * rte_get_timer_hz()),
+						   (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz()));
+	log_core->add_comm_lcore(rte_lcore_id()); /* this core */
+	log_core->add_admission_lcore(enabled_lcore[FIRST_ADMISSION_CORE]);
 
 	/* launch log core */
 	if (N_LOG_CORES > 0)
-		rte_eal_remote_launch(exec_log_core, &log_cmd,
-				enabled_lcore[FIRST_LOG_CORE]);
+		log_core->remote_launch(enabled_lcore[FIRST_LOG_CORE]);
 
 	/*** COMM/STRESS_TEST CORES ***/
 	if (IS_STRESS_TEST) {

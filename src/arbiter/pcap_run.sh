@@ -11,5 +11,5 @@ fi
 mkdir -p log/
 
 # -m 512 commented out; bring back if needed
-sudo build/fast -c $MASK -n 3 --no-hpet -m 512 --vdev eth_pcap0,iface=eth0  -- -p 1
+sudo build/fast -c $MASK -n 3 --no-hpet -m 768 --vdev eth_pcap0,iface=eth0  -- -p 1
 

@@ -3,7 +3,6 @@
 	<name>emulation</name>
 	<comment></comment>
 	<projects>
-		<project>arbiter</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

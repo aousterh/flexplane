@@ -5,7 +5,6 @@
 #include "../graph-algo/platform.h"
 #include <stdexcept>
 #include <string>
-#include <rte_errno.h>
 
 static inline
 struct fp_mempool *make_mempool(const char *name, unsigned n,
@@ -19,7 +18,7 @@ struct fp_mempool *make_mempool(const char *name, unsigned n,
 		std::string msg(std::string("Could not allocate mempool name=")
 						+ std::string(name)
 						+ std::string(" errno: ")
-						+ rte_strerror(rte_errno));
+						+ fp_strerror());
 		throw std::runtime_error(msg);
 	}
 

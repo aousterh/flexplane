@@ -238,6 +238,11 @@ void launch_cores(void)
 						   (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz()));
 	log_core->add_comm_lcore(rte_lcore_id()); /* this core */
 	log_core->add_admission_lcore(enabled_lcore[FIRST_ADMISSION_CORE]);
+#ifdef EMULATION_ALGO
+	for (i = 0; i < EMU_NUM_ROUTERS; i++)
+		log_core->add_queueing_stats(emu_get_queueing_stats(i),
+				emu_get_port_stats(i));
+#endif
 
 	/* launch log core */
 	if (N_LOG_CORES > 0)

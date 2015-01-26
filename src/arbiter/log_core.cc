@@ -315,6 +315,13 @@ void LogCore::add_admission_lcore(uint8_t lcore)
 	m_admission_lcores.push_back(lcore);
 }
 
+void LogCore::add_queueing_stats(struct queue_bank_stats* queue_stats,
+		struct port_drop_stats *port_stats)
+{
+	m_queue_stats.push_back(queue_stats);
+	m_port_stats.push_back(port_stats);
+}
+
 int LogCore::exec()
 {
 	uint64_t next_ticks = rte_get_timer_cycles();
@@ -367,9 +374,11 @@ int LogCore::exec()
 			/* print time now */
 			time = fp_get_time_ns();
 
-			struct emu_state *state = (struct emu_state *) g_admissible_status();
-			print_queue_bank_log_to_file(fp_queues, state->queue_bank_stats[0],
-					state->port_drop_stats[0], time);
+			for (i = 0; i < m_queue_stats.size(); i++) {
+				fprintf(fp_queues, "router number %d\n", i);
+				print_queue_bank_log_to_file(fp_queues, m_queue_stats[i],
+						m_port_stats[i], time);
+			}
 			q_next_ticks += m_q_log_gap_ticks;
 #else
 			rte_pause();

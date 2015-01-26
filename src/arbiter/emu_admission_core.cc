@@ -44,6 +44,16 @@ Emulation *emu_get_instance(void)
 	return g_emulation;
 }
 
+struct queue_bank_stats *emu_get_queueing_stats(uint8_t router_index)
+{
+	return g_emulation->m_queue_bank_stats[router_index];
+}
+
+struct port_drop_stats *emu_get_port_stats(uint8_t router_index)
+{
+	return g_emulation->m_port_drop_stats[router_index];
+}
+
 void emu_admission_init_global(struct rte_ring *q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
 {

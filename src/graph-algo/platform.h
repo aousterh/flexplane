@@ -23,6 +23,13 @@
 #define fp_mempool_put	 		rte_mempool_put
 #define fp_mempool_get_bulk		rte_mempool_get_bulk
 
+static struct fp_mempool * fp_mempool_create(const char *name, unsigned n,
+		unsigned elt_size, unsigned cache_size, int socket_id, unsigned flags)
+{
+	return rte_mempool_create(name, n, elt_size, cache_size,
+			0, NULL, NULL, NULL, NULL, socket_id, flags);
+}
+
 #else
 
 /** VANILLA **/
@@ -49,7 +56,9 @@ struct fp_mempool {
 	uint32_t cur_elements;
 	void **elements;
 };
-static struct fp_mempool * fp_mempool_create(unsigned n, unsigned elt_size) {
+static struct fp_mempool * fp_mempool_create(const char *name, unsigned n,
+		unsigned elt_size, unsigned cache_size, int socket_id, unsigned flags)
+{
 	struct fp_mempool *mp;
 	unsigned i;
 	/* allocate the struct */

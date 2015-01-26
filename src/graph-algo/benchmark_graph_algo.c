@@ -200,9 +200,10 @@ struct admissible_state *setup_state(bool oversubscribed,
     q_head = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
     *q_admitted_out = fp_ring_create("", 1 << ADMITTED_OUT_RING_LOG_SIZE, 0, 0);
     q_spent = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
-    *bin_mempool = fp_mempool_create(BIN_MEMPOOL_SIZE, bin_num_bytes(SMALL_BIN_SIZE));
-    *admitted_traffic_mempool = fp_mempool_create(ADMITTED_TRAFFIC_MEMPOOL_SIZE,
-                                                 get_admitted_struct_size());
+    *bin_mempool = fp_mempool_create("bin_mempool", BIN_MEMPOOL_SIZE,
+    		bin_num_bytes(SMALL_BIN_SIZE), 0, 0, 0);
+    *admitted_traffic_mempool = fp_mempool_create("admitted_traffic",
+    		ADMITTED_TRAFFIC_MEMPOOL_SIZE, get_admitted_struct_size(), 0, 0, 0);
     for (i = 0; i < NUM_BIN_RINGS; i++) {
             q_ready_partitions[i] = fp_ring_create("", 1 << READY_PARTITIONS_Q_SIZE, 0, 0);
             if (!q_ready_partitions[i]) exit(-1);
@@ -239,7 +240,8 @@ struct admissible_state *reset_state(struct admissible_state *state,
 		struct fp_mempool **admitted_traffic_mempool) {
 #if defined(EMULATION_ALGO)
 	/* emulation, cleanup and create a new status */
-	emu_cleanup((struct emu_state *) state);
+	/** TODO: fix emu_cleanup */
+	// emu_cleanup((struct emu_state *) state);
 	state = setup_state(oversubscribed, inter_rack_capacity,
 			out_of_boundary_capacity, num_nodes, q_bin, bin_mempool,
 			q_admitted_out, admitted_traffic_mempool);

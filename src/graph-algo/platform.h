@@ -11,6 +11,7 @@
 #include <rte_malloc.h>
 #include <rte_mempool.h>
 #include <rte_branch_prediction.h>
+#include <rte_errno.h>
 #include "../protocol/platform/generic.h"
 #include "../arbiter/dpdk-time.h"
 #define fp_free(ptr)                            rte_free(ptr)
@@ -28,6 +29,10 @@ static struct fp_mempool * fp_mempool_create(const char *name, unsigned n,
 {
 	return rte_mempool_create(name, n, elt_size, cache_size,
 			0, NULL, NULL, NULL, NULL, socket_id, flags);
+}
+
+static const char *fp_strerror() {
+	return rte_strerror(rte_errno);
 }
 
 #else
@@ -113,7 +118,9 @@ fp_mempool_get_bulk(struct fp_mempool *mp, void **obj_table, unsigned n)
 	memcpy(obj_table, &mp->elements[mp->cur_elements], n * sizeof(void *));
 	return 0;
 }
-
+static const char *fp_strerror() {
+	return("strerr not implemented");
+}
 
 #endif
 

@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "endpoint.h"
-#include "../graph-algo/random.h"
 #include <assert.h>
 #include <time.h> /* for seeding the random number generator */
 #include "output.h"

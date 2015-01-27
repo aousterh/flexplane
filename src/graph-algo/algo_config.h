@@ -35,10 +35,7 @@
 
 #ifdef EMULATION_ALGO
 /* emulation */
-
-#ifndef ALGO_N_CORES
-#define ALGO_N_CORES				1
-#endif
+#include "../emulation/config.h"
 
 #endif
 

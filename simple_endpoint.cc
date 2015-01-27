@@ -13,20 +13,27 @@
 #define SIMPLE_ENDPOINT_QUEUE_CAPACITY 4096
 
 SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
-		EmulationOutput& emu_output, uint16_t start_id, uint16_t q_capacity)
+		uint16_t start_id, uint16_t q_capacity)
 : m_bank(num_endpoints, 1, SIMPLE_ENDPOINT_QUEUE_CAPACITY, NULL),
-  m_emu_output(emu_output),
-  m_dropper(m_emu_output, NULL),
   m_cla(),
-  m_qm(&m_bank, q_capacity, m_dropper, TYPE_ENDPOINT),
+  m_qm(&m_bank, q_capacity, TYPE_ENDPOINT),
   m_sch(&m_bank),
-  m_sink(m_emu_output),
+  m_sink(),
   SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id, num_endpoints)
 {}
+
+void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output)
+{
+	Dropper *dropper = new Dropper(*emu_output, NULL);
+
+	m_emu_output = emu_output;
+	m_sink.assign_to_core(emu_output);
+	m_qm.assign_to_core(dropper);
+}
 
 void SimpleEndpointGroup::reset(uint16_t endpoint_id)
 {
 	/* dequeue all queued packets */
 	while (!m_bank.empty(endpoint_id, 0))
-		m_emu_output.free_packet(m_bank.dequeue(endpoint_id, 0));
+		m_emu_output->free_packet(m_bank.dequeue(endpoint_id, 0));
 }

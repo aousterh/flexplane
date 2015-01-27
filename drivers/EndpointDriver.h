@@ -11,6 +11,7 @@
 #include "../graph-algo/fp_ring.h"
 
 class EndpointGroup;
+class EmulationOutput;
 struct emu_admission_statistics;
 
 class EndpointDriver {
@@ -18,6 +19,11 @@ public:
 	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router, struct fp_ring *q_resets,
 			EndpointGroup *epg, struct emu_admission_statistics *stat);
+
+	/**
+	 * Prepares this driver to run on a specific core.
+	 */
+	void assign_to_core(EmulationOutput *out);
 
 	/**
 	 * Emulate a single timeslot

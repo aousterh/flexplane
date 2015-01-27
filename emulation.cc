@@ -23,18 +23,28 @@
 
 emu_state *g_state; /* global emulation state */
 
-EmulationCore::EmulationCore(EmulationOutput *out,
+EmulationCore::EmulationCore(struct emu_state *state,
 		EndpointDriver **epg_drivers, RouterDriver **router_drivers)
-	: m_out(out)
 {
+	Dropper *dropper;
 	uint32_t i;
 
-	/* only 1 core for now - must run all endpoints and router */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++)
-		m_endpoint_drivers[i] = epg_drivers[i];
+	/* initialize the output and dropper for this core */
+	m_out = new EmulationOutput(state->q_admitted_out,
+			state->admitted_traffic_mempool, state->packet_mempool,
+			&state->stat);
+	dropper = new Dropper(*m_out, &state->queue_bank_stats);
 
-	for (i = 0; i < EMU_NUM_ROUTERS; i++)
+	/* only 1 core for now - must handle all endpoints and routers */
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		m_endpoint_drivers[i] = epg_drivers[i];
+		m_endpoint_drivers[i]->assign_to_core(m_out);
+	}
+
+	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		m_router_drivers[i] = router_drivers[i];
+		m_router_drivers[i]->assign_to_core(dropper);
+	}
 }
 
 void EmulationCore::step() {
@@ -84,20 +94,24 @@ void emu_init_state(struct emu_state *state,
 	Router *rtr;
 	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
 	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
-	EmulationOutput *out;
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
+	EmulationOutput *out;
+	Dropper *dropper;
 
 	g_state = state;
 
+	/* initialize global emulation state */
 	pq = 0;
 	state->admitted_traffic_mempool = admitted_traffic_mempool;
 	state->q_admitted_out = q_admitted_out;
 	state->packet_mempool = packet_mempool;
+	memset(&state->queue_bank_stats, 0, sizeof(struct queue_bank_stats));
 
-	out = new EmulationOutput(state->q_admitted_out,
-			state->admitted_traffic_mempool, state->packet_mempool,
-			&state->stat);
+	/* initialize state used to communicate with comm cores */
+	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
+	state->comm_state.q_resets[0] = packet_queues[pq++];
+
 
 	/* construct topology: 1 router with 1 rack of endpoints */
 
@@ -107,18 +121,9 @@ void emu_init_state(struct emu_state *state,
 	}
 	q_epg_ingress[0] = packet_queues[pq++];
 
-	/* initialize state used to communicate with comm cores */
-	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
-	state->comm_state.q_resets[0] = packet_queues[pq++];
-
-	Dropper dropper(*out, &state->queue_bank_stats);
-
 	/* initialize all the routers */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		/* clear queue bank stats */
-		memset(&state->queue_bank_stats, 0, sizeof(struct queue_bank_stats));
-
-		rtr = RouterFactory::NewRouter(r_type, r_args, i, dropper,
+		rtr = RouterFactory::NewRouter(r_type, r_args, i,
 				&state->queue_bank_stats);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[0],
@@ -126,17 +131,19 @@ void emu_init_state(struct emu_state *state,
 	}
 
 	/* initialize all the endpoints in one endpoint group */
-	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS,
-			*out, 0, e_args);
-
+	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS, 0,
+			e_args);
 	assert(epg != NULL);
 	endpoint_drivers[0] =
 			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
 					q_router_ingress[0], q_epg_ingress[0],
 					state->comm_state.q_resets[0], epg, &state->stat);
 
-	/* initialize cores - just 1 for now */
-	state->cores[0] = new EmulationCore(out, endpoint_drivers, router_drivers);
+
+	/* initialize cores and assign endpoints and routers to them
+	 * (just 1 core for now) */
+	state->cores[0] = new EmulationCore(state, endpoint_drivers,
+			router_drivers);
 }
 
 void emu_cleanup(struct emu_state *state) {

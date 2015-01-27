@@ -29,6 +29,7 @@ class Router {
 public:
     Router() {};
     virtual ~Router() {};
+	virtual void assign_to_core(Dropper *dropper) = 0;
     virtual void push(struct emu_packet *packet) = 0;
     virtual struct emu_packet *pull(uint16_t output) = 0;
     virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
@@ -42,7 +43,7 @@ public:
 class RouterFactory {
 public:
     static Router *NewRouter(enum RouterType type, void *args, uint16_t id,
-                             Dropper &dropper, struct queue_bank_stats *stats);
+                             struct queue_bank_stats *stats);
 };
 #endif
 

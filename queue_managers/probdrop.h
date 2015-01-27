@@ -29,14 +29,16 @@ struct probdrop_args {
 
 class ProbDropQueueManager : public QueueManager {
 public:
-    ProbDropQueueManager(PacketQueueBank *bank, struct probdrop_args *probdrop_params, Dropper &dropper);
+    ProbDropQueueManager(PacketQueueBank *bank,
+    		struct probdrop_args *probdrop_params);
+	inline void assign_to_core(Dropper *dropper) { m_dropper = dropper; }
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
     /** the QueueBank where packets are stored */
     PacketQueueBank *m_bank;
     /** the means to drop packets */
-    Dropper m_dropper;
+    Dropper *m_dropper;
 
     struct probdrop_args m_probdrop_params;    
 
@@ -53,8 +55,9 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, ProbDropQueueMan
  */
 class ProbDropRouter : public ProbDropRouterBase {
 public:
-    ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params, Dropper &dropper,
+    ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params,
     		struct queue_bank_stats *stats);
+	virtual void assign_to_core(Dropper *dropper);
     virtual ~ProbDropRouter();
 
 private:

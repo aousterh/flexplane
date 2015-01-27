@@ -48,7 +48,7 @@ class RouterDriver;
  */
 class EmulationCore {
 public:
-	EmulationCore(EmulationOutput *out, EndpointDriver **epg_drivers,
+	EmulationCore(struct emu_state *state, EndpointDriver **epg_drivers,
 			RouterDriver **router_drivers);
 
 	void step();

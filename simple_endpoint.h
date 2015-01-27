@@ -31,10 +31,11 @@ struct simple_ep_args {
  */
 class SimpleSink : public Sink {
 public:
-	inline SimpleSink(EmulationOutput &output) : m_output(output) {}
-	inline void handle(struct emu_packet *pkt) { m_output.admit(pkt);}
+	inline SimpleSink() {}
+	inline void assign_to_core(EmulationOutput *out) { m_output = out; }
+	inline void handle(struct emu_packet *pkt) { m_output->admit(pkt);}
 private:
-	EmulationOutput &m_output;
+	EmulationOutput *m_output;
 };
 
 typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager, SingleQueueScheduler, SimpleSink>
@@ -45,14 +46,14 @@ typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager, Sing
  */
 class SimpleEndpointGroup : public SimpleEndpointGroupBase {
 public:
-	SimpleEndpointGroup(uint16_t num_endpoints, EmulationOutput &emu_output,
-			uint16_t start_id, uint16_t q_capacity);
+	SimpleEndpointGroup(uint16_t num_endpoints, uint16_t start_id,
+			uint16_t q_capacity);
+	virtual void assign_to_core(EmulationOutput *out);
 
 	virtual void reset(uint16_t endpoint_id);
 private:
     PacketQueueBank m_bank;
-    EmulationOutput &m_emu_output;
-    Dropper m_dropper;
+    EmulationOutput *m_emu_output;
     SingleQueueClassifier m_cla;
     DropTailQueueManager m_qm;
     SingleQueueScheduler m_sch;

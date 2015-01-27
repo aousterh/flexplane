@@ -32,6 +32,10 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 	  m_stat(stat)
 {}
 
+void EndpointDriver::assign_to_core(EmulationOutput *out) {
+	m_epg->assign_to_core(out);
+}
+
 void EndpointDriver::cleanup() {
 	free_packet_ring(g_state, m_q_from_router);
 

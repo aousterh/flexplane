@@ -11,6 +11,7 @@
 #include "../graph-algo/fp_ring.h"
 
 class Router;
+class Dropper;
 struct emu_admission_statistics;
 
 class RouterDriver {
@@ -18,6 +19,10 @@ public:
 	RouterDriver(Router *router, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router,
 			struct emu_admission_statistics *stat);
+	/**
+	 * Prepares this driver to run on a specific core.
+	 */
+	void assign_to_core(Dropper *dropper);
 
 	void step();
 	void cleanup();

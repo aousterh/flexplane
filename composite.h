@@ -56,6 +56,11 @@ public:
 	 * @param queue: index of per-port queue where packet should be enqueued
 	 */
 	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue) {THROW;}
+
+	/**
+	 * Prepare this queue manager to run on a specific core.
+	 */
+	void assign_to_core(Dropper *dropper) {THROW;}
 };
 
 /**

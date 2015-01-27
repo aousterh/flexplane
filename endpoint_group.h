@@ -28,6 +28,7 @@ class EndpointGroup {
 public:
 	EndpointGroup();
 	virtual ~EndpointGroup();
+	virtual void assign_to_core(EmulationOutput *out) = 0;
 	virtual void reset(uint16_t id) = 0;
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
@@ -41,8 +42,7 @@ public:
 class EndpointGroupFactory {
 public:
 	static EndpointGroup *NewEndpointGroup(enum EndpointType type,
-			uint16_t num_endpoints, EmulationOutput &emu_output,
-			uint16_t start_id, void *args);
+			uint16_t num_endpoints, uint16_t start_id, void *args);
 };
 
 #endif /* ENDPOINT_GROUP_H_ */

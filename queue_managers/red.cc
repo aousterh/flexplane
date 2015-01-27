@@ -13,8 +13,8 @@
 #define RED_QUEUE_CAPACITY 4096
 
 REDQueueManager::REDQueueManager(PacketQueueBank *bank,
-                                 struct red_args *red_params, Dropper &dropper)
-    : m_bank(bank), m_dropper(dropper), m_red_params(*red_params)
+		struct red_args *red_params)
+    : m_bank(bank), m_red_params(*red_params)
 {
     if (bank == NULL)
         throw std::runtime_error("bank should be non-NULL");
@@ -85,7 +85,7 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
     if (force_drop || !(m_red_params.ecn)) {
       //        printf("RED dropping pkt\n");
         adm_log_emu_router_dropped_packet(&g_state->stat);
-        m_dropper.drop(pkt, port);
+        m_dropper->drop(pkt, port);
 	return RED_DROPPKT;
     } else {
         /* mark the ECN bit */
@@ -100,14 +100,18 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
  * All ports of a REDRouter run RED. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-REDRouter::REDRouter(uint16_t id, struct red_args *red_params, Dropper &dropper,
+REDRouter::REDRouter(uint16_t id, struct red_args *red_params,
 		struct queue_bank_stats *stats)
     : m_bank(EMU_ROUTER_NUM_PORTS, 1, RED_QUEUE_CAPACITY, stats),
       m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
 	  m_cla(),
-      m_qm(&m_bank, red_params, dropper),
+      m_qm(&m_bank, red_params),
       m_sch(&m_bank),
       REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS)
 {}
+
+void REDRouter::assign_to_core(Dropper *dropper) {
+	m_qm.assign_to_core(dropper);
+}
 
 REDRouter::~REDRouter() {}

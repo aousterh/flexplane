@@ -31,6 +31,10 @@ RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
 	seed_random(&m_random, time(NULL));
 }
 
+void RouterDriver::assign_to_core(Dropper *dropper) {
+	m_router->assign_to_core(dropper);
+}
+
 void RouterDriver::cleanup() {
 	free_packet_ring(g_state, m_q_to_router);
 

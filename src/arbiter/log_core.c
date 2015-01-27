@@ -274,6 +274,8 @@ void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index)
 	printf("  tslots skipped: %lu\n", al->tslots_skipped);
 #undef D
 
+	print_core_admission_log_emulation(adm_core_index);
+
 	/* save the admission logs for this core */
 	memcpy(sal, al, sizeof(saved_admission_logs[lcore]));
 }

@@ -48,7 +48,8 @@ class SimpleEndpointGroup : public SimpleEndpointGroupBase {
 public:
 	SimpleEndpointGroup(uint16_t num_endpoints, uint16_t start_id,
 			uint16_t q_capacity);
-	virtual void assign_to_core(EmulationOutput *out);
+	virtual void assign_to_core(EmulationOutput *out,
+			struct emu_admission_core_statistics *stat);
 
 	virtual void reset(uint16_t endpoint_id);
 private:

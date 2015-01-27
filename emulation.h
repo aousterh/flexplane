@@ -45,11 +45,12 @@ class RouterDriver;
  * @m_out: a class for communicating admitted/dropped packets to comm cores
  * @m_endpoint_drivers: one driver for each endpoint group in the network
  * @m_router_drivers: one driver for each router in the network
+ * @m_stats: stats for this core
  */
 class EmulationCore {
 public:
 	EmulationCore(struct emu_state *state, EndpointDriver **epg_drivers,
-			RouterDriver **router_drivers);
+			RouterDriver **router_drivers, uint16_t index);
 
 	void step();
 	void cleanup();
@@ -57,6 +58,7 @@ private:
 	EmulationOutput	*m_out;
 	EndpointDriver	*m_endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	RouterDriver	*m_router_drivers[EMU_NUM_ROUTERS];
+	struct emu_admission_core_statistics m_stat;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 #endif
 
@@ -75,9 +77,10 @@ struct emu_comm_state {
  * @packet_mempool: pool of packet structs
  * @admitted_traffic_mempool: pool of admitted traffic structs
  * @q_admitted_out: queue of admitted structs to comm core
- * @stat: global emulation stats
+ * @stat: global emulation stats (mostly used by comm core)
  * @comm_state: state allocated per comm core to manage new packets
  * @queue_bank_stats: stats about one queue bank to be output by the log core
+ * @core_stats: per-core stats, for easier access from logging core
  * @cores: the emulation cores
  */
 struct emu_state {
@@ -87,6 +90,7 @@ struct emu_state {
 	struct emu_admission_statistics			stat;
 	struct emu_comm_state					comm_state;
 	struct queue_bank_stats					queue_bank_stats;
+	struct emu_admission_core_statistics	*core_stats[ALGO_N_CORES];
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus

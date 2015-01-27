@@ -22,13 +22,14 @@ SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
   SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id, num_endpoints)
 {}
 
-void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output)
+void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output,
+		struct emu_admission_core_statistics *stat)
 {
 	Dropper *dropper = new Dropper(*emu_output, NULL);
 
 	m_emu_output = emu_output;
 	m_sink.assign_to_core(emu_output);
-	m_qm.assign_to_core(dropper);
+	m_qm.assign_to_core(dropper, stat);
 }
 
 void SimpleEndpointGroup::reset(uint16_t endpoint_id)

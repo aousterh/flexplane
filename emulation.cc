@@ -24,7 +24,8 @@
 emu_state *g_state; /* global emulation state */
 
 EmulationCore::EmulationCore(struct emu_state *state,
-		EndpointDriver **epg_drivers, RouterDriver **router_drivers)
+		EndpointDriver **epg_drivers, RouterDriver **router_drivers,
+		uint16_t index)
 {
 	Dropper *dropper;
 	uint32_t i;
@@ -32,19 +33,23 @@ EmulationCore::EmulationCore(struct emu_state *state,
 	/* initialize the output and dropper for this core */
 	m_out = new EmulationOutput(state->q_admitted_out,
 			state->admitted_traffic_mempool, state->packet_mempool,
-			&state->stat);
+			&m_stat);
 	dropper = new Dropper(*m_out, &state->queue_bank_stats);
 
 	/* only 1 core for now - must handle all endpoints and routers */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		m_endpoint_drivers[i] = epg_drivers[i];
-		m_endpoint_drivers[i]->assign_to_core(m_out);
+		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat);
 	}
 
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
 		m_router_drivers[i] = router_drivers[i];
-		m_router_drivers[i]->assign_to_core(dropper);
+		m_router_drivers[i]->assign_to_core(dropper, &m_stat);
 	}
+
+	/* TODO: do this properly by making the APIs accessible from C, or moving
+	 * the log core to C++ */
+	state->core_stats[index] = &m_stat;
 }
 
 void EmulationCore::step() {
@@ -127,7 +132,7 @@ void emu_init_state(struct emu_state *state,
 				&state->queue_bank_stats);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[0],
-				q_epg_ingress[0], &state->stat);
+				q_epg_ingress[0]);
 	}
 
 	/* initialize all the endpoints in one endpoint group */
@@ -137,13 +142,13 @@ void emu_init_state(struct emu_state *state,
 	endpoint_drivers[0] =
 			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
 					q_router_ingress[0], q_epg_ingress[0],
-					state->comm_state.q_resets[0], epg, &state->stat);
+					state->comm_state.q_resets[0], epg);
 
 
 	/* initialize cores and assign endpoints and routers to them
 	 * (just 1 core for now) */
 	state->cores[0] = new EmulationCore(state, endpoint_drivers,
-			router_drivers);
+			router_drivers, 0);
 }
 
 void emu_cleanup(struct emu_state *state) {

@@ -26,7 +26,7 @@ public:
 	EmulationOutput(struct fp_ring *q_admitted,
 			struct fp_mempool *admitted_mempool,
 			struct fp_mempool *packet_mempool,
-			struct emu_admission_statistics	*stat);
+			struct emu_admission_core_statistics *stat);
 
 	/**
 	 * d'tor
@@ -71,7 +71,7 @@ private:
 	struct fp_mempool				*packet_mempool;
 
 	/** statistics */
-	struct emu_admission_statistics	*stat;
+	struct emu_admission_core_statistics	*m_stat;
 
 	/** the next batch to be flushed */
 	struct emu_admitted_traffic		*admitted;
@@ -102,16 +102,16 @@ inline
 EmulationOutput::EmulationOutput(struct fp_ring* q_admitted,
 		struct fp_mempool* admitted_mempool,
 		struct fp_mempool* _packet_mempool,
-		struct emu_admission_statistics	*_stat)
+		struct emu_admission_core_statistics *_stat)
 	: q_admitted_out(q_admitted),
 	  admitted_traffic_mempool(admitted_mempool),
 	  packet_mempool(_packet_mempool),
-	  stat(_stat)
+	  m_stat(_stat)
 {
 	/* allocate the next batch to be flushed */
 	while (fp_mempool_get(admitted_traffic_mempool,
 			(void **) &admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(stat);
+		adm_log_emu_admitted_alloc_failed(m_stat);
 
 	admitted_init(admitted);
 }
@@ -125,8 +125,8 @@ inline void __attribute__((always_inline))
 EmulationOutput::drop(struct emu_packet* packet)
 {
 	/* add dropped packet to admitted struct */
-	admitted_insert_dropped_edge(admitted, packet);
-	adm_log_emu_dropped_packet(stat);
+	admitted_insert_dropped_edge(admitted, packet, m_stat);
+	adm_log_emu_dropped_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
 	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
@@ -138,8 +138,8 @@ EmulationOutput::drop(struct emu_packet* packet)
 inline void __attribute__((always_inline))
 EmulationOutput::admit(struct emu_packet* packet)
 {
-	admitted_insert_admitted_edge(admitted, packet);
-	adm_log_emu_admitted_packet(stat);
+	admitted_insert_admitted_edge(admitted, packet, m_stat);
+	adm_log_emu_admitted_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
 	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
@@ -153,12 +153,12 @@ EmulationOutput::flush()
 {
 	/* send out the admitted traffic */
 	while (fp_ring_enqueue(q_admitted_out, admitted) != 0)
-		adm_log_emu_wait_for_admitted_enqueue(stat);
+		adm_log_emu_wait_for_admitted_enqueue(m_stat);
 
 	/* get 1 new admitted traffic, init it */
 	while (fp_mempool_get(admitted_traffic_mempool,
 				(void **) &admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(stat);
+		adm_log_emu_admitted_alloc_failed(m_stat);
 
 	admitted_init(admitted);
 }

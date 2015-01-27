@@ -12,23 +12,15 @@
 
 #include <stdio.h>
 
+struct emu_admission_core_statistics emu_saved_admission_core_statistics[ALGO_N_CORES];
 struct emu_admission_statistics emu_saved_admission_statistics;
 
-void print_global_admission_log_emulation() {
+void print_core_admission_log_emulation(uint16_t core_index) {
 	uint64_t dropped_in_algo;
-	struct emu_admission_statistics *st = &g_emu_state.stat;
-	struct emu_admission_statistics *sv = &emu_saved_admission_statistics;
+	struct emu_admission_core_statistics *st = g_emu_state.core_stats[core_index];
+	struct emu_admission_core_statistics *sv = &emu_saved_admission_core_statistics[core_index];
 
-	printf("\nadmission core (emu with %d nodes)", NUM_NODES);
-
-#if defined(DCTCP)
-	printf("\nrouter type DCTCP");
-#elif defined(RED)
-	printf("\nrouter type RED");
-#elif defined(DROP_TAIL)
-	printf("\nrouter type drop tail");
-#endif
-
+	printf("\nadmission core %d", core_index);
 #define D(X) (st->X - sv->X)
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
@@ -56,6 +48,27 @@ void print_global_admission_log_emulation() {
 				st->admitted_struct_overflow);
 
 	printf("\n warnings:");
+	if (st->send_packet_failed)
+		printf("\n  %lu send packet failed", st->send_packet_failed);
+	printf("\n");
+}
+
+void print_global_admission_log_emulation() {
+	uint64_t dropped_in_algo;
+	struct emu_admission_statistics *st = &g_emu_state.stat;
+	struct emu_admission_statistics *sv = &emu_saved_admission_statistics;
+
+	printf("\nemulation with %d nodes", NUM_NODES);
+
+#if defined(DCTCP)
+	printf("\nrouter type DCTCP");
+#elif defined(RED)
+	printf("\nrouter type RED");
+#elif defined(DROP_TAIL)
+	printf("\nrouter type drop tail");
+#endif
+
+	printf("\n warnings:");
 	if (st->packet_alloc_failed)
 		printf("\n  %lu packet allocs failed (increase packet mempool size?)",
 				st->packet_alloc_failed);
@@ -63,8 +76,6 @@ void print_global_admission_log_emulation() {
 		printf("\n  %lu enqueue backlog failed", st->enqueue_backlog_failed);
 	if (st->enqueue_reset_failed)
 		printf("\n  %lu enqueue reset failed", st->enqueue_reset_failed);
-	if (st->send_packet_failed)
-		printf("\n  %lu send packet failed", st->send_packet_failed);
 	printf("\n");
 }
 
@@ -73,6 +84,11 @@ void emu_save_admission_stats() {
 			sizeof(emu_saved_admission_statistics));
 }
 
-void emu_save_admission_core_stats(int i) {
-	// TODO: copy admission core stats, once they are used
+void emu_save_admission_core_stats(int core_index) {
+	uint16_t i;
+
+	for (i = 0; i < ALGO_N_CORES; i++)
+		memcpy(&emu_saved_admission_core_statistics,
+				g_emu_state.core_stats[core_index],
+				sizeof(struct emu_admission_core_statistics));
 }

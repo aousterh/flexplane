@@ -22,17 +22,18 @@
 
 
 RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
-		struct fp_ring* q_from_router, struct emu_admission_statistics* stat)
+		struct fp_ring* q_from_router)
 	: m_router(router),
 	  m_q_to_router(q_to_router),
-	  m_q_from_router(q_from_router),
-	  m_stat(stat)
+	  m_q_from_router(q_from_router)
 {
 	seed_random(&m_random, time(NULL));
 }
 
-void RouterDriver::assign_to_core(Dropper *dropper) {
-	m_router->assign_to_core(dropper);
+void RouterDriver::assign_to_core(Dropper *dropper,
+		struct emu_admission_core_statistics *stat) {
+	m_stat = stat;
+	m_router->assign_to_core(dropper, stat);
 }
 
 void RouterDriver::cleanup() {

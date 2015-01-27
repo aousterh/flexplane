@@ -29,6 +29,7 @@ DropTailRouter::DropTailRouter(uint16_t q_capacity,
 
 DropTailRouter::~DropTailRouter() {}
 
-void DropTailRouter::assign_to_core(Dropper *dropper) {
-	m_qm.assign_to_core(dropper);
+void DropTailRouter::assign_to_core(Dropper *dropper,
+		struct emu_admission_core_statistics *stat) {
+	m_qm.assign_to_core(dropper, stat);
 }

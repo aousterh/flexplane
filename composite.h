@@ -60,7 +60,8 @@ public:
 	/**
 	 * Prepare this queue manager to run on a specific core.
 	 */
-	void assign_to_core(Dropper *dropper) {THROW;}
+	void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat) {THROW;}
 };
 
 /**

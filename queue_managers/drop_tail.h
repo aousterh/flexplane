@@ -36,7 +36,8 @@ class DropTailQueueManager : public QueueManager {
 public:
 	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity,
 			enum component_type type);
-	inline void assign_to_core(Dropper *dropper) { m_dropper = dropper; }
+	inline void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
 	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -51,7 +52,16 @@ private:
 
 	/** type - router or endpoint, used for logging */
 	enum component_type m_type;
+
+	/** stats */
+	struct emu_admission_core_statistics *m_stat;
 };
+
+inline void DropTailQueueManager::assign_to_core(Dropper *dropper,
+		struct emu_admission_core_statistics *stat) {
+	m_dropper = dropper;
+	m_stat = stat;
+}
 
 typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>
 	DropTailRouterBase;
@@ -63,7 +73,8 @@ typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager,
 class DropTailRouter : public DropTailRouterBase {
 public:
     DropTailRouter(uint16_t q_capacity, struct queue_bank_stats *stats);
-	virtual void assign_to_core(Dropper *dropper);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
     virtual ~DropTailRouter();
 
 private:
@@ -83,9 +94,9 @@ inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 
 		/* log the drop */
 		if (m_type == TYPE_ROUTER)
-			adm_log_emu_router_dropped_packet(&g_state->stat);
+			adm_log_emu_router_dropped_packet(m_stat);
 		else
-			adm_log_emu_endpoint_dropped_packet(&g_state->stat);
+			adm_log_emu_endpoint_dropped_packet(m_stat);
 	} else {
 		m_bank->enqueue(port, queue, pkt);
 	}

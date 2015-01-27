@@ -12,7 +12,7 @@
 
 #include <inttypes.h>
 
-struct emu_admission_statistics;
+struct emu_admission_core_statistics;
 struct emu_packet;
 struct emu_state;
 
@@ -46,13 +46,13 @@ void free_packet(struct emu_state *state, struct emu_packet *packet);
  * Logs that an endpoint dropped a packet.
  */
 static inline __attribute__((always_inline))
-void adm_log_emu_endpoint_dropped_packet(struct emu_admission_statistics *st);
+void adm_log_emu_endpoint_dropped_packet(struct emu_admission_core_statistics *st);
 
 /**
  * Logs that a router dropped a packet.
  */
 static inline __attribute__((always_inline))
-void adm_log_emu_router_dropped_packet(struct emu_admission_statistics *st);
+void adm_log_emu_router_dropped_packet(struct emu_admission_core_statistics *st);
 
 
 /**

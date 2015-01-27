@@ -30,7 +30,8 @@ struct dctcp_args {
 class DCTCPQueueManager : public QueueManager {
 public:
     DCTCPQueueManager(PacketQueueBank *bank, struct dctcp_args *dctcp_params);
-	inline void assign_to_core(Dropper *dropper) { m_dropper = dropper; }
+	inline void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -39,8 +40,16 @@ private:
     /** the means to drop packets */
     Dropper *m_dropper;
 
-    struct dctcp_args m_dctcp_params;    
+    struct dctcp_args m_dctcp_params;
+	struct emu_admission_core_statistics *m_stat;
 };
+
+inline void DCTCPQueueManager::assign_to_core(Dropper *dropper,
+		struct emu_admission_core_statistics *stat)
+{
+	m_dropper = dropper;
+	m_stat = stat;
+}
 
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManager, SingleQueueScheduler>
 	DCTCPRouterBase;
@@ -53,7 +62,8 @@ class DCTCPRouter : public DCTCPRouterBase {
 public:
     DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params,
     		struct queue_bank_stats *stats);
-	virtual void assign_to_core(Dropper *dropper);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
     virtual ~DCTCPRouter();
 
 private:

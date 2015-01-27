@@ -22,18 +22,18 @@
 
 EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 		struct fp_ring* q_to_router, struct fp_ring* q_from_router,
-		struct fp_ring *q_resets, EndpointGroup* epg,
-		struct emu_admission_statistics *stat)
+		struct fp_ring *q_resets, EndpointGroup* epg)
 	: m_q_new_packets(q_new_packets),
 	  m_q_to_router(q_to_router),
 	  m_q_from_router(q_from_router),
 	  m_q_resets(q_resets),
-	  m_epg(epg),
-	  m_stat(stat)
+	  m_epg(epg)
 {}
 
-void EndpointDriver::assign_to_core(EmulationOutput *out) {
-	m_epg->assign_to_core(out);
+void EndpointDriver::assign_to_core(EmulationOutput *out,
+		struct emu_admission_core_statistics *stat) {
+	m_stat = stat;
+	m_epg->assign_to_core(out, stat);
 }
 
 void EndpointDriver::cleanup() {

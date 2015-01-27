@@ -31,7 +31,8 @@ class ProbDropQueueManager : public QueueManager {
 public:
     ProbDropQueueManager(PacketQueueBank *bank,
     		struct probdrop_args *probdrop_params);
-	inline void assign_to_core(Dropper *dropper) { m_dropper = dropper; }
+	inline void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -44,7 +45,15 @@ private:
 
     /** Other state **/
     uint32_t random_state; // for random packet drop
+    struct emu_admission_core_statistics *m_stat;
 };
+
+inline void ProbDropQueueManager::assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat)
+{
+	m_dropper = dropper;
+	m_stat = stat;
+}
 
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, ProbDropQueueManager, SingleQueueScheduler>
 	ProbDropRouterBase;
@@ -57,7 +66,8 @@ class ProbDropRouter : public ProbDropRouterBase {
 public:
     ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params,
     		struct queue_bank_stats *stats);
-	virtual void assign_to_core(Dropper *dropper);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
     virtual ~ProbDropRouter();
 
 private:

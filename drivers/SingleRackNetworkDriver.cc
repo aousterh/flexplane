@@ -17,8 +17,8 @@ SingleRackNetworkDriver::SingleRackNetworkDriver(struct fp_ring* q_new_packets,
       m_q_router_to_epg(make_ring("router_to_epg_ring", ring_size, 0,
                                   RING_F_SP_ENQ | RING_F_SC_DEQ)),
       m_endpoint_driver(q_new_packets, m_q_epg_to_router, m_q_router_to_epg,
-    		  q_resets, epg, stat),
-      m_router_driver(router, m_q_epg_to_router, m_q_router_to_epg, stat)
+    		  q_resets, epg),
+      m_router_driver(router, m_q_epg_to_router, m_q_router_to_epg)
 {}
 
 void SingleRackNetworkDriver::step() {

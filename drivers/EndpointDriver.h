@@ -18,12 +18,13 @@ class EndpointDriver {
 public:
 	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router, struct fp_ring *q_resets,
-			EndpointGroup *epg, struct emu_admission_statistics *stat);
+			EndpointGroup *epg);
 
 	/**
 	 * Prepares this driver to run on a specific core.
 	 */
-	void assign_to_core(EmulationOutput *out);
+	void assign_to_core(EmulationOutput *out,
+			struct emu_admission_core_statistics *stat);
 
 	/**
 	 * Emulate a single timeslot
@@ -45,7 +46,7 @@ private:
 	struct fp_ring *m_q_from_router; /* must free incoming ring from network */
 	struct fp_ring *m_q_resets;
 	EndpointGroup *m_epg;
-	struct emu_admission_statistics	*m_stat;
+	struct emu_admission_core_statistics	*m_stat;
 };
 
 #endif /* DRIVERS_ENDPOINTDRIVER_H_ */

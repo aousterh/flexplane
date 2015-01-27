@@ -25,14 +25,14 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_dctcp_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-        adm_log_emu_router_dropped_packet(&g_state->stat);
+        adm_log_emu_router_dropped_packet(m_stat);
         m_dropper->drop(pkt, port);
 	return;
     }
 
     if (qlen >= m_dctcp_params.K_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
-		adm_log_emu_router_marked_packet(&g_state->stat);
+		adm_log_emu_router_marked_packet(m_stat);
         packet_mark_ecn(pkt);
     }
 
@@ -55,6 +55,7 @@ DCTCPRouter::DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params,
 
 DCTCPRouter::~DCTCPRouter() {}
 
-void DCTCPRouter::assign_to_core(Dropper *dropper) {
-	m_qm.assign_to_core(dropper);
+void DCTCPRouter::assign_to_core(Dropper *dropper,
+		struct emu_admission_core_statistics *stat) {
+	m_qm.assign_to_core(dropper, stat);
 }

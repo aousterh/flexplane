@@ -29,7 +29,8 @@ class Router {
 public:
     Router() {};
     virtual ~Router() {};
-	virtual void assign_to_core(Dropper *dropper) = 0;
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat) = 0;
     virtual void push(struct emu_packet *packet) = 0;
     virtual struct emu_packet *pull(uint16_t output) = 0;
     virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;

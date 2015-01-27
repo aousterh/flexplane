@@ -84,13 +84,13 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
     count_since_last = -1;
     if (force_drop || !(m_red_params.ecn)) {
       //        printf("RED dropping pkt\n");
-        adm_log_emu_router_dropped_packet(&g_state->stat);
+        adm_log_emu_router_dropped_packet(m_stat);
         m_dropper->drop(pkt, port);
 	return RED_DROPPKT;
     } else {
         /* mark the ECN bit */
       //        printf("RED marking pkt\n");
-	adm_log_emu_router_marked_packet(&g_state->stat);
+	adm_log_emu_router_marked_packet(m_stat);
         packet_mark_ecn(pkt);
         return RED_ACCEPTMARKED;
      }
@@ -110,8 +110,9 @@ REDRouter::REDRouter(uint16_t id, struct red_args *red_params,
       REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS)
 {}
 
-void REDRouter::assign_to_core(Dropper *dropper) {
-	m_qm.assign_to_core(dropper);
+void REDRouter::assign_to_core(Dropper *dropper,
+		struct emu_admission_core_statistics *stat) {
+	m_qm.assign_to_core(dropper, stat);
 }
 
 REDRouter::~REDRouter() {}

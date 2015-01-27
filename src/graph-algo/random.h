@@ -9,6 +9,7 @@
  */
 #define GA_RAND_A		1664525
 #define GA_RAND_C		1013904223
+#define RANDRANGE_16	((1 << 16) - 1)
 
 static inline __attribute__((always_inline))
 void seed_random(u32 *state, u32 value)

@@ -148,10 +148,17 @@ void emu_init_state(struct emu_state *state,
 					state->comm_state.q_resets[0], epg);
 
 
-	/* initialize cores and assign endpoints and routers to them
-	 * (just 1 core for now) */
+	/* initialize cores and assign endpoints and routers to them */
+#if (ALGO_N_CORES == 2)
+	/* 1 core for endpoints, 1 for router */
+	state->cores[0] = new EmulationCore(state, endpoint_drivers, NULL,
+			EMU_NUM_ENDPOINT_GROUPS, 0, 0);
+	state->cores[1] = new EmulationCore(state, NULL, router_drivers, 0,
+			EMU_NUM_ROUTERS, 1);
+#else
 	state->cores[0] = new EmulationCore(state, endpoint_drivers,
 			router_drivers, EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS, 0);
+#endif
 }
 
 void emu_cleanup(struct emu_state *state) {

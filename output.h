@@ -129,7 +129,7 @@ EmulationOutput::drop(struct emu_packet* packet)
 	adm_log_emu_dropped_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
-	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
+	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))
 		flush();
 
 	free_packet(packet);
@@ -142,7 +142,7 @@ EmulationOutput::admit(struct emu_packet* packet)
 	adm_log_emu_admitted_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
-	if (unlikely(admitted->size == EMU_NUM_ENDPOINTS + EMU_MAX_DROPS))
+	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))
 		flush();
 
 	free_packet(packet);

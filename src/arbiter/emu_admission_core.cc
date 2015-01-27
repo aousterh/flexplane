@@ -148,6 +148,7 @@ int exec_emu_admission_core(void *void_cmd_p)
 {
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
+	EmulationCore *core = g_emu_state.cores[core_ind];
 	int ret;
 	uint64_t logical_timeslot = cmd->start_timeslot;
 	uint64_t start_time_first_timeslot, time_now, tslot;
@@ -193,9 +194,8 @@ int exec_emu_admission_core(void *void_cmd_p)
 		admission_log_allocation_begin(logical_timeslot,
 					       start_time_first_timeslot);
 
-		/* perform allocation */
-		/* use a single core for now */
-		emu_emulate(&g_emu_state);
+		/* perform allocation on this core */
+		core->step();
 
 		admission_log_allocation_end(logical_timeslot);
 

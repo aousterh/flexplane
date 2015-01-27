@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "../config.h"
 #include "../endpoint_group.h"
+#include "../emulation.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include "../api.h"
@@ -32,6 +33,8 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 {}
 
 void EndpointDriver::cleanup() {
+	free_packet_ring(g_state, m_q_from_router);
+
 	delete m_epg;
 }
 

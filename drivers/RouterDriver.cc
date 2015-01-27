@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <time.h> /* for seeding the random number generator */
 #include "../config.h"
+#include "../emulation.h"
 #include "../router.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
@@ -31,6 +32,8 @@ RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
 }
 
 void RouterDriver::cleanup() {
+	free_packet_ring(g_state, m_q_to_router);
+
 	delete m_router;
 }
 

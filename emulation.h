@@ -59,9 +59,7 @@ struct emu_comm_state {
  * @core_stats: stats per emulation core
  * @comm_state: state allocated per comm core to manage new packets
  * @queue_bank_stats: stats about one queue bank to be output by the log core
- * @q_epg_ingress: queues of packets to endpoint groups from the network
  * @endpoint_drivers: one driver for each endpoint group in the network
- * @q_router_ingress: a queue of incoming packets for each router
  * @router_drivers: one driver for each router in the network
  */
 struct emu_state {
@@ -78,9 +76,7 @@ struct emu_state {
 #ifdef __cplusplus
 	EmulationOutput	*out;
 
-	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
-	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
 	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
 #endif
 };
@@ -127,5 +123,10 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
  */
 static inline
 void emu_reset_sender(struct emu_state *state, uint16_t src);
+
+/**
+ * Frees all the packets in an fp_ring, and frees the ring itself.
+ */
+void free_packet_ring(struct emu_state *state, struct fp_ring *packet_ring);
 
 #endif /* EMULATION_H_ */

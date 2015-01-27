@@ -36,7 +36,7 @@ private:
 
 	struct fp_ring *m_q_new_packets;
 	struct fp_ring *m_q_to_router;
-	struct fp_ring *m_q_from_router;
+	struct fp_ring *m_q_from_router; /* must free incoming ring from network */
 	struct fp_ring *m_q_resets;
 	EndpointGroup *m_epg;
 	struct emu_admission_statistics	*m_stat;

@@ -23,7 +23,7 @@ public:
 	void cleanup();
 private:
 	Router *m_router;
-	struct fp_ring *m_q_to_router;
+	struct fp_ring *m_q_to_router; /* must free incoming ring from network */
 	struct fp_ring *m_q_from_router;
 	struct emu_admission_statistics	*m_stat;
 	uint32_t m_random;

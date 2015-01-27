@@ -39,6 +39,27 @@ class EndpointDriver;
 class RouterDriver;
 #endif
 
+#ifdef __cplusplus
+/**
+ * A class to encapsulate the state used by one core in the emulation.
+ * @m_out: a class for communicating admitted/dropped packets to comm cores
+ * @m_endpoint_drivers: one driver for each endpoint group in the network
+ * @m_router_drivers: one driver for each router in the network
+ */
+class EmulationCore {
+public:
+	EmulationCore(EmulationOutput *out, EndpointDriver **epg_drivers,
+			RouterDriver **router_drivers);
+
+	void step();
+	void cleanup();
+private:
+	EmulationOutput	*m_out;
+	EndpointDriver	*m_endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
+	RouterDriver	*m_router_drivers[EMU_NUM_ROUTERS];
+}  __attribute__((aligned(64))) /* don't want sharing between cores */;
+#endif
+
 /**
  * Emu state allocated for each comm core
  * @q_epg_new_pkts: queues of packets from comm core to each endpoint group
@@ -59,8 +80,7 @@ struct emu_comm_state {
  * @core_stats: stats per emulation core
  * @comm_state: state allocated per comm core to manage new packets
  * @queue_bank_stats: stats about one queue bank to be output by the log core
- * @endpoint_drivers: one driver for each endpoint group in the network
- * @router_drivers: one driver for each router in the network
+ * @cores: the emulation cores
  */
 struct emu_state {
 	struct emu_admitted_traffic				*admitted;
@@ -74,10 +94,7 @@ struct emu_state {
 
 	/* this state is not directly accessible from the arbiter */
 #ifdef __cplusplus
-	EmulationOutput	*out;
-
-	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
-	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
+	EmulationCore							*cores[ALGO_N_CORES];
 #endif
 };
 
@@ -96,7 +113,8 @@ void emu_init_state(struct emu_state *state,
 void emu_cleanup(struct emu_state *state);
 
 /**
- * Emulate a single timeslot.
+ * Emulate a single timeslot - called only for single-core tests. For
+ * multicore, should call step on the specific core instead.
  */
 void emu_emulate(struct emu_state *state);
 

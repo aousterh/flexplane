@@ -25,7 +25,7 @@ emu_state *g_state; /* global emulation state */
 
 EmulationCore::EmulationCore(struct emu_state *state,
 		EndpointDriver **epg_drivers, RouterDriver **router_drivers,
-		uint16_t index)
+		uint16_t n_epgs, uint16_t n_rtrs, uint16_t core_index)
 {
 	Dropper *dropper;
 	uint32_t i;
@@ -36,20 +36,23 @@ EmulationCore::EmulationCore(struct emu_state *state,
 			&m_stat);
 	dropper = new Dropper(*m_out, &state->queue_bank_stats);
 
+	m_n_epgs = n_epgs;
+	m_n_rtrs = n_rtrs;
+
 	/* only 1 core for now - must handle all endpoints and routers */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+	for (i = 0; i < n_epgs; i++) {
 		m_endpoint_drivers[i] = epg_drivers[i];
 		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat);
 	}
 
-	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+	for (i = 0; i < n_rtrs; i++) {
 		m_router_drivers[i] = router_drivers[i];
 		m_router_drivers[i]->assign_to_core(dropper, &m_stat);
 	}
 
 	/* TODO: do this properly by making the APIs accessible from C, or moving
 	 * the log core to C++ */
-	state->core_stats[index] = &m_stat;
+	state->core_stats[core_index] = &m_stat;
 }
 
 void EmulationCore::step() {
@@ -60,11 +63,11 @@ void EmulationCore::step() {
 	 * next. */
 
 	/* push new packets from the network to endpoints */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++)
+	for (i = 0; i < m_n_epgs; i++)
 		m_endpoint_drivers[i]->step();
 
 	/* emulate one timeslot at each router (push and pull) */
-	for (i = 0; i < EMU_NUM_ROUTERS; i++)
+	for (i = 0; i < m_n_rtrs; i++)
 		m_router_drivers[i]->step();
 
 	m_out->flush();
@@ -148,7 +151,7 @@ void emu_init_state(struct emu_state *state,
 	/* initialize cores and assign endpoints and routers to them
 	 * (just 1 core for now) */
 	state->cores[0] = new EmulationCore(state, endpoint_drivers,
-			router_drivers, 0);
+			router_drivers, EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS, 0);
 }
 
 void emu_cleanup(struct emu_state *state) {

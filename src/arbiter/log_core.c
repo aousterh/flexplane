@@ -364,8 +364,7 @@ int exec_log_core(void *void_cmd_p)
 		print_comm_log(enabled_lcore[FIRST_COMM_CORE]);
 		print_global_admission_log();
 
-        /* just print one admission core log for now */
-		for (i = 0; i < 1; i++)
+		for (i = 0; i < N_ADMISSION_CORES; i++)
 			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
 		fflush(stdout);
 

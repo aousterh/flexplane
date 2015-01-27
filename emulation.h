@@ -21,7 +21,7 @@
 #define ADMITTED_MEMPOOL_SIZE	10
 #define ADMITTED_Q_LOG_SIZE		4
 #define PACKET_MEMPOOL_SIZE		(1024 * 1024)
-#define PACKET_Q_LOG_SIZE		12
+#define PACKET_Q_LOG_SIZE		16
 #define EMU_NUM_PACKET_QS		(3 * EMU_NUM_ENDPOINT_GROUPS + EMU_NUM_ROUTERS)
 
 /* comm core state - 1 comm core right now */

@@ -177,7 +177,7 @@ void handle_spent_demands(struct admissible_state *state)
 #define ADMITTED_PER_BATCH			4
 #define NUM_BIN_RINGS				EMU_NUM_PACKET_QS
 #define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
-#define MAX_ADMITTED_PER_TIMESLOT	(EMU_NUM_ENDPOINTS + EMU_MAX_DROPS)
+#define MAX_ADMITTED_PER_TIMESLOT	(EMU_ADMITS_PER_ADMITTED)
 
 static inline
 void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,

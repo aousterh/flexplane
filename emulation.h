@@ -72,23 +72,19 @@ struct emu_comm_state {
 
 /**
  * Data structure to store the state of the emulation.
- * @admitted: the current admitted struct
  * @packet_mempool: pool of packet structs
  * @admitted_traffic_mempool: pool of admitted traffic structs
  * @q_admitted_out: queue of admitted structs to comm core
  * @stat: global emulation stats
- * @core_stats: stats per emulation core
  * @comm_state: state allocated per comm core to manage new packets
  * @queue_bank_stats: stats about one queue bank to be output by the log core
  * @cores: the emulation cores
  */
 struct emu_state {
-	struct emu_admitted_traffic				*admitted;
 	struct fp_mempool						*packet_mempool;
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct fp_ring							*q_admitted_out;
 	struct emu_admission_statistics			stat;
-//	struct emu_admission_core_statistics	core_stats; /* 1 core for now */
 	struct emu_comm_state					comm_state;
 	struct queue_bank_stats					queue_bank_stats;
 

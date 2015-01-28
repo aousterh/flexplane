@@ -368,6 +368,10 @@ int exec_log_core(void *void_cmd_p)
 			print_admission_core_log(enabled_lcore[FIRST_ADMISSION_CORE+i], i);
 		fflush(stdout);
 
+		/* save admission core stats */
+		for (i = 0; i < N_ADMISSION_CORES; i++)
+			save_admission_core_stats(i);
+
 		/* write log */
 //		for (i = 0; i < MAX_NODES; i++) {
 		for (i = 49; i < 55; i++) {

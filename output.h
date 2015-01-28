@@ -118,7 +118,6 @@ EmulationOutput::EmulationOutput(struct fp_ring* q_admitted,
 	/* allocate the next batch to be flushed */
 	while (fp_mempool_get_bulk(admitted_traffic_mempool,
 			(void **) &admitted[0], start_n_admitted) == -ENOENT) {
-		printf("loop\n");
 		adm_log_emu_admitted_alloc_failed(m_stat);
 	}
 

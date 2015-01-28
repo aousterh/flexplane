@@ -95,7 +95,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 	for (i = 0; i < EMU_NUM_PACKET_QS; i++) {
 		snprintf(s, sizeof(s), "packet_q_%d", i);
 		packet_queues[i] = rte_ring_create(s, PACKET_Q_SIZE, 0,
-				RING_F_SP_ENQ | RING_F_SC_DEQ);
+				RING_F_SC_DEQ);
 		if (packet_queues[i] == NULL)
 			rte_exit(EXIT_FAILURE, "Cannot init packet_queues[%d]: %s\n", i,
 					rte_strerror(rte_errno));

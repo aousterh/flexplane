@@ -107,7 +107,8 @@ public:
     virtual struct emu_packet *pull(uint16_t port);
 
     virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
-    virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
+    virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
+    		uint64_t *port_masks);
 
 private:
     RT *m_rt;
@@ -145,7 +146,7 @@ private:
 template < class SCH >
 inline  __attribute__((always_inline))
 uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
-		struct emu_packet **pkts, uint32_t n_pkts)
+		struct emu_packet **pkts, uint32_t n_pkts, uint64_t *port_masks)
 {
 	uint64_t *non_empty_port_mask = sch->non_empty_port_mask();
 	uint32_t res = 0;
@@ -154,7 +155,8 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 		throw std::runtime_error("pull_batch should be passed space for at least n_elems packets");
 
 	for (uint32_t i = 0; i < ((n_elems + 63) >> 6); i++) {
-		uint64_t mask = non_empty_port_mask[i];
+		/* only pull from non-empty ports that are requested right now */
+		uint64_t mask = non_empty_port_mask[i] & port_masks[i];
 		uint64_t port;
 		while (mask) {
 			/* get the index of the lsb that is set */
@@ -220,8 +222,8 @@ void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
 
 template < class RT, class CLA, class QM, class SCH >
 uint32_t CompositeRouter<RT,CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
-		uint32_t n_pkts)
-{ return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts); }
+		uint32_t n_pkts, uint64_t *port_masks)
+{ return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts, port_masks); }
 
 
 /***
@@ -268,6 +270,9 @@ inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::push_batch(
 template<class CLA, class QM, class SCH, class SINK>
 inline uint32_t CompositeEndpointGroup<CLA, QM, SCH, SINK>::pull_batch(
 		struct emu_packet** pkts, uint32_t n_pkts)
-{ return composite_pull_batch<SCH>(m_sch, m_n_endpoints, pkts, n_pkts); }
+{
+	uint64_t mask = 0xFFFFFFFFFFFFFFFF;
+	return composite_pull_batch<SCH>(m_sch, m_n_endpoints, pkts, n_pkts, &mask);
+}
 
 #endif /* COMPOSITE_H_ */

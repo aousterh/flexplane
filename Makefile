@@ -52,8 +52,7 @@ clean:
 emulation: emulation_test.o emulation.o endpoint_group.o simple_endpoint.o \
 			router.o \
 			drop_tail.qm.o red.qm.o dctcp.qm.o probdrop.qm.o \
-			RouterDriver.drv.o EndpointDriver.drv.o \
-			SingleRackNetworkDriver.drv.o
+			RouterDriver.drv.o EndpointDriver.drv.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 ####################

@@ -98,6 +98,7 @@ void EmulationCore::cleanup() {
 	delete m_out;
 }
 
+#if defined(SINGLE_RACK_TOPOLOGY)
 /* construct a topology with 1 rack - 1 router connected to all endpoints */
 inline void construct_single_rack_topology(struct emu_state *state,
 		struct fp_ring **packet_queues, EndpointDriver **endpoint_drivers,
@@ -105,8 +106,9 @@ inline void construct_single_rack_topology(struct emu_state *state,
 		EndpointType e_type, void *e_args)
 {
 	uint32_t pq;
-	struct fp_ring	*q_epg_ingress;
-	struct fp_ring	*q_router_ingress;
+	struct fp_ring	*q_router_egress[EMU_MAX_OUTPUTS_PER_RTR];
+	uint64_t rtr_masks[EMU_MAX_OUTPUTS_PER_RTR];
+	struct fp_ring *q_router_ingress;
 	EndpointGroup *epg;
 	Router *rtr;
 	struct topology_args topo_args;
@@ -114,7 +116,7 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	/* initialize rings for routers and endpoints */
 	pq = 0;
 	q_router_ingress = packet_queues[pq++];
-	q_epg_ingress = packet_queues[pq++];
+	q_router_egress[0] = packet_queues[pq++];
 
 	/* initialize the routers */
 	topo_args.func = TOR_ROUTER;
@@ -122,7 +124,9 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 0,
 			&state->queue_bank_stats);
 	assert(rtr != NULL);
-	router_drivers[0] = new RouterDriver(rtr, q_router_ingress, q_epg_ingress);
+	rtr_masks[0] = 0xFFFFFFFF; /* 32 ports */
+	router_drivers[0] = new RouterDriver(rtr, q_router_ingress,
+			&q_router_egress[0], &rtr_masks[0], 1);
 
 	/* initialize all the endpoints in one endpoint group */
 	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS, 0,
@@ -130,9 +134,10 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	assert(epg != NULL);
 	endpoint_drivers[0] =
 			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
-					q_router_ingress, q_epg_ingress,
+					q_router_ingress, q_router_egress[0],
 					state->comm_state.q_resets[0], epg);
 }
+#endif
 
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
@@ -158,10 +163,14 @@ void emu_init_state(struct emu_state *state,
 	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->comm_state.q_resets[0] = packet_queues[pq++];
 
+#if defined(SINGLE_RACK_TOPOLOGY)
 	/* construct topology: 1 router with 1 rack of endpoints */
 	construct_single_rack_topology(state, &packet_queues[pq],
 			&endpoint_drivers[0], &router_drivers[0], r_type, r_args, e_type,
 			e_args);
+#else
+#error "unrecognized topology"
+#endif
 
 	/* initialize cores and assign endpoints and routers to them */
 #if (ALGO_N_CORES == 2)

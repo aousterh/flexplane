@@ -8,6 +8,7 @@
 #ifndef DRIVERS_ROUTERDRIVER_H_
 #define DRIVERS_ROUTERDRIVER_H_
 
+#include "config.h"
 #include "../graph-algo/fp_ring.h"
 
 class Router;
@@ -17,7 +18,8 @@ struct emu_admission_statistics;
 class RouterDriver {
 public:
 	RouterDriver(Router *router, struct fp_ring *q_to_router,
-			struct fp_ring *q_from_router);
+			struct fp_ring **q_from_router, uint64_t *masks,
+			uint16_t n_neighbors);
 	/**
 	 * Prepares this driver to run on a specific core.
 	 */
@@ -29,7 +31,9 @@ public:
 private:
 	Router *m_router;
 	struct fp_ring *m_q_to_router; /* must free incoming ring from network */
-	struct fp_ring *m_q_from_router;
+	struct fp_ring *m_q_from_router[EMU_MAX_OUTPUTS_PER_RTR];
+	uint64_t m_port_masks[EMU_MAX_OUTPUTS_PER_RTR]; /* mask for each outgoing queue */
+	uint16_t m_neighbors;
 	struct emu_admission_core_statistics	*m_stat;
 	uint32_t m_random;
 };

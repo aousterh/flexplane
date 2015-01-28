@@ -14,6 +14,7 @@
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
+#include "routing_tables/CoreRoutingTable.h"
 #include "routing_tables/TorRoutingTable.h"
 #include "classifiers/FlowIDClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
@@ -89,7 +90,8 @@ typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager,
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-    DropTailRouter(uint16_t q_capacity, struct queue_bank_stats *stats);
+    DropTailRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
+    		uint32_t rack_index);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
     virtual ~DropTailRouter();
@@ -97,6 +99,29 @@ public:
 private:
     PacketQueueBank m_bank;
     TorRoutingTable m_rt;
+    FlowIDClassifier m_cla;
+    DropTailQueueManager m_qm;
+    SingleQueueScheduler m_sch;
+};
+
+typedef CompositeRouter<CoreRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>
+	DropTailCoreRouterBase;
+
+/**
+ * A drop tail core router.
+ * @output_queue: a queue of packets for each output port
+ */
+class DropTailCoreRouter : public DropTailCoreRouterBase {
+public:
+    DropTailCoreRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
+    		uint32_t links_per_tor);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
+    virtual ~DropTailCoreRouter();
+
+private:
+    PacketQueueBank m_bank;
+    CoreRoutingTable m_rt;
     FlowIDClassifier m_cla;
     DropTailQueueManager m_qm;
     SingleQueueScheduler m_sch;

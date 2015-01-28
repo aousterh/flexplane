@@ -21,8 +21,12 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 	case (R_DropTail):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		assert(topo_args->func == TOR_ROUTER); /* for now */
-		return new DropTailRouter(dt_args->q_capacity, stats);
+		if (topo_args->func == TOR_ROUTER)
+			return new DropTailRouter(dt_args->q_capacity, stats,
+					topo_args->rack_index);
+		else
+			return new DropTailCoreRouter(dt_args->q_capacity, stats,
+					topo_args->links_per_tor);
 	case (R_RED):
 		assert(args != NULL);
 		return new REDRouter(id, (struct red_args *)args, stats);

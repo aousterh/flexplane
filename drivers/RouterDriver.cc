@@ -67,7 +67,7 @@ void RouterDriver::step() {
 				n_pkts++;
 		}
 #else
-		n_pkts = m_router->pull_batch(pkt_ptrs, EMU_ENDPOINTS_PER_RACK,
+		n_pkts = m_router->pull_batch(pkt_ptrs, EMU_ENDPOINTS_PER_RACK*2,
 				&m_port_masks[j]);
 #endif
 		assert(n_pkts <= EMU_ENDPOINTS_PER_RACK);

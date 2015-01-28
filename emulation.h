@@ -24,9 +24,6 @@
 #define PACKET_Q_LOG_SIZE		16
 #define EMU_NUM_PACKET_QS		(3 * EMU_NUM_ENDPOINT_GROUPS + EMU_NUM_ROUTERS)
 
-/* comm core state - 1 comm core right now */
-#define EPGS_PER_COMM			(EMU_NUM_ENDPOINT_GROUPS)
-
 struct emu_state;
 
 extern struct emu_state *g_state;

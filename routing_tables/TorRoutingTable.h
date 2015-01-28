@@ -1,12 +1,12 @@
 /*
- * TorClassifier.h
+ * TorRoutingTable.h
  *
  *  Created on: Dec 17, 2014
  *      Author: yonch
  */
 
-#ifndef CLASSIFIERS_TORCLASSIFIER_H_
-#define CLASSIFIERS_TORCLASSIFIER_H_
+#ifndef ROUTINGTABLES_TOR_H_
+#define ROUTINGTABLES_TOR_H_
 
 #include <stdint.h>
 #include "../composite.h"
@@ -27,13 +27,13 @@ public:
 	 * @param rack_index: the index of this rack
 	 * @param n_endpoints: the actual number of endpoints in the rack, must be
 	 *      no larger than (1 << log_max_rack_endpoints).
-	 * @param n_core: the number of core routers
+	 * @param n_uplinks: the number of uplinks to core routers
 	 *
 	 * @assumes endpoints are connected to ports 0..n_endpoints-1, and core
-	 *     routers to ports n_endpoints..n_endpoints+n_core-1
+	 *     routers to ports n_endpoints..2*n_endpoints-1
 	 */
 	TorRoutingTable(uint32_t rack_shift, uint32_t rack_index,
-			uint32_t n_endpoints, uint32_t n_core);
+			uint32_t n_endpoints, uint32_t n_uplinks);
 
 	/**
 	 * d'tor
@@ -55,17 +55,17 @@ private:
 	/** number of endpoints in the current rack */
 	uint32_t m_n_endpoints;
 
-	/** the number of core routers */
-	uint32_t m_n_core;
+	/** the number of uplinks to cores */
+	uint32_t m_n_uplinks;
 };
 
 inline TorRoutingTable::TorRoutingTable(uint32_t rack_shift,
-		uint32_t rack_index, uint32_t n_endpoints, uint32_t n_core)
+		uint32_t rack_index, uint32_t n_endpoints, uint32_t n_uplinks)
 	: m_rack_shift(rack_shift),
 	  m_endpoint_mask( (1 << rack_shift) - 1 ),
 	  m_rack_index(rack_index),
 	  m_n_endpoints(n_endpoints),
-	  m_n_core(n_core)
+	  m_n_uplinks(n_uplinks)
 {}
 
 inline TorRoutingTable::~TorRoutingTable() {}
@@ -78,9 +78,10 @@ inline uint32_t TorRoutingTable::route(struct emu_packet *pkt)
 	if (rack_id == m_rack_index)
 		return (pkt->dst & m_endpoint_mask);
 
-	/* go to core switch */
+	/* go to core switch - assume full bisection bandwidth, with multiple links
+	 * used to create links with higher bandwidth */
 	uint32_t hash =  7 * pkt->src + 9 * pkt->dst + pkt->flow;
-	return (hash % m_n_core);
+	return (hash % m_n_uplinks) + m_n_endpoints;
 }
 
-#endif /* CLASSIFIERS_TORCLASSIFIER_H_ */
+#endif /* ROUTINGTABLES_TOR_H_ */

@@ -31,11 +31,15 @@ struct simple_ep_args {
  */
 class SimpleSink : public Sink {
 public:
-	inline SimpleSink() {}
+	inline SimpleSink(uint16_t rack_id) : m_rack_id(rack_id) {}
 	inline void assign_to_core(EmulationOutput *out) { m_output = out; }
-	inline void handle(struct emu_packet *pkt) { m_output->admit(pkt);}
+	inline void handle(struct emu_packet *pkt) {
+		assert((pkt->dst >> EMU_RACK_SHIFT) == m_rack_id);
+		m_output->admit(pkt);
+	}
 private:
 	EmulationOutput *m_output;
+	uint16_t m_rack_id;
 };
 
 typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager, SingleQueueScheduler, SimpleSink>

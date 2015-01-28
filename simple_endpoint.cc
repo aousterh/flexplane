@@ -18,7 +18,7 @@ SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
   m_cla(),
   m_qm(&m_bank, q_capacity, TYPE_ENDPOINT),
   m_sch(&m_bank),
-  m_sink(),
+  m_sink(start_id >> EMU_RACK_SHIFT),
   SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id, num_endpoints)
 {}
 

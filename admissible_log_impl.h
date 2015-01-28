@@ -87,8 +87,7 @@ void emu_save_admission_stats() {
 void emu_save_admission_core_stats(int core_index) {
 	uint16_t i;
 
-	for (i = 0; i < ALGO_N_CORES; i++)
-		memcpy(&emu_saved_admission_core_statistics,
-				g_emu_state.core_stats[core_index],
-				sizeof(struct emu_admission_core_statistics));
+	memcpy(&emu_saved_admission_core_statistics[core_index],
+			g_emu_state.core_stats[core_index],
+			sizeof(struct emu_admission_core_statistics));
 }

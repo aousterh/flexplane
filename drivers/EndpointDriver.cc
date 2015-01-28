@@ -75,11 +75,11 @@ inline void EndpointDriver::push() {
  */
 inline void EndpointDriver::pull() {
 	uint32_t n_pkts, i;
-	struct emu_packet *pkts[MAX_ENDPOINTS_PER_GROUP];
+	struct emu_packet *pkts[EMU_ENDPOINTS_PER_EPG];
 
 	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = m_epg->pull_batch(&pkts[0], MAX_ENDPOINTS_PER_GROUP);
-	assert(n_pkts <= MAX_ENDPOINTS_PER_GROUP);
+	n_pkts = m_epg->pull_batch(&pkts[0], EMU_ENDPOINTS_PER_EPG);
+	assert(n_pkts <= EMU_ENDPOINTS_PER_EPG);
 	while (fp_ring_enqueue_bulk(m_q_to_router,
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
 		/* no space in ring. log and retry. */

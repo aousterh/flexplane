@@ -15,8 +15,6 @@
 #include <time.h> /* for seeding the random number generator */
 #include "output.h"
 
-#define MAX_ENDPOINTS_PER_GROUP		EMU_NUM_ENDPOINTS
-
 /**
  * A representation of a group of endpoints (servers) with a shared router
  * @reset: reset state of an endpoint (e.g. when it loses sync with the arbiter)

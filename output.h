@@ -12,6 +12,9 @@
 #include "packet.h"
 #include "queue_bank_log.h"
 
+/* pull admitted structs in batches to avoid contention */
+#define N_ADMITTEDS_PER_OUTPUT	64
+
 /**
  * A class used to admit and drop packets
  */
@@ -22,11 +25,14 @@ public:
 	 * @param q_admitted: ring where admitted batches are enqueued
 	 * @param admitted_mempool: a mempool for allocation of admitted batches
 	 * @param packet_mempool: a mempool to free packets.
+	 * @param stat: stats for this core
+	 * @param start_n_admitted: number of admitted structs to start with
 	 */
 	EmulationOutput(struct fp_ring *q_admitted,
 			struct fp_mempool *admitted_mempool,
 			struct fp_mempool *packet_mempool,
-			struct emu_admission_core_statistics *stat);
+			struct emu_admission_core_statistics *stat,
+			uint16_t start_n_admitted);
 
 	/**
 	 * d'tor
@@ -74,7 +80,8 @@ private:
 	struct emu_admission_core_statistics	*m_stat;
 
 	/** the next batch to be flushed */
-	struct emu_admitted_traffic		*admitted;
+	uint16_t						m_admitted_index;
+	struct emu_admitted_traffic		*admitted[N_ADMITTEDS_PER_OUTPUT];
 };
 
 /**
@@ -102,34 +109,40 @@ inline
 EmulationOutput::EmulationOutput(struct fp_ring* q_admitted,
 		struct fp_mempool* admitted_mempool,
 		struct fp_mempool* _packet_mempool,
-		struct emu_admission_core_statistics *_stat)
+		struct emu_admission_core_statistics *_stat, uint16_t start_n_admitted)
 	: q_admitted_out(q_admitted),
 	  admitted_traffic_mempool(admitted_mempool),
 	  packet_mempool(_packet_mempool),
 	  m_stat(_stat)
 {
 	/* allocate the next batch to be flushed */
-	while (fp_mempool_get(admitted_traffic_mempool,
-			(void **) &admitted) == -ENOENT)
+	while (fp_mempool_get_bulk(admitted_traffic_mempool,
+			(void **) &admitted[0], start_n_admitted) == -ENOENT) {
+		printf("loop\n");
 		adm_log_emu_admitted_alloc_failed(m_stat);
+	}
 
-	admitted_init(admitted);
+	m_admitted_index = start_n_admitted - 1;
+	admitted_init(admitted[m_admitted_index]);
 }
 
 inline EmulationOutput::~EmulationOutput() {
+	uint16_t i;
+
 	/* free the allocated next batch */
-	fp_mempool_put(admitted_traffic_mempool, admitted);
+	for (i = 0; i <= m_admitted_index; i++)
+		fp_mempool_put(admitted_traffic_mempool, admitted[i]);
 }
 
 inline void __attribute__((always_inline))
 EmulationOutput::drop(struct emu_packet* packet)
 {
 	/* add dropped packet to admitted struct */
-	admitted_insert_dropped_edge(admitted, packet, m_stat);
+	admitted_insert_dropped_edge(admitted[m_admitted_index], packet, m_stat);
 	adm_log_emu_dropped_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
-	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))
+	if (unlikely(admitted[m_admitted_index]->size == EMU_ADMITS_PER_ADMITTED))
 		flush();
 
 	free_packet(packet);
@@ -138,11 +151,11 @@ EmulationOutput::drop(struct emu_packet* packet)
 inline void __attribute__((always_inline))
 EmulationOutput::admit(struct emu_packet* packet)
 {
-	admitted_insert_admitted_edge(admitted, packet, m_stat);
+	admitted_insert_admitted_edge(admitted[m_admitted_index], packet, m_stat);
 	adm_log_emu_admitted_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
-	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))
+	if (unlikely(admitted[m_admitted_index]->size == EMU_ADMITS_PER_ADMITTED))
 		flush();
 
 	free_packet(packet);
@@ -152,15 +165,20 @@ inline void __attribute__((always_inline))
 EmulationOutput::flush()
 {
 	/* send out the admitted traffic */
-	while (fp_ring_enqueue(q_admitted_out, admitted) != 0)
+	while (fp_ring_enqueue(q_admitted_out, admitted[m_admitted_index]) != 0)
 		adm_log_emu_wait_for_admitted_enqueue(m_stat);
 
-	/* get 1 new admitted traffic, init it */
-	while (fp_mempool_get(admitted_traffic_mempool,
-				(void **) &admitted) == -ENOENT)
-		adm_log_emu_admitted_alloc_failed(m_stat);
+	/* get a batch of new admitted traffic, init it */
+	if (m_admitted_index == 0) {
+		while (fp_mempool_get_bulk(admitted_traffic_mempool,
+				(void **) &admitted[0], N_ADMITTEDS_PER_OUTPUT) == -ENOENT)
+			adm_log_emu_admitted_alloc_failed(m_stat);
+		m_admitted_index = N_ADMITTEDS_PER_OUTPUT - 1;
+	} else {
+		m_admitted_index--;
+	}
 
-	admitted_init(admitted);
+	admitted_init(admitted[m_admitted_index]);
 }
 
 inline void EmulationOutput::free_packet(struct emu_packet* packet)

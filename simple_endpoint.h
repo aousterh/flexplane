@@ -20,6 +20,8 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "queue_managers/drop_tail.h"
 
+#define SIMPLE_ENDPOINT_QUEUE_CAPACITY 8192
+
 struct packet_queue;
 
 struct simple_ep_args {

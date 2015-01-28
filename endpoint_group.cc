@@ -20,7 +20,8 @@ EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
 		uint16_t num_endpoints, uint16_t start_id, void *args) {
 	switch(type) {
 	case(E_Simple):
-		uint16_t q_capacity = (args == NULL) ? 4096 : ((struct simple_ep_args *) args)->q_capacity;
+		uint16_t q_capacity = (args == NULL) ? SIMPLE_ENDPOINT_QUEUE_CAPACITY :
+				((struct simple_ep_args *) args)->q_capacity;
 		return new SimpleEndpointGroup(num_endpoints, start_id, q_capacity);
 	}
 	throw std::runtime_error("invalid endpoint type\n");

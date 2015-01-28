@@ -10,11 +10,9 @@
 #include "api.h"
 #include "api_impl.h"
 
-#define SIMPLE_ENDPOINT_QUEUE_CAPACITY 4096
-
 SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
 		uint16_t start_id, uint16_t q_capacity)
-: m_bank(num_endpoints, 1, SIMPLE_ENDPOINT_QUEUE_CAPACITY, NULL),
+: m_bank(num_endpoints, 1, q_capacity, NULL),
   m_cla(),
   m_qm(&m_bank, q_capacity, TYPE_ENDPOINT),
   m_sch(&m_bank),

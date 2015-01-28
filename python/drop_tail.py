@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from fastemu import *
+from do_imports import *
 
 class PyTorRoutingTable(PyRoutingTable):
     def route(self, pkt_p):
@@ -55,7 +55,7 @@ class PySimpleSink(PySink):
 state = emu_state()
 ADMITTED_MEMPOOL_SIZE = 1 << 10
 ADMITTED_RING_SIZE = 1 << 10
-PACKET_MEMPOOL_SIZE = 1 << 14
+PACKET_MEMPOOL_SIZE = 1 << 12
 PACKET_RING_SIZE = 1 << 10
 
 emu_alloc_init(state, ADMITTED_MEMPOOL_SIZE, ADMITTED_RING_SIZE,

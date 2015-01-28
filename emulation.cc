@@ -113,6 +113,9 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	Router *rtr;
 	struct topology_args topo_args;
 
+	printf("SINGLE RACK topology with %d routers and %d endpoints\n",
+			EMU_NUM_ROUTERS, EMU_NUM_ENDPOINTS);
+
 	/* initialize rings for routers and endpoints */
 	pq = 0;
 	q_router_ingress = packet_queues[pq++];
@@ -139,6 +142,20 @@ inline void construct_single_rack_topology(struct emu_state *state,
 }
 #endif
 
+/* configure the topology of endpoints and routers */
+inline void construct_topology(struct emu_state *state,
+		struct fp_ring **packet_queues, EndpointDriver **endpoint_drivers,
+		RouterDriver **router_drivers, RouterType r_type, void *r_args,
+		EndpointType e_type, void *e_args) {
+#if defined(SINGLE_RACK_TOPOLOGY)
+	/* construct topology: 1 router with 1 rack of endpoints */
+	construct_single_rack_topology(state, packet_queues, endpoint_drivers,
+			router_drivers, r_type, r_args, e_type, e_args);
+#else
+#error "unrecognized topology"
+#endif
+}
+
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
@@ -163,25 +180,22 @@ void emu_init_state(struct emu_state *state,
 	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->comm_state.q_resets[0] = packet_queues[pq++];
 
-#if defined(SINGLE_RACK_TOPOLOGY)
-	/* construct topology: 1 router with 1 rack of endpoints */
-	construct_single_rack_topology(state, &packet_queues[pq],
-			&endpoint_drivers[0], &router_drivers[0], r_type, r_args, e_type,
-			e_args);
-#else
-#error "unrecognized topology"
-#endif
+	/* initialize the topology */
+	construct_topology(state, &packet_queues[pq], &endpoint_drivers[0],
+			&router_drivers[0], r_type, r_args, e_type, e_args);
 
 	/* initialize cores and assign endpoints and routers to them */
-#if (ALGO_N_CORES == 2)
-	/* 1 core for endpoints, 1 for router */
+#if (ALGO_N_CORES == (EMU_NUM_ROUTERS + EMU_NUM_ENDPOINT_GROUPS))
+	/* 1 core for each router and each endpoint group */
 	state->cores[0] = new EmulationCore(state, endpoint_drivers, NULL,
 			EMU_NUM_ENDPOINT_GROUPS, 0, 0);
 	state->cores[1] = new EmulationCore(state, NULL, router_drivers, 0,
 			EMU_NUM_ROUTERS, 1);
-#else
+#elif (ALGO_N_CORES == 1)
 	state->cores[0] = new EmulationCore(state, endpoint_drivers,
 			router_drivers, EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS, 0);
+#else
+#error "no specified way to assign this number of routers and endpoint groups to available cores"
 #endif
 }
 

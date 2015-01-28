@@ -11,6 +11,7 @@
 #include <rte_string_fns.h>
 #include <pthread.h>
 #include <sched.h>
+#include <math.h>
 
 #include "admission_core_common.h"
 #include "admission_log.h"
@@ -25,12 +26,17 @@
 #include "../graph-algo/algo_config.h"
 
 #define TIMESLOTS_PER_ONE_WAY_DELAY 4
+#define TIMESLOTS_PER_TIME_SYNC	64
 
 struct emu_state g_emu_state;
 
 struct rte_mempool* admitted_traffic_pool[NB_SOCKETS];
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 struct rte_ring *packet_queues[EMU_NUM_PACKET_QS];
+
+#ifndef NSEC_PER_SEC
+#define NSEC_PER_SEC (1000*1000*1000)
+#endif
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out)
 {
@@ -152,7 +158,13 @@ int exec_emu_admission_core(void *void_cmd_p)
 	int ret;
 	uint64_t logical_timeslot = cmd->start_timeslot;
 	uint64_t start_time_first_timeslot, time_now, tslot;
-        int64_t timeslots_behind;
+	int64_t timeslots_behind;
+    int16_t i;
+	/* calculate shift and mul for the rdtsc */
+	double tslot_len_seconds = ((double)(1 << TIMESLOT_SHIFT)) / ((double)TIMESLOT_MUL * NSEC_PER_SEC);
+    double tslot_len_rdtsc_cycles = tslot_len_seconds * rte_get_timer_hz();
+    uint32_t rdtsc_shift = (uint32_t)log(tslot_len_rdtsc_cycles) + 12;
+    uint32_t rdtsc_mul = ((double)(1 << rdtsc_shift)) / tslot_len_rdtsc_cycles;
 
 	/* set thread priority to max */
 /*	pthread_t this_thread = pthread_self();
@@ -184,22 +196,33 @@ int exec_emu_admission_core(void *void_cmd_p)
 			admission_log_core_skipped_tslots(timeslots_behind);
 		}*/
 
-		/* pace emulation so that timeslots arrive at endpoints just in time */
-		while (tslot < logical_timeslot - TIMESLOTS_PER_ONE_WAY_DELAY) {
-			admission_log_core_ahead();
-			time_now = fp_get_time_ns();
-			tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+		/* re-calibrate clock */
+		uint64_t real_time = fp_get_time_ns();
+		uint64_t rdtsc_time = rte_get_timer_cycles();
+		uint64_t real_tslot = (real_time * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+		uint64_t rdtsc_tslot = (rdtsc_time * rdtsc_mul) >> rdtsc_shift;
+		tslot = real_tslot;
+
+		for (i = 0; i < TIMESLOTS_PER_TIME_SYNC; i++) {
+
+			/* pace emulation so that timeslots arrive at endpoints just in time */
+			while (tslot < logical_timeslot - TIMESLOTS_PER_ONE_WAY_DELAY) {
+				admission_log_core_ahead();
+				rdtsc_time = rte_get_timer_cycles();
+				tslot = ((rdtsc_time * rdtsc_mul) >> rdtsc_shift) +
+						(real_tslot - rdtsc_tslot);
+			}
+
+			admission_log_allocation_begin(logical_timeslot,
+						       start_time_first_timeslot);
+
+			/* perform allocation on this core */
+			core->step();
+
+			admission_log_allocation_end(logical_timeslot);
+
+			logical_timeslot += 1;
 		}
-
-		admission_log_allocation_begin(logical_timeslot,
-					       start_time_first_timeslot);
-
-		/* perform allocation on this core */
-		core->step();
-
-		admission_log_allocation_end(logical_timeslot);
-
-		logical_timeslot += 1;
 	}
 
 	return 0;

@@ -2,8 +2,8 @@
 
 # check the arguments
 if [ "$#" -ne 1 ]; then
-    # set default value of the mask, for 6 cores
-    MASK=7e
+    # set default value of the mask, for 7 cores
+    MASK=fe
 else
     MASK="$1"
 fi

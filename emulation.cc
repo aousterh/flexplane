@@ -156,6 +156,34 @@ inline void construct_topology(struct emu_state *state,
 #endif
 }
 
+/* map drivers to cores based on number of cores available */
+inline void assign_components_to_cores(struct emu_state *state,
+		EndpointDriver **epg_drivers, RouterDriver **router_drivers) {
+	uint16_t core_index = 0;
+	uint16_t i;
+
+#if (ALGO_N_CORES == (EMU_NUM_ROUTERS + EMU_NUM_ENDPOINT_GROUPS))
+	/* put 1 router or endpoint group on each core */
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		state->cores[core_index] = new EmulationCore(state, &epg_drivers[i],
+				NULL, 1, 0, core_index);
+		core_index++;
+	}
+	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		state->cores[core_index] = new EmulationCore(state, NULL,
+				&router_drivers[i], 0, 1, core_index);
+		core_index++;
+	}
+#elif (ALGO_N_CORES == 1)
+	/* assign everything to one core */
+	state->cores[core_index] = new EmulationCore(state, epg_drivers,
+			router_drivers, EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS,
+			core_index);
+#else
+#error "no specified way to assign this number of routers and endpoint groups to available cores"
+#endif
+}
+
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
@@ -184,19 +212,8 @@ void emu_init_state(struct emu_state *state,
 	construct_topology(state, &packet_queues[pq], &endpoint_drivers[0],
 			&router_drivers[0], r_type, r_args, e_type, e_args);
 
-	/* initialize cores and assign endpoints and routers to them */
-#if (ALGO_N_CORES == (EMU_NUM_ROUTERS + EMU_NUM_ENDPOINT_GROUPS))
-	/* 1 core for each router and each endpoint group */
-	state->cores[0] = new EmulationCore(state, endpoint_drivers, NULL,
-			EMU_NUM_ENDPOINT_GROUPS, 0, 0);
-	state->cores[1] = new EmulationCore(state, NULL, router_drivers, 0,
-			EMU_NUM_ROUTERS, 1);
-#elif (ALGO_N_CORES == 1)
-	state->cores[0] = new EmulationCore(state, endpoint_drivers,
-			router_drivers, EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS, 0);
-#else
-#error "no specified way to assign this number of routers and endpoint groups to available cores"
-#endif
+	/* assign endpoints and routers to cores */
+	assign_components_to_cores(state, endpoint_drivers, router_drivers);
 }
 
 void emu_cleanup(struct emu_state *state) {

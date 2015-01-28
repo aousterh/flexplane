@@ -47,12 +47,12 @@ void ProbDropQueueManager::enqueue(struct emu_packet *pkt,
  */
 ProbDropRouter::ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params,
 		struct queue_bank_stats *stats)
-    : m_bank(EMU_ROUTER_NUM_PORTS, 1, PROBDROP_QUEUE_CAPACITY, stats),
-      m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
+    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, PROBDROP_QUEUE_CAPACITY, stats),
+      m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, probdrop_params),
       m_sch(&m_bank),
-      ProbDropRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS)
+      ProbDropRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}
 
 void ProbDropRouter::assign_to_core(Dropper *dropper,

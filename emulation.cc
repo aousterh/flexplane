@@ -98,17 +98,48 @@ void EmulationCore::cleanup() {
 	delete m_out;
 }
 
+/* construct a topology with 1 rack - 1 router connected to all endpoints */
+inline void construct_single_rack_topology(struct emu_state *state,
+		struct fp_ring **packet_queues, EndpointDriver **endpoint_drivers,
+		RouterDriver **router_drivers, RouterType r_type, void *r_args,
+		EndpointType e_type, void *e_args)
+{
+	uint32_t pq;
+	struct fp_ring	*q_epg_ingress;
+	struct fp_ring	*q_router_ingress;
+	EndpointGroup *epg;
+	Router *rtr;
+	struct topology_args topo_args;
+
+	/* initialize rings for routers and endpoints */
+	pq = 0;
+	q_router_ingress = packet_queues[pq++];
+	q_epg_ingress = packet_queues[pq++];
+
+	/* initialize the routers */
+	topo_args.func = TOR_ROUTER;
+	topo_args.rack_index = 0;
+	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 0,
+			&state->queue_bank_stats);
+	assert(rtr != NULL);
+	router_drivers[0] = new RouterDriver(rtr, q_router_ingress, q_epg_ingress);
+
+	/* initialize all the endpoints in one endpoint group */
+	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS, 0,
+			e_args);
+	assert(epg != NULL);
+	endpoint_drivers[0] =
+			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
+					q_router_ingress, q_epg_ingress,
+					state->comm_state.q_resets[0], epg);
+}
+
 void emu_init_state(struct emu_state *state,
 		struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
 	    struct fp_ring **packet_queues, RouterType r_type, void *r_args,
 		EndpointType e_type, void *e_args) {
 	uint32_t i, pq;
-	uint32_t size;
-	EndpointGroup *epg;
-	Router *rtr;
-	struct fp_ring	*q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
-	struct fp_ring	*q_router_ingress[EMU_NUM_ROUTERS];
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
 	EmulationOutput *out;
@@ -127,33 +158,10 @@ void emu_init_state(struct emu_state *state,
 	state->comm_state.q_epg_new_pkts[0] = packet_queues[pq++];
 	state->comm_state.q_resets[0] = packet_queues[pq++];
 
-
 	/* construct topology: 1 router with 1 rack of endpoints */
-
-	/* initialize rings for routers and endpoints */
-	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		q_router_ingress[i] = packet_queues[pq++];
-	}
-	q_epg_ingress[0] = packet_queues[pq++];
-
-	/* initialize all the routers */
-	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		rtr = RouterFactory::NewRouter(r_type, r_args, i,
-				&state->queue_bank_stats);
-		assert(rtr != NULL);
-		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[0],
-				q_epg_ingress[0]);
-	}
-
-	/* initialize all the endpoints in one endpoint group */
-	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS, 0,
+	construct_single_rack_topology(state, &packet_queues[pq],
+			&endpoint_drivers[0], &router_drivers[0], r_type, r_args, e_type,
 			e_args);
-	assert(epg != NULL);
-	endpoint_drivers[0] =
-			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
-					q_router_ingress[0], q_epg_ingress[0],
-					state->comm_state.q_resets[0], epg);
-
 
 	/* initialize cores and assign endpoints and routers to them */
 #if (ALGO_N_CORES == 2)

@@ -102,12 +102,12 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
  */
 REDRouter::REDRouter(uint16_t id, struct red_args *red_params,
 		struct queue_bank_stats *stats)
-    : m_bank(EMU_ROUTER_NUM_PORTS, 1, RED_QUEUE_CAPACITY, stats),
-      m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
+    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, RED_QUEUE_CAPACITY, stats),
+      m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, red_params),
       m_sch(&m_bank),
-      REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS)
+      REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}
 
 void REDRouter::assign_to_core(Dropper *dropper,

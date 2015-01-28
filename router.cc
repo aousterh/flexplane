@@ -12,17 +12,17 @@
 #include <assert.h>
 #include "output.h"
 
-Router *RouterFactory::NewRouter(enum RouterType type, void *args, uint16_t id,
+Router *RouterFactory::NewRouter(enum RouterType type, void *args,
+		struct topology_args *topo_args, uint16_t id,
 		struct queue_bank_stats *stats)
 {
-  uint16_t q_capacity;
+	struct drop_tail_args *dt_args;
 	switch (type) {
 	case (R_DropTail):
-          q_capacity =   (args == NULL)
-                       ? 128
-		       : ((struct drop_tail_args *)args)->q_capacity;
-		return new DropTailRouter(q_capacity, stats);
-
+		assert(args != NULL);
+		dt_args = (struct drop_tail_args *) args;
+		assert(topo_args->func == TOR_ROUTER); /* for now */
+		return new DropTailRouter(dt_args->q_capacity, stats);
 	case (R_RED):
 		assert(args != NULL);
 		return new REDRouter(id, (struct red_args *)args, stats);

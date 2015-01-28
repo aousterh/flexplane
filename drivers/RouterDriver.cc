@@ -18,7 +18,7 @@
 #include "../api_impl.h"
 #include "../graph-algo/random.h"
 
-#define ROUTER_MAX_BURST	(EMU_ROUTER_NUM_PORTS * 2)
+#define ROUTER_MAX_BURST	(EMU_ENDPOINTS_PER_RACK * 2)
 
 
 RouterDriver::RouterDriver(Router* router, struct fp_ring* q_to_router,
@@ -48,21 +48,21 @@ void RouterDriver::cleanup() {
 void RouterDriver::step() {
 	uint32_t i, j, n_pkts;
 	struct emu_packet *pkt_ptrs[ROUTER_MAX_BURST];
-	assert(ROUTER_MAX_BURST >= EMU_ROUTER_NUM_PORTS);
+	assert(ROUTER_MAX_BURST >= EMU_ENDPOINTS_PER_RACK);
 
 	/* fetch packets to send from router to endpoints */
 #ifdef EMU_NO_BATCH_CALLS
 	n_pkts = 0;
-	for (uint32_t i = 0; i < EMU_ROUTER_NUM_PORTS; i++) {
+	for (uint32_t i = 0; i < EMU_ENDPOINTS_PER_RACK; i++) {
 		pkt_ptrs[n_pkts] = m_router->pull(i);
 
 		if (pkt_ptrs[n_pkts] != NULL)
 			n_pkts++;
 	}
 #else
-	n_pkts = m_router->pull_batch(pkt_ptrs, EMU_ROUTER_NUM_PORTS);
+	n_pkts = m_router->pull_batch(pkt_ptrs, EMU_ENDPOINTS_PER_RACK);
 #endif
-	assert(n_pkts <= EMU_ROUTER_NUM_PORTS);
+	assert(n_pkts <= EMU_ENDPOINTS_PER_RACK);
 	/* send packets to endpoint groups */
 	while (fp_ring_enqueue_bulk(m_q_from_router, (void **) &pkt_ptrs[0],
 			n_pkts) == -ENOBUFS) {

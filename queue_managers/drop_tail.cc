@@ -19,12 +19,12 @@ DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 
 DropTailRouter::DropTailRouter(uint16_t q_capacity,
 		struct queue_bank_stats *stats)
-	: m_bank(EMU_ROUTER_NUM_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
-	  m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
+	: m_bank(EMU_ENDPOINTS_PER_RACK, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
+	  m_rt(EMU_RACK_SHIFT, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
 	  m_sch(&m_bank),
-	  DropTailRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS)
+	  DropTailRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}
 
 DropTailRouter::~DropTailRouter() {}

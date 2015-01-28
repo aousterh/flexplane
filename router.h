@@ -16,6 +16,17 @@ enum RouterType {
     R_DropTail, R_RED, R_DCTCP
 };
 
+enum RouterFunction {
+	TOR_ROUTER,
+	CORE_ROUTER
+};
+
+struct topology_args {
+	enum RouterFunction func;
+    uint32_t rack_index;	/* tor router only */
+    uint32_t links_per_tor; /* core router only */
+};
+
 #ifdef __cplusplus
 class Dropper;
 /**
@@ -43,8 +54,9 @@ public:
  */
 class RouterFactory {
 public:
-    static Router *NewRouter(enum RouterType type, void *args, uint16_t id,
-                             struct queue_bank_stats *stats);
+    static Router *NewRouter(enum RouterType type, void *args,
+    		struct topology_args *topo_args, uint16_t id,
+    		struct queue_bank_stats *stats);
 };
 #endif
 

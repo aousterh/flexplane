@@ -45,12 +45,12 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
  */
 DCTCPRouter::DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params,
 		struct queue_bank_stats *stats)
-    : m_bank(EMU_ROUTER_NUM_PORTS, 1, DCTCP_QUEUE_CAPACITY, stats),
-      m_rt(16, 0, EMU_ROUTER_NUM_PORTS, 0),
+    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, DCTCP_QUEUE_CAPACITY, stats),
+      m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, dctcp_params),
       m_sch(&m_bank),
-      DCTCPRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ROUTER_NUM_PORTS)
+      DCTCPRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}
 
 DCTCPRouter::~DCTCPRouter() {}

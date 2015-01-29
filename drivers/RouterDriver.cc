@@ -67,10 +67,15 @@ void RouterDriver::step() {
 				n_pkts++;
 		}
 #else
-		n_pkts = m_router->pull_batch(pkt_ptrs, EMU_ENDPOINTS_PER_RACK*2,
+		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,
 				&m_port_masks[j]);
 #endif
 		assert(n_pkts <= EMU_ENDPOINTS_PER_RACK);
+#ifndef NDEBUG
+		for (uint32_t i = 0; i < n_pkts; i++) {
+			assert(pkt_ptrs[i] != NULL);
+		}
+#endif
 		/* send packets to endpoint groups */
 		while (fp_ring_enqueue_bulk(m_q_from_router[j], (void **) &pkt_ptrs[0],
 				n_pkts) == -ENOBUFS) {
@@ -84,6 +89,7 @@ void RouterDriver::step() {
 	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(m_q_to_router,
 			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
+	assert(n_pkts <= ROUTER_MAX_BURST);
 	/* shuffle packets to ensure router doesn't discriminate against some
 	 * endpoints */
 	for (uint32_t i = n_pkts; i > 1; i--) {

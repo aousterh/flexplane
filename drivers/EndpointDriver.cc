@@ -80,6 +80,11 @@ inline void EndpointDriver::pull() {
 	/* pull a batch of packets from the epg, enqueue to router */
 	n_pkts = m_epg->pull_batch(&pkts[0], EMU_ENDPOINTS_PER_EPG);
 	assert(n_pkts <= EMU_ENDPOINTS_PER_EPG);
+#ifndef NDEBUG
+	for (uint32_t i = 0; i < n_pkts; i++) {
+		assert(pkts[i] != NULL);
+	}
+#endif
 	while (fp_ring_enqueue_bulk(m_q_to_router,
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
 		/* no space in ring. log and retry. */

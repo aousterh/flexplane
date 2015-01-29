@@ -17,8 +17,9 @@
 #include "../api.h"
 #include "../api_impl.h"
 
-#define MAX_PUSH_BURST			(EMU_NUM_ENDPOINTS * 2)
-#define MAX_NEW_PACKET_BURST	(EMU_NUM_ENDPOINTS * 4)
+#define MAX_PUSH_BURST			(EMU_ENDPOINTS_PER_RACK)
+#define MAX_PULL_BURST			(EMU_ENDPOINTS_PER_RACK)
+#define MAX_NEW_PACKET_BURST	(EMU_ENDPOINTS_PER_RACK)
 
 EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 		struct fp_ring* q_to_router, struct fp_ring* q_from_router,
@@ -83,11 +84,11 @@ inline void EndpointDriver::push() {
  */
 inline void EndpointDriver::pull() {
 	uint32_t n_pkts, i;
-	struct emu_packet *pkts[EMU_ENDPOINTS_PER_EPG];
+	struct emu_packet *pkts[MAX_PULL_BURST];
 
 	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = m_epg->pull_batch(&pkts[0], EMU_ENDPOINTS_PER_EPG);
-	assert(n_pkts <= EMU_ENDPOINTS_PER_EPG);
+	n_pkts = m_epg->pull_batch(&pkts[0], MAX_PULL_BURST);
+	assert(n_pkts <= MAX_PULL_BURST);
 	while (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_to_router,
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
 		/* no space in ring. log and retry. */

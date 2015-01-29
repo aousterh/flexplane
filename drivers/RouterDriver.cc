@@ -18,7 +18,7 @@
 #include "../api_impl.h"
 #include "../graph-algo/random.h"
 
-#define ROUTER_MAX_BURST	(EMU_ENDPOINTS_PER_RACK * 2)
+#define ROUTER_MAX_BURST	(EMU_ENDPOINTS_PER_RACK)
 
 
 RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
@@ -61,7 +61,7 @@ void RouterDriver::step() {
 	for (j = 0; j < m_neighbors; j++) {
 #ifdef EMU_NO_BATCH_CALLS
 		n_pkts = 0;
-		for (uint32_t i = 0; i < EMU_ENDPOINTS_PER_RACK; i++) {
+		for (uint32_t i = 0; i < ROUTER_MAX_BURST; i++) {
 			pkt_ptrs[n_pkts] = m_router->pull(i);
 
 			if (pkt_ptrs[n_pkts] != NULL)
@@ -71,12 +71,12 @@ void RouterDriver::step() {
 		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,
 				&m_port_masks[j]);
 #endif
-		assert(n_pkts <= EMU_ENDPOINTS_PER_RACK);
 #ifndef NDEBUG
 		for (uint32_t i = 0; i < n_pkts; i++) {
 			assert(pkt_ptrs[i] != NULL);
 		}
 #endif
+		assert(n_pkts <= ROUTER_MAX_BURST);
 		/* send packets to endpoint groups */
 		while (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_from_router[j],
 				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {

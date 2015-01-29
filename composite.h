@@ -151,8 +151,8 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 	uint64_t *non_empty_port_mask = sch->non_empty_port_mask();
 	uint32_t res = 0;
 
-	if (unlikely(n_pkts < n_elems))
-		throw std::runtime_error("pull_batch should be passed space for at least n_elems packets");
+/*	if (unlikely(n_pkts < n_elems))
+		throw std::runtime_error("pull_batch should be passed space for at least n_elems packets");*/
 
 	for (uint32_t i = 0; i < ((n_elems + 63) >> 6); i++) {
 		/* only pull from non-empty ports that are requested right now */

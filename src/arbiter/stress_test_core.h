@@ -6,8 +6,8 @@
 #include <rte_ip.h>
 #include "../graph-algo/admissible.h"
 
-#define MAX_ENQUEUES_PER_LOOP		1024
-#define MAX_ADMITTED_PER_LOOP		(4*BATCH_SIZE)
+#define MAX_ENQUEUES_PER_LOOP					1024
+#define STRESS_TEST_MAX_ADMITTED_PER_LOOP		(32*BATCH_SIZE)
 
 /* The buffer size when writing to q_head */
 #define Q_HEAD_WRITE_BUFFER_SIZE		(32*1024)

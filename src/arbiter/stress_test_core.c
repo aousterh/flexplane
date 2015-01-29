@@ -50,13 +50,13 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 {
 	int rc;
 	int i;
-	struct admitted_traffic* admitted[MAX_ADMITTED_PER_LOOP];
+	struct admitted_traffic* admitted[STRESS_TEST_MAX_ADMITTED_PER_LOOP];
 	uint16_t partition;
 	uint64_t current_timeslot;
 
 	/* Process newly allocated timeslots */
 	rc = rte_ring_dequeue_burst(q_admitted, (void **) &admitted[0],
-								MAX_ADMITTED_PER_LOOP);
+								STRESS_TEST_MAX_ADMITTED_PER_LOOP);
 	if (unlikely(rc < 0)) {
 		/* error in dequeuing.. should never happen?? */
 		comm_log_dequeue_admitted_failed(rc);

@@ -53,6 +53,9 @@ EmulationCore::EmulationCore(struct emu_state *state,
 	/* TODO: do this properly by making the APIs accessible from C, or moving
 	 * the log core to C++ */
 	state->core_stats[core_index] = &m_stat;
+
+	/* initialize log to zeroes */
+	memset(&m_stat, 0, sizeof(struct emu_admission_core_statistics));
 }
 
 void EmulationCore::step() {

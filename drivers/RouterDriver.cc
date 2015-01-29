@@ -37,9 +37,10 @@ RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
 }
 
 void RouterDriver::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
+		struct emu_admission_core_statistics *stat, uint16_t core_index) {
 	m_stat = stat;
 	m_router->assign_to_core(dropper, stat);
+	m_core_index = core_index;
 }
 
 void RouterDriver::cleanup() {
@@ -77,15 +78,19 @@ void RouterDriver::step() {
 		}
 #endif
 		/* send packets to endpoint groups */
-		while (n_pkts > 0 &&
-				fp_ring_enqueue_bulk(m_q_from_router[j], (void **) &pkt_ptrs[0],
-				n_pkts) == -ENOBUFS) {
+		while (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_from_router[j],
+				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
 			adm_log_emu_send_packets_failed(m_stat, n_pkts);
 		}
 		adm_log_emu_router_sent_packets(m_stat, n_pkts);
-	}
+		adm_log_emu_router_driver_pulled(m_stat, n_pkts);
 
+#ifndef NDEBUG
+		printf("RouterDriver on core %d pulled %d packets with mask %llx\n",
+			m_core_index, n_pkts, m_port_masks[j]);
+#endif
+	}
 
 	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(m_q_to_router,
@@ -109,6 +114,12 @@ void RouterDriver::step() {
 	}
 #else
 	m_router->push_batch(&pkt_ptrs[0], n_pkts);
+#endif
+	adm_log_emu_router_driver_pushed(m_stat, n_pkts);
+
+#ifndef NDEBUG
+	printf("RouterDriver on core %d pushed %d packets\n", m_core_index,
+			n_pkts);
 #endif
 }
 

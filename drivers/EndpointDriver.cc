@@ -31,9 +31,10 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 {}
 
 void EndpointDriver::assign_to_core(EmulationOutput *out,
-		struct emu_admission_core_statistics *stat) {
+		struct emu_admission_core_statistics *stat, uint16_t core_index) {
 	m_stat = stat;
 	m_epg->assign_to_core(out, stat);
+	m_core_index = core_index;
 }
 
 void EndpointDriver::cleanup() {
@@ -68,6 +69,13 @@ inline void EndpointDriver::push() {
 	n_pkts = fp_ring_dequeue_burst(m_q_from_router,
 			(void **) &pkts[0], MAX_PUSH_BURST);
 	m_epg->push_batch(&pkts[0], n_pkts);
+
+	adm_log_emu_endpoint_driver_pushed(m_stat, n_pkts);
+
+#ifndef NDEBUG
+	printf("EndpointDriver on core %d pushed %d packets\n", m_core_index,
+			n_pkts);
+#endif
 }
 
 /**
@@ -86,6 +94,12 @@ inline void EndpointDriver::pull() {
 		adm_log_emu_send_packets_failed(m_stat, n_pkts);
 	}
 	adm_log_emu_endpoint_sent_packets(m_stat, n_pkts);
+	adm_log_emu_endpoint_driver_pulled(m_stat, n_pkts);
+
+#ifndef NDEBUG
+	printf("EndpointDriver on core %d pulled %d packets\n", m_core_index,
+			n_pkts);
+#endif
 }
 
 /**
@@ -100,4 +114,10 @@ inline void EndpointDriver::process_new()
 	n_pkts = fp_ring_dequeue_burst(m_q_new_packets,
 			(void **) &pkts, MAX_NEW_PACKET_BURST);
 	m_epg->new_packets(&pkts[0], n_pkts);
+	adm_log_emu_endpoint_driver_processed_new(m_stat, n_pkts);
+
+#ifndef NDEBUG
+	printf("EndpointDriver on core %d processed %d new packets\n",
+			m_core_index, n_pkts);
+#endif
 }

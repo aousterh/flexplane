@@ -55,7 +55,8 @@ public:
 	 * @param port: port to enqueue packet
 	 * @param queue: index of per-port queue where packet should be enqueued
 	 */
-	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue) {THROW;}
+	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
+			uint64_t cur_time) {THROW;}
 
 	/**
 	 * Prepare this queue manager to run on a specific core.
@@ -103,10 +104,11 @@ public:
     CompositeRouter(RT *rt, CLA *cla, QM *qm, SCH *sch, uint32_t n_ports);
     virtual ~CompositeRouter();
 
-    virtual void push(struct emu_packet *packet);
+    virtual void push(struct emu_packet *packet, uint64_t cur_time);
     virtual struct emu_packet *pull(uint16_t port);
 
-    virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
+    virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts,
+    		uint64_t cur_time);
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
     		uint64_t *port_masks);
 
@@ -129,7 +131,8 @@ public:
 			uint32_t first_endpoint_id, uint32_t n_endpoints);
 	virtual ~CompositeEndpointGroup();
 
-	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts);
+	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts,
+			uint64_t cur_time);
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
 
@@ -151,8 +154,8 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 	uint64_t *non_empty_port_mask = sch->non_empty_port_mask();
 	uint32_t res = 0;
 
-	if (unlikely(n_pkts < n_elems))
-		throw std::runtime_error("pull_batch should be passed space for at least n_elems packets");
+/*	if (unlikely(n_pkts < n_elems))
+		throw std::runtime_error("pull_batch should be passed space for at least n_elems packets");*/
 
 	for (uint32_t i = 0; i < ((n_elems + 63) >> 6); i++) {
 		/* only pull from non-empty ports that are requested right now */
@@ -195,16 +198,18 @@ CompositeRouter<RT,CLA,QM,SCH>::~CompositeRouter() {}
 /** helper for common functionality in push and push_batch */
 template <class RT, class CLA, class QM>
 inline  __attribute__((always_inline))
-void composite_push(RT *rt, CLA *cla, QM *qm, struct emu_packet *packet)
+void composite_push(RT *rt, CLA *cla, QM *qm, struct emu_packet *packet,
+		uint64_t cur_time)
 {
 	uint32_t port = rt->route(packet);
 	uint32_t queue = cla->classify(packet, port);
-	qm->enqueue(packet, port, queue);
+	qm->enqueue(packet, port, queue, cur_time);
 }
 
 template < class RT, class CLA, class QM, class SCH >
-void CompositeRouter<RT,CLA,QM,SCH>::push(struct emu_packet *packet)
-	{ composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, packet); }
+void CompositeRouter<RT,CLA,QM,SCH>::push(struct emu_packet *packet,
+		uint64_t cur_time)
+	{ composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, packet, cur_time); }
 
 template < class RT, class CLA, class QM, class SCH >
 struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port)
@@ -214,10 +219,10 @@ struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port)
 
 template < class RT, class CLA, class QM, class SCH >
 void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
-		uint32_t n_pkts)
+		uint32_t n_pkts, uint64_t cur_time)
 {
 	for (uint32_t i = 0; i < n_pkts; i++)
-		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i]);
+		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time);
 }
 
 template < class RT, class CLA, class QM, class SCH >
@@ -249,12 +254,12 @@ inline CompositeEndpointGroup<CLA, QM, SCH, SINK>::~CompositeEndpointGroup() {}
 
 template<class CLA, class QM, class SCH, class SINK>
 inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::new_packets(
-		struct emu_packet** pkts, uint32_t n_pkts)
+		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time)
 {
 	for (uint32_t i = 0; i < n_pkts; i++) {
 		uint32_t port = pkts[i]->src - m_first_endpoint_id;
 		uint32_t queue = m_cla->classify(pkts[i], port);
-		m_qm->enqueue(pkts[i], port, queue);
+		m_qm->enqueue(pkts[i], port, queue, cur_time);
 	}
 }
 

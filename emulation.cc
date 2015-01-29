@@ -26,40 +26,36 @@ emu_state *g_state; /* global emulation state */
 EmulationCore::EmulationCore(struct emu_state *state,
 		EndpointDriver **epg_drivers, RouterDriver **router_drivers,
 		uint16_t n_epgs, uint16_t n_rtrs, uint16_t core_index)
+	: m_core_index(core_index)
 {
 	Dropper *dropper;
-	uint16_t start_n_admitted = N_ADMITTEDS_PER_OUTPUT;
 	uint32_t i;
-
-#if	(ALGO_N_CORES == 2) && (core_index == 1)
-	/* different cores start with different numbers of admitted structs,
-	 * to reduce contention over the mempool */
-	start_n_admitted = N_ADMITTEDS_PER_OUTPUT >> 1;
-#endif
 
 	/* initialize the output and dropper for this core */
 	m_out = new EmulationOutput(state->q_admitted_out,
 			state->admitted_traffic_mempool, state->packet_mempool,
-			&m_stat, start_n_admitted);
+			&m_stat);
 	dropper = new Dropper(*m_out, &state->queue_bank_stats);
 
 	m_n_epgs = n_epgs;
 	m_n_rtrs = n_rtrs;
 
-	/* only 1 core for now - must handle all endpoints and routers */
 	for (i = 0; i < n_epgs; i++) {
 		m_endpoint_drivers[i] = epg_drivers[i];
-		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat);
+		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat, core_index);
 	}
 
 	for (i = 0; i < n_rtrs; i++) {
 		m_router_drivers[i] = router_drivers[i];
-		m_router_drivers[i]->assign_to_core(dropper, &m_stat);
+		m_router_drivers[i]->assign_to_core(dropper, &m_stat, core_index);
 	}
 
 	/* TODO: do this properly by making the APIs accessible from C, or moving
 	 * the log core to C++ */
 	state->core_stats[core_index] = &m_stat;
+
+	/* initialize log to zeroes */
+	memset(&m_stat, 0, sizeof(struct emu_admission_core_statistics));
 }
 
 void EmulationCore::step() {

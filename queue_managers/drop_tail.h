@@ -41,7 +41,8 @@ public:
 			enum component_type type);
 	inline void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
-	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
+			uint64_t cur_time);
 
 private:
 	/** the QueueBank where packets are stored */
@@ -67,7 +68,7 @@ inline void DropTailQueueManager::assign_to_core(Dropper *dropper,
 }
 
 inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
-		uint32_t port, uint32_t queue)
+		uint32_t port, uint32_t queue, uint64_t cur_time)
 {
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */

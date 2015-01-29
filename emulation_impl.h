@@ -36,6 +36,10 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	comm_state = &state->comm_state;
 	q_epg_new_pkts = comm_state->q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
 
+#ifndef NDEBUG
+	printf("adding backlog from %d to %d, amount %d\n", src, dst, amount);
+#endif
+
 	/* create and enqueue a packet for each MTU, do this in batches */
 	struct emu_packet *pkt_ptrs[EMU_ADD_BACKLOG_BATCH_SIZE];
 	while (amount > 0) {

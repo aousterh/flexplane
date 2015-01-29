@@ -18,14 +18,15 @@
 #include "../api_impl.h"
 #include "../graph-algo/random.h"
 
-#define ROUTER_MAX_BURST	(EMU_ENDPOINTS_PER_RACK * 2)
+#define ROUTER_MAX_BURST	(EMU_ENDPOINTS_PER_RACK)
 
 
 RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
 		struct fp_ring **q_from_router, uint64_t *masks, uint16_t n_neighbors)
 	: m_router(router),
 	  m_q_to_router(q_to_router),
-	  m_neighbors(n_neighbors)
+	  m_neighbors(n_neighbors),
+	  m_cur_time(0)
 {
 	uint16_t i;
 
@@ -37,9 +38,10 @@ RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
 }
 
 void RouterDriver::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
+		struct emu_admission_core_statistics *stat, uint16_t core_index) {
 	m_stat = stat;
 	m_router->assign_to_core(dropper, stat);
+	m_core_index = core_index;
 }
 
 void RouterDriver::cleanup() {
@@ -60,7 +62,7 @@ void RouterDriver::step() {
 	for (j = 0; j < m_neighbors; j++) {
 #ifdef EMU_NO_BATCH_CALLS
 		n_pkts = 0;
-		for (uint32_t i = 0; i < EMU_ENDPOINTS_PER_RACK; i++) {
+		for (uint32_t i = 0; i < ROUTER_MAX_BURST; i++) {
 			pkt_ptrs[n_pkts] = m_router->pull(i);
 
 			if (pkt_ptrs[n_pkts] != NULL)
@@ -70,21 +72,26 @@ void RouterDriver::step() {
 		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,
 				&m_port_masks[j]);
 #endif
-		assert(n_pkts <= EMU_ENDPOINTS_PER_RACK);
 #ifndef NDEBUG
 		for (uint32_t i = 0; i < n_pkts; i++) {
 			assert(pkt_ptrs[i] != NULL);
 		}
 #endif
+		assert(n_pkts <= ROUTER_MAX_BURST);
 		/* send packets to endpoint groups */
-		while (fp_ring_enqueue_bulk(m_q_from_router[j], (void **) &pkt_ptrs[0],
-				n_pkts) == -ENOBUFS) {
+		while (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_from_router[j],
+				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
 			adm_log_emu_send_packets_failed(m_stat, n_pkts);
 		}
 		adm_log_emu_router_sent_packets(m_stat, n_pkts);
-	}
+		adm_log_emu_router_driver_pulled(m_stat, n_pkts);
 
+#ifndef NDEBUG
+		printf("RouterDriver on core %d pulled %d packets with mask %llx\n",
+			m_core_index, n_pkts, m_port_masks[j]);
+#endif
+	}
 
 	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(m_q_to_router,
@@ -107,8 +114,16 @@ void RouterDriver::step() {
 		m_router->push(pkt_ptrs[i]);
 	}
 #else
-	m_router->push_batch(&pkt_ptrs[0], n_pkts);
+	m_router->push_batch(&pkt_ptrs[0], n_pkts, m_cur_time);
 #endif
+	adm_log_emu_router_driver_pushed(m_stat, n_pkts);
+
+#ifndef NDEBUG
+	printf("RouterDriver on core %d pushed %d packets\n", m_core_index,
+			n_pkts);
+#endif
+
+	m_cur_time++;
 }
 
 

@@ -43,7 +43,8 @@ public:
     REDQueueManager(PacketQueueBank *bank, struct red_args *red_params);
 	inline void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
-    void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+    void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
+    		uint64_t cur_time);
     uint8_t red_rules(struct emu_packet *pkt, uint32_t qlen, uint32_t port);
     uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port);
 

@@ -24,7 +24,7 @@ public:
 	 * Prepares this driver to run on a specific core.
 	 */
 	void assign_to_core(EmulationOutput *out,
-			struct emu_admission_core_statistics *stat);
+			struct emu_admission_core_statistics *stat, uint16_t core_index);
 
 	/**
 	 * Emulate a single timeslot
@@ -47,6 +47,8 @@ private:
 	struct fp_ring *m_q_resets;
 	EndpointGroup *m_epg;
 	struct emu_admission_core_statistics	*m_stat;
+	uint16_t m_core_index;
+	uint64_t m_cur_time;
 };
 
 #endif /* DRIVERS_ENDPOINTDRIVER_H_ */

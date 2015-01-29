@@ -45,6 +45,7 @@ class RouterDriver;
  * @m_router_drivers: one driver for each router in the network
  * @m_n_rtrs: number of routers this core controls
  * @m_stats: stats for this core
+ * @m_core_index: index of this core
  */
 class EmulationCore {
 public:
@@ -61,6 +62,7 @@ private:
 	RouterDriver	*m_router_drivers[EMU_NUM_ROUTERS];
 	uint16_t		m_n_rtrs;
 	struct emu_admission_core_statistics m_stat;
+	uint16_t		m_core_index;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 #endif
 

@@ -37,6 +37,13 @@ struct emu_admission_core_statistics {
 	uint64_t endpoint_dropped_packet;
 	uint64_t router_dropped_packet;
 	uint64_t router_marked_packet;
+
+	/* counters used by drivers */
+	uint64_t endpoint_driver_processed_new;
+	uint64_t endpoint_driver_pulled;
+	uint64_t endpoint_driver_pushed;
+	uint64_t router_driver_pulled;
+	uint64_t router_driver_pushed;
 };
 
 /**
@@ -138,6 +145,41 @@ void adm_log_emu_router_marked_packet (
 		struct emu_admission_core_statistics *st) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->router_marked_packet++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_driver_processed_new(
+		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->endpoint_driver_processed_new += n_pkts;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_driver_pulled(
+		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->endpoint_driver_pulled += n_pkts;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_endpoint_driver_pushed(
+		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->endpoint_driver_pushed += n_pkts;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_router_driver_pulled(
+		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->router_driver_pulled += n_pkts;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_router_driver_pushed(
+		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->router_driver_pushed += n_pkts;
 }
 
 /* global admission stats */

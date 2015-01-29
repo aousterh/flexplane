@@ -24,7 +24,7 @@ public:
 	 * Prepares this driver to run on a specific core.
 	 */
 	void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
+			struct emu_admission_core_statistics *stat, uint16_t core_index);
 
 	void step();
 	void cleanup();
@@ -36,6 +36,8 @@ private:
 	uint16_t m_neighbors;
 	struct emu_admission_core_statistics	*m_stat;
 	uint32_t m_random;
+	uint16_t m_core_index;
+	uint64_t m_cur_time;
 };
 
 #endif /* DRIVERS_ROUTERDRIVER_H_ */

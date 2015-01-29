@@ -15,7 +15,8 @@ public:
 	PyQueueManager() {};
 	virtual ~PyQueueManager() {};
 
-	virtual void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue) {}
+	virtual void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
+			uint64_t cur_time) {}
 };
 
 #endif /* QUEUE_MANAGERS_PYQUEUEMANAGER_H_ */

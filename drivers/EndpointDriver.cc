@@ -28,7 +28,8 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 	  m_q_to_router(q_to_router),
 	  m_q_from_router(q_from_router),
 	  m_q_resets(q_resets),
-	  m_epg(epg)
+	  m_epg(epg),
+	  m_cur_time(0)
 {}
 
 void EndpointDriver::assign_to_core(EmulationOutput *out,
@@ -56,6 +57,8 @@ void EndpointDriver::step() {
 	push();
 	pull();
 	process_new();
+
+	m_cur_time++;
 }
 
 /**
@@ -114,7 +117,7 @@ inline void EndpointDriver::process_new()
 	/* dequeue new packets, pass to endpoint group */
 	n_pkts = fp_ring_dequeue_burst(m_q_new_packets,
 			(void **) &pkts, MAX_NEW_PACKET_BURST);
-	m_epg->new_packets(&pkts[0], n_pkts);
+	m_epg->new_packets(&pkts[0], n_pkts, m_cur_time);
 	adm_log_emu_endpoint_driver_processed_new(m_stat, n_pkts);
 
 #ifndef NDEBUG

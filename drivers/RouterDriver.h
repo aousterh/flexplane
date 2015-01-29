@@ -37,6 +37,7 @@ private:
 	struct emu_admission_core_statistics	*m_stat;
 	uint32_t m_random;
 	uint16_t m_core_index;
+	uint64_t m_cur_time;
 };
 
 #endif /* DRIVERS_ROUTERDRIVER_H_ */

@@ -22,7 +22,7 @@ ProbDropQueueManager::ProbDropQueueManager(PacketQueueBank *bank,
 }
 
 void ProbDropQueueManager::enqueue(struct emu_packet *pkt,
-                                     uint32_t port, uint32_t queue)
+							 uint32_t port, uint32_t queue, uint64_t cur_time)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_probdrop_params.q_capacity) {

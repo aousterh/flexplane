@@ -33,7 +33,8 @@ public:
     		struct probdrop_args *probdrop_params);
 	inline void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
-    void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
+    void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
+    		uint64_t cur_time);
 
 private:
     /** the QueueBank where packets are stored */

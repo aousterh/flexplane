@@ -25,7 +25,8 @@ RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
 		struct fp_ring **q_from_router, uint64_t *masks, uint16_t n_neighbors)
 	: m_router(router),
 	  m_q_to_router(q_to_router),
-	  m_neighbors(n_neighbors)
+	  m_neighbors(n_neighbors),
+	  m_cur_time(0)
 {
 	uint16_t i;
 
@@ -113,7 +114,7 @@ void RouterDriver::step() {
 		m_router->push(pkt_ptrs[i]);
 	}
 #else
-	m_router->push_batch(&pkt_ptrs[0], n_pkts);
+	m_router->push_batch(&pkt_ptrs[0], n_pkts, m_cur_time);
 #endif
 	adm_log_emu_router_driver_pushed(m_stat, n_pkts);
 
@@ -121,6 +122,8 @@ void RouterDriver::step() {
 	printf("RouterDriver on core %d pushed %d packets\n", m_core_index,
 			n_pkts);
 #endif
+
+	m_cur_time++;
 }
 
 

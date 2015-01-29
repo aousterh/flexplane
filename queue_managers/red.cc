@@ -25,7 +25,7 @@ REDQueueManager::REDQueueManager(PacketQueueBank *bank,
 }
 
 void REDQueueManager::enqueue(struct emu_packet *pkt,
-                                     uint32_t port, uint32_t queue)
+							 uint32_t port, uint32_t queue, uint64_t cur_time)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
     //    printf("RED qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);

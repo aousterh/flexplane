@@ -29,7 +29,8 @@ public:
 	virtual void assign_to_core(EmulationOutput *out,
 			struct emu_admission_core_statistics *stat) = 0;
 	virtual void reset(uint16_t id) = 0;
-	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts) = 0;
+	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts,
+			uint64_t cur_time) = 0;
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 };

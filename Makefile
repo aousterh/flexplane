@@ -68,6 +68,7 @@ WRAP_HEADERS = \
 	composite.h \
 	classifiers/SingleQueueClassifier.h \
 	classifiers/PyClassifier.h \
+	classifiers/BySourceClassifier.h \
 	queue_managers/PyQueueManager.h \
 	schedulers/SingleQueueScheduler.h \
 	schedulers/RRScheduler.h \

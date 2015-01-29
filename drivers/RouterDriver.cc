@@ -77,7 +77,8 @@ void RouterDriver::step() {
 		}
 #endif
 		/* send packets to endpoint groups */
-		while (fp_ring_enqueue_bulk(m_q_from_router[j], (void **) &pkt_ptrs[0],
+		while (n_pkts > 0 &&
+				fp_ring_enqueue_bulk(m_q_from_router[j], (void **) &pkt_ptrs[0],
 				n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
 			adm_log_emu_send_packets_failed(m_stat, n_pkts);

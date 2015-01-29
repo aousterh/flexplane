@@ -19,6 +19,8 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 
+#define DCTCP_QUEUE_CAPACITY 4096
+
 struct packet_queue;
 
 struct dctcp_args {
@@ -30,8 +32,8 @@ struct dctcp_args {
 class DCTCPQueueManager : public QueueManager {
 public:
     DCTCPQueueManager(PacketQueueBank *bank, struct dctcp_args *dctcp_params);
-	inline void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
+    inline void assign_to_core(Dropper *dropper,
+                               struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue);
 
 private:
@@ -41,7 +43,7 @@ private:
     Dropper *m_dropper;
 
     struct dctcp_args m_dctcp_params;
-	struct emu_admission_core_statistics *m_stat;
+    struct emu_admission_core_statistics *m_stat;
 };
 
 inline void DCTCPQueueManager::assign_to_core(Dropper *dropper,

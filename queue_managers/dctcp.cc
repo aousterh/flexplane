@@ -8,10 +8,8 @@
 #include "queue_managers/dctcp.h"
 #include "api_impl.h"
 
-#define DCTCP_QUEUE_CAPACITY 4096
-
 DCTCPQueueManager::DCTCPQueueManager(PacketQueueBank *bank,
-                                 struct dctcp_args *dctcp_params)
+                                     struct dctcp_args *dctcp_params)
     : m_bank(bank), m_dctcp_params(*dctcp_params)
 {
     if (bank == NULL)
@@ -20,7 +18,7 @@ DCTCPQueueManager::DCTCPQueueManager(PacketQueueBank *bank,
 }
 
 void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
-                                     uint32_t port, uint32_t queue)
+                                uint32_t port, uint32_t queue)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_dctcp_params.q_capacity) {
@@ -32,7 +30,7 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
 
     if (qlen >= m_dctcp_params.K_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
-		adm_log_emu_router_marked_packet(m_stat);
+        adm_log_emu_router_marked_packet(m_stat);
         packet_mark_ecn(pkt);
     }
 

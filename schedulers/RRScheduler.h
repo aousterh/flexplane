@@ -24,7 +24,7 @@ private:
 	uint32_t        random_state; /* first scheduled q (whether or not backlogged; we'll sched first backlogged one following */
 };
 
-inline RRScheduler::PriorityScheduler(PacketQueueBank* bank)
+inline RRScheduler::RRScheduler(PacketQueueBank* bank)
 	: m_bank(bank)
 {
     seed_random(&random_state, time(NULL));
@@ -36,15 +36,17 @@ RRScheduler::schedule(uint32_t port)
 {
 	/* get the non empty queue mask for the port */
 	uint64_t q_mask = m_bank->non_empty_queue_mask(port);
+	uint64_t q_mask_rot =
+		(q_mask >> m_last_sched_index) | (q_mask << (64 - m_last_sched_index));
 	uint64_t q_index;
 
-	asm("bsfq %1,%0" : "=r"(q_index) : "r"(q_mask>>m_last_sched_index));
-	m_last_sched_index += q_index;
+	asm("bsfq %1,%0" : "=r"(q_index) : "r"(q_mask_rot));
+	m_last_sched_index = (m_last_sched_index + q_index) % 64;
 	return m_bank->dequeue(port, m_last_sched_index);
 }
 
-inline uint64_t* PriorityScheduler::non_empty_port_mask() {
+inline uint64_t* RRScheduler::non_empty_port_mask() {
 	return m_bank->non_empty_port_mask();
 }
 
-#endif /* SCHEDULERS_PRIORITYSCHEDULER_H_ */
+#endif /* SCHEDULERS_RRSCHEDULER_H_ */

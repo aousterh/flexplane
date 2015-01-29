@@ -36,12 +36,12 @@ RRScheduler::schedule(uint32_t port)
 {
 	/* get the non empty queue mask for the port */
 	uint64_t q_mask = m_bank->non_empty_queue_mask(port);
-	uint64_t q_mask_rot =
-		(q_mask >> m_last_sched_index) | (q_mask << (64 - m_last_sched_index));
+	uint64_t q_mask_rot = (  (q_mask >> (m_last_sched_index + 1))
+						   | (q_mask << (64 - (m_last_sched_index + 1))));
 	uint64_t q_index;
 
 	asm("bsfq %1,%0" : "=r"(q_index) : "r"(q_mask_rot));
-	m_last_sched_index = (m_last_sched_index + q_index) % 64;
+	m_last_sched_index = (m_last_sched_index + 1 + q_index) % 64;
 	return m_bank->dequeue(port, m_last_sched_index);
 }
 

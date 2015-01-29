@@ -265,7 +265,7 @@ void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index)
 	struct admission_log *al = &admission_core_logs[lcore];
 	struct admission_log *sal = &saved_admission_logs[lcore];
 
-	printf("\nadmission lcore %d\n", lcore);
+/*	printf("\nadmission lcore %d\n", lcore);
 #define D(X) (al->X - sal->X)
 	printf("  tslots core ahead: %lu (diff), %lu (total)\n", D(core_ahead),
 			al->core_ahead);
@@ -273,7 +273,7 @@ void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index)
 			TSLOTS_BEHIND_TOLERANCE, D(core_behind), al->core_behind);
 	printf("  tslots skipped: %lu\n", al->tslots_skipped);
 #undef D
-
+*/
 	print_core_admission_log_emulation(adm_core_index);
 
 	/* save the admission logs for this core */

@@ -51,3 +51,22 @@ void DropTailCoreRouter::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat) {
 	m_qm.assign_to_core(dropper, stat);
 }
+
+PriorityRouter::PriorityRouter(uint16_t q_capacity,
+		struct queue_bank_stats* stats, uint32_t rack_index,
+		uint32_t n_hi_prio, uint32_t n_med_prio)
+	: m_bank(EMU_ENDPOINTS_PER_RACK, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
+	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
+			  EMU_ENDPOINTS_PER_RACK),
+	  m_cla(n_hi_prio, n_med_prio),
+	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
+	  m_sch(&m_bank),
+	  PriorityRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
+{}
+
+void PriorityRouter::assign_to_core(Dropper* dropper,
+		struct emu_admission_core_statistics* stat) {
+	m_qm.assign_to_core(dropper, stat);
+}
+
+PriorityRouter::~PriorityRouter() {}

@@ -40,6 +40,7 @@
 #include "queue_bank.h"
 #include "routing_tables/TorRoutingTable.h"
 #include "routing_tables/PyRoutingTable.h"
+#include "classifiers/BySourceClassifier.h"
 #include "classifiers/SingleQueueClassifier.h"
 #include "classifiers/FlowIDClassifier.h"
 #include "classifiers/PyClassifier.h"
@@ -83,6 +84,7 @@
 
 
 /** Classifiers */
+%include "classifiers/BySourceClassifier.h"
 %include "classifiers/SingleQueueClassifier.h"
 %include "classifiers/FlowIDClassifier.h"
 %feature("director") PyClassifier;
@@ -106,6 +108,8 @@
 %template(PyRouter) CompositeRouter<PyRoutingTable, PyClassifier, PyQueueManager, PyScheduler>;
 
 %template(DropTailRouterBase) CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>;
+%template(PriorityRouterBase) CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManager, PriorityScheduler>;
+%ignore DropTailCoreRouter;
 %include "queue_managers/drop_tail.h"
 
 %template(REDRouterBase) CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>;
@@ -118,6 +122,7 @@
 /** Composite Endpoint Groups */
 %template(SimpleEndpointGroupBase) CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager, SingleQueueScheduler, SimpleSink>;
 %include "simple_endpoint.h"
+
 
 /** accessors */
 %inline %{
@@ -165,4 +170,3 @@ public:
 	virtual void reset(uint16_t id) { throw std::runtime_error("not implemented");}
 };
 %}
-

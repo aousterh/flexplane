@@ -17,7 +17,9 @@
 #include "routing_tables/CoreRoutingTable.h"
 #include "routing_tables/TorRoutingTable.h"
 #include "classifiers/FlowIDClassifier.h"
+#include "classifiers/BySourceClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
+#include "schedulers/PriorityScheduler.h"
 #include "output.h"
 
 #include <stdexcept>
@@ -125,6 +127,25 @@ private:
     FlowIDClassifier m_cla;
     DropTailQueueManager m_qm;
     SingleQueueScheduler m_sch;
+};
+
+typedef CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManager, PriorityScheduler>
+	PriorityRouterBase;
+
+class PriorityRouter : public PriorityRouterBase {
+public:
+    PriorityRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
+    		uint32_t rack_index, uint32_t n_hi_prio, uint32_t n_med_prio);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
+    virtual ~PriorityRouter();
+
+private:
+    PacketQueueBank m_bank;
+    TorRoutingTable m_rt;
+    BySourceClassifier m_cla;
+    DropTailQueueManager m_qm;
+    PriorityScheduler m_sch;
 };
 
 #endif /* DROP_TAIL_H_ */

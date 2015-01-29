@@ -14,12 +14,13 @@
 #define EMU_ADMITS_PER_ADMITTED	(2 * EMU_NUM_ENDPOINTS)
 #define EMU_MAX_OUTPUTS_PER_RTR	2
 
-#define SINGLE_RACK_TOPOLOGY
-//#define TWO_RACK_TOPOLOGY
+//#define SINGLE_RACK_TOPOLOGY
+#define TWO_RACK_TOPOLOGY
 
 #ifndef ALGO_N_CORES
-#define ALGO_N_CORES			2
-//#define ALGO_N_CORES			5
+//#define ALGO_N_CORES			1
+//#define ALGO_N_CORES			2
+#define ALGO_N_CORES			5
 #endif
 
 #ifdef SINGLE_RACK_TOPOLOGY

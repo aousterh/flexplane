@@ -21,6 +21,7 @@
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"
 #include "../emulation/queue_managers/red.h"
+#include "../emulation/queue_managers/hull.h"
 #include "../emulation/packet.h"
 #include "../emulation/router.h"
 #include "../graph-algo/algo_config.h"
@@ -139,6 +140,22 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out)
 
     rtype = R_DropTail;
     rtr_args = &dt_args;
+#elif defined(PRIO_QUEUEING)
+	RTE_LOG(INFO, ADMISSION, "Using Priority Queueing with default parameters\n");
+    rtype = R_Prio;
+    rtr_args = NULL;
+#elif defined(ROUND_ROBIN)
+	RTE_LOG(INFO, ADMISSION, "Using Round-Robin with default parameters\n");
+    rtype = R_RR;
+    rtr_args = NULL;
+#elif defined(HULL)
+    struct hull_args hl_args;
+    hl_args.q_capacity = 512;
+	RTE_LOG(INFO, ADMISSION, "Using HULL routers with q_capacity %d mark_threshold %d gamma %f\n",
+			hl_args.q_capacity, hl_args.mark_threshold, hl_args.GAMMA);
+
+    rtype = R_HULL;
+    rtr_args = &hl_args;
 #else
 #error "Unrecognized router type"
 #endif

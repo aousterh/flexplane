@@ -14,6 +14,15 @@ elif [ "$1" = "red"  ]; then
 elif [ "$1" = "dctcp" ]; then
     FAST="./fast_dctcp"
     echo "running dctcp arbiter"
+elif [ "$1" = "prio" ]; then
+    FAST="./fast_prio"
+    echo "running prio arbiter"
+elif [ "$1" = "rr" ]; then
+    FAST="./fast_rr"
+    echo "running rr arbiter"
+elif [ "$1" = "hull" ]; then
+    FAST="./fast_hull"
+    echo "running hull arbiter"
 else
     echo "unrecognized arbiter type $1"
     exit

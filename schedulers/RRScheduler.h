@@ -28,7 +28,7 @@ inline RRScheduler::RRScheduler(PacketQueueBank* bank)
 	: m_bank(bank)
 {
     seed_random(&random_state, time(NULL));
-    m_last_sched_index = random_int(&random_state, sizeof(*non_empty_port_mask)*8); 
+    m_last_sched_index = random_int(&random_state, 64);
 }
 
 inline struct emu_packet* __attribute__((always_inline))

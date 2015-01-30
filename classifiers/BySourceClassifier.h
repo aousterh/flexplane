@@ -13,6 +13,9 @@
 
 /**
  * Classifies packets by source.
+ *
+ * Some sources are hi priority (queue 0), some medium (queue 1) and the rest
+ *    are low priority (queue 2).
  */
 class BySourceClassifier : public Classifier {
 public:

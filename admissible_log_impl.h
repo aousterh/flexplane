@@ -21,7 +21,7 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 	struct emu_admission_core_statistics *sv = &emu_saved_admission_core_statistics[core_index];
 
 	printf("\nadmission core %d", core_index);
-#define D(X) (st->X - sv->X)
+/*#define D(X) (st->X - sv->X)
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
 	printf("\n  demands: %lu admitted", D(admitted_packet));
@@ -29,23 +29,23 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 			D(endpoint_sent_packet), D(router_sent_packet));
 	printf("\n  algo dropped %lu from endpoints, %lu from routers",
 			D(endpoint_dropped_packet), D(router_dropped_packet));
-	printf("\n  algo marked %lu from routers", D(router_marked_packet));*/
+	printf("\n  algo marked %lu from routers", D(router_marked_packet));
 	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu",
 			D(endpoint_driver_pushed), D(endpoint_driver_pulled),
 			D(endpoint_driver_processed_new));
 	printf("\n  router driver pushed %lu, pulled %lu", D(router_driver_pushed),
 			D(router_driver_pulled));
 	printf("\n");
-#undef D
+#undef D*/
 
 	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
 	printf("\n  demands: %lu admitted", st->admitted_packet);
 /*	printf("\n  algo sent %lu from endpoints, %lu from routers",
-			st->endpoint_sent_packet, st->router_sent_packet);
+			st->endpoint_sent_packet, st->router_sent_packet);*/
 	printf("\n  algo dropped %lu from endpoints, %lu from routers",
 			st->endpoint_dropped_packet, st->router_dropped_packet);
-	printf("\n  algo marked %lu from routers", st->router_marked_packet);*/
+/*	printf("\n  algo marked %lu from routers", st->router_marked_packet);*/
 	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu",
 			st->endpoint_driver_pushed, st->endpoint_driver_pulled,
 			st->endpoint_driver_processed_new);

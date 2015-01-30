@@ -92,6 +92,18 @@ inline void EndpointDriver::pull() {
 	/* pull a batch of packets from the epg, enqueue to router */
 	n_pkts = m_epg->pull_batch(&pkts[0], MAX_PULL_BURST);
 	assert(n_pkts <= MAX_PULL_BURST);
+#ifdef DROP_ON_FAILED_ENQUEUE
+	if (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_to_router,
+			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
+		/* no space in ring. log but don't retry. */
+		adm_log_emu_send_packets_failed(m_stat, n_pkts);
+		for (i = 0; i < n_pkts; i++)
+			free_packet(g_state, pkts[i]);
+	} else {
+		adm_log_emu_endpoint_sent_packets(m_stat, n_pkts);
+		adm_log_emu_endpoint_driver_pulled(m_stat, n_pkts);
+	}
+#else
 	while (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_to_router,
 			(void **) &pkts[0], n_pkts) == -ENOBUFS) {
 		/* no space in ring. log and retry. */
@@ -99,6 +111,7 @@ inline void EndpointDriver::pull() {
 	}
 	adm_log_emu_endpoint_sent_packets(m_stat, n_pkts);
 	adm_log_emu_endpoint_driver_pulled(m_stat, n_pkts);
+#endif
 
 #ifndef NDEBUG
 	printf("EndpointDriver on core %d pulled %d packets\n", m_core_index,

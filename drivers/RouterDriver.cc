@@ -79,6 +79,18 @@ void RouterDriver::step() {
 #endif
 		assert(n_pkts <= ROUTER_MAX_BURST);
 		/* send packets to endpoint groups */
+#ifdef DROP_ON_FAILED_ENQUEUE
+		if (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_from_router[j],
+				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
+			/* no space in ring. log but don't retry. */
+			adm_log_emu_send_packets_failed(m_stat, n_pkts);
+			for (i = 0; i < n_pkts; i++)
+				free_packet(g_state, pkt_ptrs[i]);
+		} else {
+			adm_log_emu_router_sent_packets(m_stat, n_pkts);
+			adm_log_emu_router_driver_pulled(m_stat, n_pkts);
+		}
+#else
 		while (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_from_router[j],
 				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
@@ -86,6 +98,7 @@ void RouterDriver::step() {
 		}
 		adm_log_emu_router_sent_packets(m_stat, n_pkts);
 		adm_log_emu_router_driver_pulled(m_stat, n_pkts);
+#endif
 
 #ifndef NDEBUG
 		printf("RouterDriver on core %d pulled %d packets with mask %llx\n",

@@ -9,6 +9,7 @@
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
 #include "queue_managers/dctcp.h"
+#include "queue_managers/hull.h"
 #include <assert.h>
 #include "output.h"
 
@@ -43,6 +44,9 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		assert(args == NULL);
 		return new RRRouter(512, stats, topo_args->rack_index);
 
+	case (R_HULL):
+		assert(args != NULL);
+		return new HULLRouter(id, (struct hull_args *)args, stats);
 
 	}
 

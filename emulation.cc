@@ -242,6 +242,16 @@ inline void assign_components_to_cores(struct emu_state *state,
 				&router_drivers[i], 0, 1, core_index);
 		core_index++;
 	}
+#elif (ALGO_N_CORES == 3) && defined(TWO_RACK_TOPOLOGY)
+	/* 1 epg + 1 rtr on first two cores, core router on last core */
+	for (i = 0; i < 2; i++) {
+		state->cores[core_index] = new EmulationCore(state, &epg_drivers[i],
+				&router_drivers[i], 1, 1, core_index);
+		core_index++;
+	}
+	state->cores[core_index] = new EmulationCore(state, NULL,
+			&router_drivers[2], 0, 1, core_index);
+	core_index++;
 #elif (ALGO_N_CORES == 1)
 	/* assign everything to one core */
 	state->cores[core_index] = new EmulationCore(state, epg_drivers,

@@ -77,7 +77,7 @@ int fpproto_rcv(struct sk_buff *skb)
 		fastpass_sk(sk)->stat.rx_fragmented++;
 
 		/* try to linearize */
-		if (skb_cow_data(skb, 0, &trailer) != 0) {
+		if (skb_cow_data(skb, 0, &trailer) != 1) {
 			/* we're in real trouble, could not linearize. will drop */
 			fastpass_sk(sk)->stat.linearize_fragments_failed++;
 			goto discard_out;

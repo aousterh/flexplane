@@ -34,6 +34,16 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 	case (R_DCTCP):
 		assert(args != NULL);
 		return new DCTCPRouter(id, (struct dctcp_args *)args, stats);
+
+	case (R_Prio):
+		assert(args == NULL);
+		return new PriorityRouter(512, stats, topo_args->rack_index, 8, 8);
+
+	case (R_RR):
+		assert(args == NULL);
+		return new RRRouter(512, stats, topo_args->rack_index);
+
+
 	}
 
 	throw std::runtime_error("invalid router type\n");

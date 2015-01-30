@@ -18,8 +18,10 @@
 #include "routing_tables/TorRoutingTable.h"
 #include "classifiers/FlowIDClassifier.h"
 #include "classifiers/BySourceClassifier.h"
+#include "classifiers/SourceIDClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 #include "schedulers/PriorityScheduler.h"
+#include "schedulers/RRScheduler.h"
 #include "output.h"
 
 #include <stdexcept>
@@ -147,6 +149,25 @@ private:
     BySourceClassifier m_cla;
     DropTailQueueManager m_qm;
     PriorityScheduler m_sch;
+};
+
+typedef CompositeRouter<TorRoutingTable, SourceIDClassifier, DropTailQueueManager, RRScheduler>
+	RRRouterBase;
+
+class RRRouter : public RRRouterBase {
+public:
+	RRRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
+    		uint32_t rack_index);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
+    virtual ~RRRouter();
+
+private:
+    PacketQueueBank m_bank;
+    TorRoutingTable m_rt;
+    SourceIDClassifier m_cla;
+    DropTailQueueManager m_qm;
+    RRScheduler m_sch;
 };
 
 #endif /* DROP_TAIL_H_ */

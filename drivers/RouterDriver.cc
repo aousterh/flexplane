@@ -73,7 +73,7 @@ void RouterDriver::step() {
 				&m_port_masks[j]);
 #endif
 #ifndef NDEBUG
-		for (uint32_t i = 0; i < n_pkts; i++) {
+		for (i = 0; i < n_pkts; i++) {
 			assert(pkt_ptrs[i] != NULL);
 		}
 #endif

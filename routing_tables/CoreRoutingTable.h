@@ -49,7 +49,12 @@ inline uint32_t CoreRoutingTable::route(struct emu_packet *pkt)
 {
 	/* use a hash to choose between the links to the correct tor */
 	uint32_t hash =  7 * pkt->src + 9 * pkt->dst + pkt->flow;
+#if defined(TWO_RACK_TOPOLOGY)
 	return (hash & m_tor_mask) + (pkt->dst & ~m_tor_mask);
+#else
+	/* must be 3 rack topology */
+	return (hash & 0xF) + ((pkt->dst & ~m_tor_mask) >> 1);
+#endif
 }
 
 #endif /* ROUTINGTABLES_CORE_H_ */

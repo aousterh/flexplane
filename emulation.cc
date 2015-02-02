@@ -206,6 +206,77 @@ inline void construct_two_rack_topology(struct emu_state *state,
 }
 #endif
 
+#if defined(THREE_RACK_TOPOLOGY)
+/* construct a topology with 3 racks and one core router connecting the tors */
+inline void construct_three_rack_topology(struct emu_state *state,
+		struct fp_ring **packet_queues, EndpointDriver **endpoint_drivers,
+		RouterDriver **router_drivers, RouterType r_type, void *r_args,
+		EndpointType e_type, void *e_args)
+{
+	uint32_t pq, i;
+	struct fp_ring *q_epg_ingress[EMU_NUM_ENDPOINT_GROUPS];
+	struct fp_ring *q_router_ingress[EMU_NUM_ROUTERS];
+	EndpointGroup *epg;
+	Router *rtr;
+	struct topology_args topo_args;
+
+	printf("THREE RACK topology with %d routers and %d endpoints\n",
+			EMU_NUM_ROUTERS, EMU_NUM_ENDPOINTS);
+
+	/* initialize rings for routers and endpoints */
+	pq = 0;
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++)
+		q_epg_ingress[i] = packet_queues[pq++];
+	for (i = 0; i < EMU_NUM_ROUTERS; i++)
+		q_router_ingress[i] = packet_queues[pq++];
+
+	/* initialize all the endpoints */
+	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+		epg = EndpointGroupFactory::NewEndpointGroup(e_type,
+				EMU_ENDPOINTS_PER_RACK, i * EMU_ENDPOINTS_PER_RACK, e_args);
+		assert(epg != NULL);
+		endpoint_drivers[i] =
+				new EndpointDriver(state->comm_state.q_epg_new_pkts[i],
+						q_router_ingress[i], q_epg_ingress[i],
+						state->comm_state.q_resets[i], epg);
+	}
+
+	/* initialize the ToRs. all three have 32 ports facing down and 32 ports facing
+	 * up to the core. */
+	uint64_t rtr_masks[EMU_MAX_OUTPUTS_PER_RTR];
+	struct fp_ring *q_router_egress[EMU_MAX_OUTPUTS_PER_RTR];
+	topo_args.func = TOR_ROUTER;
+	rtr_masks[0] = 0xFFFFFFFF;
+	rtr_masks[1] = 0xFFFFFFFF00000000;
+	q_router_egress[1] = q_router_ingress[3];
+	for (i = 0; i < EMU_NUM_TORS; i++) {
+		topo_args.rack_index = i;
+		q_router_egress[0] = q_epg_ingress[i];
+
+		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i, NULL);
+		assert(rtr != NULL);
+		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
+				&q_router_egress[0], &rtr_masks[0], 2);
+	}
+
+	/* initialize the ToR with 16 ports per ToR. */
+	topo_args.func = CORE_ROUTER;
+	topo_args.links_per_tor = 16;
+	rtr_masks[0] = 0xFFFF;
+	rtr_masks[1] = 0xFFFF0000;
+	rtr_masks[2] = 0xFFFF00000000;
+	q_router_egress[0] = q_router_ingress[0];
+	q_router_egress[1] = q_router_ingress[1];
+	q_router_egress[2] = q_router_ingress[2];
+	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 3,
+			&state->queue_bank_stats);
+	assert(rtr != NULL);
+	router_drivers[3] = new RouterDriver(rtr, q_router_ingress[3],
+			&q_router_egress[0], &rtr_masks[0], 3);
+
+}
+#endif
+
 /* configure the topology of endpoints and routers */
 inline void construct_topology(struct emu_state *state,
 		struct fp_ring **packet_queues, EndpointDriver **endpoint_drivers,
@@ -218,6 +289,10 @@ inline void construct_topology(struct emu_state *state,
 #elif defined(TWO_RACK_TOPOLOGY)
 	/* construct topology: 3 routers with 2 racks of endpoints */
 	construct_two_rack_topology(state, packet_queues, endpoint_drivers,
+			router_drivers, r_type, r_args, e_type, e_args);
+#elif defined(THREE_RACK_TOPOLOGY)
+	/* construct topology: 3 routers with 2 racks of endpoints */
+	construct_three_rack_topology(state, packet_queues, endpoint_drivers,
 			router_drivers, r_type, r_args, e_type, e_args);
 #else
 #error "unrecognized topology"
@@ -251,6 +326,16 @@ inline void assign_components_to_cores(struct emu_state *state,
 	}
 	state->cores[core_index] = new EmulationCore(state, NULL,
 			&router_drivers[2], 0, 1, core_index);
+	core_index++;
+#elif (ALGO_N_CORES == 4) && defined(THREE_RACK_TOPOLOGY)
+	/* 1 epg + 1 rtr on first three cores, core router on last core */
+	for (i = 0; i < 3; i++) {
+		state->cores[core_index] = new EmulationCore(state, &epg_drivers[i],
+				&router_drivers[i], 1, 1, core_index);
+		core_index++;
+	}
+	state->cores[core_index] = new EmulationCore(state, NULL,
+			&router_drivers[3], 0, 1, core_index);
 	core_index++;
 #elif (ALGO_N_CORES == 1)
 	/* assign everything to one core */

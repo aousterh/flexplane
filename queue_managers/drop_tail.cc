@@ -36,13 +36,13 @@ void DropTailRouter::assign_to_core(Dropper *dropper,
 }
 
 DropTailCoreRouter::DropTailCoreRouter(uint16_t q_capacity,
-		struct queue_bank_stats *stats, uint32_t links_per_tor)
-	: m_bank(EMU_ENDPOINTS_PER_RACK*2, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
+		struct queue_bank_stats *stats)
+	: m_bank(EMU_CORE_ROUTER_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
 	  m_rt((1 << EMU_RACK_SHIFT) - 1),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
 	  m_sch(&m_bank),
-	  DropTailCoreRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK*2)
+	  DropTailCoreRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_CORE_ROUTER_PORTS)
 {}
 
 DropTailCoreRouter::~DropTailCoreRouter() {}

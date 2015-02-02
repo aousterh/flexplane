@@ -118,8 +118,7 @@ typedef CompositeRouter<CoreRoutingTable, FlowIDClassifier, DropTailQueueManager
  */
 class DropTailCoreRouter : public DropTailCoreRouterBase {
 public:
-    DropTailCoreRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
-    		uint32_t links_per_tor);
+    DropTailCoreRouter(uint16_t q_capacity, struct queue_bank_stats *stats);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
     virtual ~DropTailCoreRouter();

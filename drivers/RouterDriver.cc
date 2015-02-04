@@ -72,7 +72,8 @@ void RouterDriver::step() {
 		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,
 				&m_port_masks[j]);
 #endif
-#ifndef NDEBUG
+
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 		for (i = 0; i < n_pkts; i++) {
 			assert(pkt_ptrs[i] != NULL);
 		}
@@ -100,7 +101,7 @@ void RouterDriver::step() {
 		adm_log_emu_router_driver_pulled(m_stat, n_pkts);
 #endif
 
-#ifndef NDEBUG
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 		printf("RouterDriver on core %d pulled %d packets with mask %llx\n",
 			m_core_index, n_pkts, m_port_masks[j]);
 #endif
@@ -131,7 +132,7 @@ void RouterDriver::step() {
 #endif
 	adm_log_emu_router_driver_pushed(m_stat, n_pkts);
 
-#ifndef NDEBUG
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("RouterDriver on core %d pushed %d packets\n", m_core_index,
 			n_pkts);
 #endif

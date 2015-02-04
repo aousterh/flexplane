@@ -36,7 +36,7 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	comm_state = &state->comm_state;
 	q_epg_new_pkts = comm_state->q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
 
-#ifndef NDEBUG
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("adding backlog from %d to %d, amount %d\n", src, dst, amount);
 #endif
 

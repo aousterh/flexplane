@@ -76,7 +76,7 @@ inline void EndpointDriver::push() {
 
 	adm_log_emu_endpoint_driver_pushed(m_stat, n_pkts);
 
-#ifndef NDEBUG
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("EndpointDriver on core %d pushed %d packets\n", m_core_index,
 			n_pkts);
 #endif
@@ -113,7 +113,7 @@ inline void EndpointDriver::pull() {
 	adm_log_emu_endpoint_driver_pulled(m_stat, n_pkts);
 #endif
 
-#ifndef NDEBUG
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("EndpointDriver on core %d pulled %d packets\n", m_core_index,
 			n_pkts);
 #endif
@@ -133,7 +133,7 @@ inline void EndpointDriver::process_new()
 	m_epg->new_packets(&pkts[0], n_pkts, m_cur_time);
 	adm_log_emu_endpoint_driver_processed_new(m_stat, n_pkts);
 
-#ifndef NDEBUG
+#ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("EndpointDriver on core %d processed %d new packets\n",
 			m_core_index, n_pkts);
 #endif

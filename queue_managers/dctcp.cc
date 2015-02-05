@@ -31,7 +31,7 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
     if (qlen >= m_dctcp_params.K_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
         adm_log_emu_router_marked_packet(m_stat);
-        packet_mark_ecn(pkt);
+        m_dropper->mark_ecn(pkt);
     }
 
     m_bank->enqueue(port, queue, pkt);

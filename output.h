@@ -92,6 +92,11 @@ public:
 		queue_bank_log_drop(m_stats, port);
 	}
 
+	inline void __attribute__((always_inline)) mark_ecn(
+			struct emu_packet *packet) {
+		packet->flags = EMU_FLAGS_ECN_MARK;
+	}
+
 private:
 	EmulationOutput &m_emu_output;
 	struct queue_bank_stats *m_stats;

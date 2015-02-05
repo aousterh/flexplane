@@ -45,12 +45,4 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 	 * areq_data, based on the algorithm used. */
 }
 
-/**
- * Mark a packet with ECN congestion encountered.
- */
-static inline
-void packet_mark_ecn(struct emu_packet *packet) {
-	packet->flags = EMU_FLAGS_ECN_MARK;
-}
-
 #endif /* PACKET_H_ */

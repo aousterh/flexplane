@@ -32,8 +32,6 @@ struct emu_admission_core_statistics {
 	uint64_t admitted_struct_overflow;
 
 	/* counters used by algos */
-	uint64_t endpoint_sent_packet;
-	uint64_t router_sent_packet;
 	uint64_t endpoint_dropped_packet;
 	uint64_t router_dropped_packet;
 	uint64_t router_marked_packet;
@@ -110,20 +108,6 @@ void adm_log_emu_admitted_struct_overflow(
 		struct emu_admission_core_statistics *st) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->admitted_struct_overflow++;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_endpoint_sent_packets(
-		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->endpoint_sent_packet += n_pkts;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_router_sent_packets (
-		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->router_sent_packet += n_pkts;
 }
 
 static inline __attribute__((always_inline))

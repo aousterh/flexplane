@@ -88,7 +88,6 @@ void RouterDriver::step() {
 			for (i = 0; i < n_pkts; i++)
 				free_packet(g_state, pkt_ptrs[i]);
 		} else {
-			adm_log_emu_router_sent_packets(m_stat, n_pkts);
 			adm_log_emu_router_driver_pulled(m_stat, n_pkts);
 		}
 #else

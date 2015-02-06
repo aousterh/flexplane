@@ -10,7 +10,6 @@
 
 #include "api.h"
 #include "config.h"
-#include "packet_queue.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -18,8 +17,6 @@
 #include "routing_tables/TorRoutingTable.h"
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
-
-struct packet_queue;
 
 struct probdrop_args {
     uint16_t q_capacity;

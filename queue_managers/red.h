@@ -10,7 +10,6 @@
 
 #include "api.h"
 #include "config.h"
-#include "packet_queue.h"
 #include "router.h"
 #include "endpoint.h"
 #include "endpoint_group.h"
@@ -25,8 +24,6 @@
 #define RED_DROPPKT 0		/* red_rules() tells caller that it dropped the packet in RED */
 #define RED_ACCEPTMARKED 1      /* red_rules() tells caller that it did not drop pkt, but ECN-marked it */
 #define RED_ACCEPTPKT 2		/* red_rules() tells caller that it accepted the pkt without marking */
-
-struct packet_queue;
 
 struct red_args {
     uint16_t q_capacity;

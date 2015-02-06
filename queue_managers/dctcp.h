@@ -10,7 +10,6 @@
 
 #include "api.h"
 #include "config.h"
-#include "packet_queue.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -20,8 +19,6 @@
 #include "schedulers/SingleQueueScheduler.h"
 
 #define DCTCP_QUEUE_CAPACITY 4096
-
-struct packet_queue;
 
 struct dctcp_args {
     uint16_t q_capacity;

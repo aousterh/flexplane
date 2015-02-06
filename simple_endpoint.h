@@ -10,7 +10,6 @@
 
 #include "api.h"
 #include "config.h"
-#include "packet_queue.h"
 #include "endpoint.h"
 #include "endpoint_group.h"
 #include "../graph-algo/fp_ring.h"
@@ -21,8 +20,6 @@
 #include "queue_managers/drop_tail.h"
 
 #define SIMPLE_ENDPOINT_QUEUE_CAPACITY 8192
-
-struct packet_queue;
 
 struct simple_ep_args {
     uint16_t q_capacity;

@@ -10,7 +10,6 @@
 
 #include "api.h"
 #include "config.h"
-#include "packet_queue.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -25,8 +24,6 @@
 #include "output.h"
 
 #include <stdexcept>
-
-struct packet_queue;
 
 enum component_type {
 	TYPE_ROUTER,

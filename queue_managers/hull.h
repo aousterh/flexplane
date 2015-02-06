@@ -10,7 +10,6 @@
 
 #include "api.h"
 #include "config.h"
-#include "packet_queue.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -21,8 +20,6 @@
 
 #define HULL_QUEUE_CAPACITY DCTCP_QUEUE_CAPACITY
 #define HULL_ATOM_SIZE      1000
-
-struct packet_queue;
 
 struct hull_args {
     uint16_t q_capacity;

@@ -8,7 +8,6 @@
 #ifndef RED_H_
 #define RED_H_
 
-#include "api.h"
 #include "config.h"
 #include "router.h"
 #include "endpoint.h"

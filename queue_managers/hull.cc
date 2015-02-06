@@ -26,7 +26,6 @@ void HULLQueueManager::enqueue(struct emu_packet *pkt,
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_hull_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-        adm_log_emu_router_dropped_packet(m_stat);
         m_dropper->drop(pkt, port);
 	return;
     }
@@ -39,7 +38,6 @@ void HULLQueueManager::enqueue(struct emu_packet *pkt,
 
     if (m_phantom_len > m_hull_params.mark_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
-        adm_log_emu_router_marked_packet(m_stat);
         m_dropper->mark_ecn(pkt);
     }
 

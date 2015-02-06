@@ -6,7 +6,6 @@
  */
 
 #include "queue_managers/red.h"
-#include "api_impl.h"
 #include "../graph-algo/random.h"
 
 #define RED_PORT_CAPACITY 128
@@ -84,13 +83,11 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
     count_since_last = -1;
     if (force_drop || !(m_red_params.ecn)) {
       //        printf("RED dropping pkt\n");
-        adm_log_emu_router_dropped_packet(m_stat);
         m_dropper->drop(pkt, port);
-	return RED_DROPPKT;
+        return RED_DROPPKT;
     } else {
         /* mark the ECN bit */
       //        printf("RED marking pkt\n");
-	adm_log_emu_router_marked_packet(m_stat);
         m_dropper->mark_ecn(pkt);
         return RED_ACCEPTMARKED;
      }

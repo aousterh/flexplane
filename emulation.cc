@@ -37,7 +37,7 @@ EmulationCore::EmulationCore(struct emu_state *state,
 	m_out = new EmulationOutput(state->q_admitted_out,
 			state->admitted_traffic_mempool, state->packet_mempool,
 			&m_stat);
-	dropper = new Dropper(*m_out, &state->queue_bank_stats);
+	dropper = new Dropper(*m_out, &state->queue_bank_stats, &m_stat);
 
 	m_n_epgs = n_epgs;
 	m_n_rtrs = n_rtrs;

@@ -8,6 +8,8 @@
 #ifndef QUEUE_BANK_LOG_H_
 #define QUEUE_BANK_LOG_H_
 
+#include "../protocol/platform/generic.h"
+
 #define MAINTAIN_QUEUE_BANK_LOG_COUNTERS	0
 #define QUEUE_BANK_MAX_PORTS				64
 

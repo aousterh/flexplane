@@ -27,15 +27,13 @@ void ProbDropQueueManager::enqueue(struct emu_packet *pkt,
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_probdrop_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-        adm_log_emu_router_dropped_packet(m_stat);
         m_dropper->drop(pkt, port);
 	return;
     }
 
     if (random_int(&random_state, RANDRANGE_16) <=  (uint16_t)(m_probdrop_params.p_drop*RANDRANGE_16)) {
         // drop this packet
-        adm_log_emu_router_dropped_packet(m_stat);
-	m_dropper->drop(pkt, port);
+        m_dropper->drop(pkt, port);
     } else {
         m_bank->enqueue(port, queue, pkt);
     }

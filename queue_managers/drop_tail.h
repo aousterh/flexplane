@@ -8,7 +8,6 @@
 #ifndef DROP_TAIL_H_
 #define DROP_TAIL_H_
 
-#include "api.h"
 #include "config.h"
 #include "router.h"
 #include "composite.h"
@@ -25,19 +24,13 @@
 
 #include <stdexcept>
 
-enum component_type {
-	TYPE_ROUTER,
-	TYPE_ENDPOINT
-};
-
 struct drop_tail_args {
     uint16_t q_capacity;
 };
 
 class DropTailQueueManager : public QueueManager {
 public:
-	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity,
-			enum component_type type);
+	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity);
 	inline void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
@@ -52,9 +45,6 @@ private:
 
 	/** the means to drop packets */
 	Dropper *m_dropper;
-
-	/** type - router or endpoint, used for logging */
-	enum component_type m_type;
 
 	/** stats */
 	struct emu_admission_core_statistics *m_stat;
@@ -72,12 +62,6 @@ inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */
 		m_dropper->drop(pkt, port);
-
-		/* log the drop */
-		if (m_type == TYPE_ROUTER)
-			adm_log_emu_router_dropped_packet(m_stat);
-		else
-			adm_log_emu_endpoint_dropped_packet(m_stat);
 	} else {
 		m_bank->enqueue(port, queue, pkt);
 	}

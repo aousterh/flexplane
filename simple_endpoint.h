@@ -8,7 +8,6 @@
 #ifndef SIMPLE_ENDPOINT_H_
 #define SIMPLE_ENDPOINT_H_
 
-#include "api.h"
 #include "config.h"
 #include "endpoint.h"
 #include "endpoint_group.h"

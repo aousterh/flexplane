@@ -10,8 +10,8 @@
 #define DROP_TAIL_QUEUE_CAPACITY 4096
 
 DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
-		uint32_t queue_capacity, enum component_type type)
-	: m_bank(bank), m_q_capacity(queue_capacity), m_type(type)
+		uint32_t queue_capacity)
+	: m_bank(bank), m_q_capacity(queue_capacity)
 {
 	if (bank == NULL)
 		throw std::runtime_error("bank should be non-NULL");
@@ -23,7 +23,7 @@ DropTailRouter::DropTailRouter(uint16_t q_capacity,
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  (1 << EMU_RACK_SHIFT) - 1),
 	  m_cla(),
-	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
+	  m_qm(&m_bank, q_capacity),
 	  m_sch(&m_bank),
 	  DropTailRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK*2)
 {}
@@ -40,7 +40,7 @@ DropTailCoreRouter::DropTailCoreRouter(uint16_t q_capacity,
 	: m_bank(EMU_CORE_ROUTER_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
 	  m_rt((1 << EMU_RACK_SHIFT) - 1),
 	  m_cla(),
-	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
+	  m_qm(&m_bank, q_capacity),
 	  m_sch(&m_bank),
 	  DropTailCoreRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_CORE_ROUTER_PORTS)
 {}
@@ -59,7 +59,7 @@ PriorityRouter::PriorityRouter(uint16_t q_capacity,
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  EMU_ENDPOINTS_PER_RACK),
 	  m_cla(n_hi_prio, n_med_prio),
-	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
+	  m_qm(&m_bank, q_capacity),
 	  m_sch(&m_bank),
 	  PriorityRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}
@@ -77,7 +77,7 @@ RRRouter::RRRouter(uint16_t q_capacity,
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  EMU_ENDPOINTS_PER_RACK),
 	  m_cla(),
-	  m_qm(&m_bank, q_capacity, TYPE_ROUTER),
+	  m_qm(&m_bank, q_capacity),
 	  m_sch(&m_bank),
 	  RRRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}

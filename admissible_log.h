@@ -10,8 +10,7 @@
 #ifndef EMU_ADMISSIBLE_LOG_H__
 #define EMU_ADMISSIBLE_LOG_H__
 
-#include "api.h"
-#include "../protocol/platform/generic.h"
+#include <stdint.h>
 
 #define		MAINTAIN_EMU_ADM_LOG_COUNTERS	1
 
@@ -26,15 +25,11 @@ struct emu_admission_core_statistics {
 	/* packets */
 	uint64_t admitted_packet;
 	uint64_t dropped_packet;
+	uint64_t marked_packet;
 
 	/* framework failures */
 	uint64_t send_packet_failed;
 	uint64_t admitted_struct_overflow;
-
-	/* counters used by algos */
-	uint64_t endpoint_dropped_packet;
-	uint64_t router_dropped_packet;
-	uint64_t router_marked_packet;
 
 	/* counters used by drivers */
 	uint64_t endpoint_driver_processed_new;
@@ -97,6 +92,13 @@ void adm_log_emu_dropped_packet(
 }
 
 static inline __attribute__((always_inline))
+void adm_log_emu_marked_packet(
+		struct emu_admission_core_statistics *st) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->marked_packet++;
+}
+
+static inline __attribute__((always_inline))
 void adm_log_emu_send_packets_failed(
 		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
@@ -108,27 +110,6 @@ void adm_log_emu_admitted_struct_overflow(
 		struct emu_admission_core_statistics *st) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->admitted_struct_overflow++;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_endpoint_dropped_packet (
-		struct emu_admission_core_statistics *st) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->endpoint_dropped_packet++;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_router_dropped_packet (
-		struct emu_admission_core_statistics *st) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->router_dropped_packet++;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_router_marked_packet (
-		struct emu_admission_core_statistics *st) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->router_marked_packet++;
 }
 
 static inline __attribute__((always_inline))

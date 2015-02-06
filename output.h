@@ -83,23 +83,27 @@ private:
  */
 class Dropper {
 public:
-	Dropper(EmulationOutput &emu_output, struct queue_bank_stats *stats)
-		: m_emu_output(emu_output), m_stats(stats) {}
+	Dropper(EmulationOutput &emu_output, struct queue_bank_stats *stats,
+			struct emu_admission_core_statistics *core_stats)
+		: m_emu_output(emu_output), m_stats(stats), m_core_stats(core_stats) {}
 
 	inline void  __attribute__((always_inline))	drop(struct emu_packet *packet,
 			uint32_t port) {
 		m_emu_output.drop(packet);
 		queue_bank_log_drop(m_stats, port);
+		adm_log_emu_dropped_packet(m_core_stats);
 	}
 
 	inline void __attribute__((always_inline)) mark_ecn(
 			struct emu_packet *packet) {
 		packet->flags = EMU_FLAGS_ECN_MARK;
+		adm_log_emu_marked_packet(m_core_stats);
 	}
 
 private:
 	EmulationOutput &m_emu_output;
 	struct queue_bank_stats *m_stats;
+	struct emu_admission_core_statistics *m_core_stats;
 };
 
 /** implementation */
@@ -135,7 +139,6 @@ EmulationOutput::drop(struct emu_packet* packet)
 {
 	/* add dropped packet to admitted struct */
 	admitted_insert_dropped_edge(admitted, packet, m_stat);
-	adm_log_emu_dropped_packet(m_stat);
 
 	/* if admitted struct is full, flush now */
 	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))

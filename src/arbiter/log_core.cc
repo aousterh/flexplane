@@ -367,7 +367,8 @@ int LogCore::exec()
 			time = fp_get_time_ns();
 
 			struct emu_state *state = (struct emu_state *) g_admissible_status();
-			print_queue_bank_log_to_file(fp_queues, &state->queue_bank_stats, time);
+			print_queue_bank_log_to_file(fp_queues, state->queue_bank_stats[0],
+					state->port_drop_stats[0], time);
 			q_next_ticks += m_q_log_gap_ticks;
 #else
 			rte_pause();

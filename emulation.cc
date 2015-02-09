@@ -440,8 +440,8 @@ void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
 		uint32_t packet_ring_size)
 {
 	struct fp_mempool *admitted_traffic_mempool =
-			fp_mempool_create(admitted_mempool_size,
-					sizeof(struct emu_admitted_traffic));
+			fp_mempool_create("admitted_mempool", admitted_mempool_size,
+					sizeof(struct emu_admitted_traffic), 0, 0, 0);
 	if (admitted_traffic_mempool == NULL)
 		throw std::runtime_error("couldn't allocate admitted_traffic_mempool");
 
@@ -450,8 +450,8 @@ void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
 	if (q_admitted_out == NULL)
 		throw std::runtime_error("couldn't allocate q_admitted_out");
 
-	struct fp_mempool *packet_mempool = fp_mempool_create(packet_mempool_size,
-			EMU_ALIGN(sizeof(struct emu_packet)));
+	struct fp_mempool *packet_mempool = fp_mempool_create("packet_mempool",
+			packet_mempool_size, EMU_ALIGN(sizeof(struct emu_packet)), 0, 0, 0);
 	if (packet_mempool == NULL)
 		throw std::runtime_error("couldn't allocate packet_mempool");
 

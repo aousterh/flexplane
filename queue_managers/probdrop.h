@@ -32,6 +32,7 @@ public:
 			struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
     		uint64_t cur_time);
+	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
     /** the QueueBank where packets are stored */
@@ -53,6 +54,10 @@ inline void ProbDropQueueManager::assign_to_core(Dropper *dropper,
 	m_stat = stat;
 }
 
+inline struct port_drop_stats *ProbDropQueueManager::get_port_drop_stats() {
+	return m_dropper->get_port_drop_stats();
+}
+
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, ProbDropQueueManager, SingleQueueScheduler>
 	ProbDropRouterBase;
 
@@ -62,10 +67,10 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, ProbDropQueueMan
  */
 class ProbDropRouter : public ProbDropRouterBase {
 public:
-    ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params,
-    		struct queue_bank_stats *stats);
+    ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~ProbDropRouter();
 
 private:

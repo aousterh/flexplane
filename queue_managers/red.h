@@ -43,6 +43,7 @@ public:
     		uint64_t cur_time);
     uint8_t red_rules(struct emu_packet *pkt, uint32_t qlen, uint32_t port);
     uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port);
+	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
     /** the QueueBank where packets are stored */
@@ -68,6 +69,10 @@ inline void REDQueueManager::assign_to_core(Dropper *dropper,
 	m_stat = stat;
 }
 
+inline struct port_drop_stats *REDQueueManager::get_port_drop_stats() {
+	return m_dropper->get_port_drop_stats();
+}
+
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>
 	REDRouterBase;
 
@@ -77,10 +82,10 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager,
  */
 class REDRouter : public REDRouterBase {
 public:
-    REDRouter(uint16_t id, struct red_args *red_params,
-    		struct queue_bank_stats *stats);
+    REDRouter(uint16_t id, struct red_args *red_params);
     virtual void assign_to_core(Dropper *dropper,
     			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~REDRouter();
 
 private:

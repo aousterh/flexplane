@@ -24,7 +24,6 @@ struct dctcp_args {
     uint32_t K_threshold;
 };
 
-
 class DCTCPQueueManager : public QueueManager {
 public:
     DCTCPQueueManager(PacketQueueBank *bank, struct dctcp_args *dctcp_params);
@@ -32,6 +31,7 @@ public:
                                struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
     		uint64_t cur_time);
+	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
     /** the QueueBank where packets are stored */
@@ -50,6 +50,10 @@ inline void DCTCPQueueManager::assign_to_core(Dropper *dropper,
 	m_stat = stat;
 }
 
+inline struct port_drop_stats *DCTCPQueueManager::get_port_drop_stats() {
+	return m_dropper->get_port_drop_stats();
+}
+
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManager, SingleQueueScheduler>
 	DCTCPRouterBase;
 
@@ -59,10 +63,10 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManage
  */
 class DCTCPRouter : public DCTCPRouterBase {
 public:
-    DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params,
-    		struct queue_bank_stats *stats);
+    DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~DCTCPRouter();
 
 private:

@@ -88,7 +88,7 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
     } else {
         /* mark the ECN bit */
       //        printf("RED marking pkt\n");
-        m_dropper->mark_ecn(pkt);
+        m_dropper->mark_ecn(pkt, port);
         return RED_ACCEPTMARKED;
      }
 }
@@ -97,9 +97,8 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
  * All ports of a REDRouter run RED. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-REDRouter::REDRouter(uint16_t id, struct red_args *red_params,
-		struct queue_bank_stats *stats)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, RED_QUEUE_CAPACITY, stats),
+REDRouter::REDRouter(uint16_t id, struct red_args *red_params)
+    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, RED_QUEUE_CAPACITY),
       m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, red_params),
@@ -110,6 +109,10 @@ REDRouter::REDRouter(uint16_t id, struct red_args *red_params,
 void REDRouter::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat) {
 	m_qm.assign_to_core(dropper, stat);
+}
+
+struct queue_bank_stats *REDRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
 }
 
 REDRouter::~REDRouter() {}

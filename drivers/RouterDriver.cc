@@ -44,6 +44,14 @@ void RouterDriver::assign_to_core(Dropper *dropper,
 	m_core_index = core_index;
 }
 
+struct queue_bank_stats *RouterDriver::get_queue_bank_stats() {
+	return m_router->get_queue_bank_stats();
+}
+
+struct port_drop_stats *RouterDriver::get_port_drop_stats() {
+	return m_router->get_port_drop_stats();
+}
+
 void RouterDriver::cleanup() {
 	free_packet_ring(g_state, m_q_to_router);
 

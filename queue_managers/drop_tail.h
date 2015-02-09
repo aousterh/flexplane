@@ -35,6 +35,7 @@ public:
 			struct emu_admission_core_statistics *stat);
 	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
 			uint64_t cur_time);
+	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
 	/** the QueueBank where packets are stored */
@@ -54,6 +55,10 @@ inline void DropTailQueueManager::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat) {
 	m_dropper = dropper;
 	m_stat = stat;
+}
+
+inline struct port_drop_stats *DropTailQueueManager::get_port_drop_stats() {
+	return m_dropper->get_port_drop_stats();
 }
 
 inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
@@ -76,10 +81,10 @@ typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager,
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-    DropTailRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
-    		uint32_t rack_index);
+    DropTailRouter(uint16_t q_capacity, uint32_t rack_index);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~DropTailRouter();
 
 private:
@@ -99,9 +104,10 @@ typedef CompositeRouter<CoreRoutingTable, FlowIDClassifier, DropTailQueueManager
  */
 class DropTailCoreRouter : public DropTailCoreRouterBase {
 public:
-    DropTailCoreRouter(uint16_t q_capacity, struct queue_bank_stats *stats);
+    DropTailCoreRouter(uint16_t q_capacity);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~DropTailCoreRouter();
 
 private:
@@ -117,10 +123,11 @@ typedef CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManage
 
 class PriorityRouter : public PriorityRouterBase {
 public:
-    PriorityRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
-    		uint32_t rack_index, uint32_t n_hi_prio, uint32_t n_med_prio);
+    PriorityRouter(uint16_t q_capacity, uint32_t rack_index,
+    		uint32_t n_hi_prio, uint32_t n_med_prio);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~PriorityRouter();
 
 private:
@@ -136,10 +143,10 @@ typedef CompositeRouter<TorRoutingTable, SourceIDClassifier, DropTailQueueManage
 
 class RRRouter : public RRRouterBase {
 public:
-	RRRouter(uint16_t q_capacity, struct queue_bank_stats *stats,
-    		uint32_t rack_index);
+	RRRouter(uint16_t q_capacity, uint32_t rack_index);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~RRRouter();
 
 private:

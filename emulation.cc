@@ -37,7 +37,7 @@ EmulationCore::EmulationCore(struct emu_state *state,
 	m_out = new EmulationOutput(state->q_admitted_out,
 			state->admitted_traffic_mempool, state->packet_mempool,
 			&m_stat);
-	dropper = new Dropper(*m_out, &state->queue_bank_stats, &m_stat);
+	dropper = new Dropper(*m_out, &m_stat);
 
 	m_n_epgs = n_epgs;
 	m_n_rtrs = n_rtrs;
@@ -122,8 +122,7 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	/* initialize the routers */
 	topo_args.func = TOR_ROUTER;
 	topo_args.rack_index = 0;
-	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 0,
-			&state->queue_bank_stats);
+	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 0);
 	assert(rtr != NULL);
 	rtr_masks[0] = 0xFFFFFFFF; /* 32 ports */
 	router_drivers[0] = new RouterDriver(rtr, q_router_ingress,
@@ -187,7 +186,7 @@ inline void construct_two_rack_topology(struct emu_state *state,
 		topo_args.rack_index = i;
 		q_router_egress[0] = q_epg_ingress[i];
 
-		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i, NULL);
+		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
 				&q_router_egress[0], &rtr_masks[0], 2);
@@ -199,8 +198,7 @@ inline void construct_two_rack_topology(struct emu_state *state,
 	topo_args.links_per_tor = 32;
 	q_router_egress[0] = q_router_ingress[0];
 	q_router_egress[1] = q_router_ingress[1];
-	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 2,
-			&state->queue_bank_stats);
+	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 2);
 	assert(rtr != NULL);
 	router_drivers[2] = new RouterDriver(rtr, q_router_ingress[2],
 			&q_router_egress[0], &rtr_masks[0], 2);
@@ -255,7 +253,7 @@ inline void construct_three_rack_topology(struct emu_state *state,
 		topo_args.rack_index = i;
 		q_router_egress[0] = q_epg_ingress[i];
 
-		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i, NULL);
+		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
 				&q_router_egress[0], &rtr_masks[0], 2);
@@ -270,8 +268,7 @@ inline void construct_three_rack_topology(struct emu_state *state,
 	q_router_egress[0] = q_router_ingress[0];
 	q_router_egress[1] = q_router_ingress[1];
 	q_router_egress[2] = q_router_ingress[2];
-	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 3,
-			&state->queue_bank_stats);
+	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 3);
 	assert(rtr != NULL);
 	router_drivers[3] = new RouterDriver(rtr, q_router_ingress[3],
 			&q_router_egress[0], &rtr_masks[0], 3);
@@ -375,7 +372,6 @@ void emu_init_state(struct emu_state *state,
 	state->admitted_traffic_mempool = admitted_traffic_mempool;
 	state->q_admitted_out = q_admitted_out;
 	state->packet_mempool = packet_mempool;
-	memset(&state->queue_bank_stats, 0, sizeof(struct queue_bank_stats));
 
 	/* initialize state used to communicate with comm cores */
 	for (i = 0; i < EPGS_PER_COMM; i++) {
@@ -389,6 +385,13 @@ void emu_init_state(struct emu_state *state,
 
 	/* assign endpoints and routers to cores */
 	assign_components_to_cores(state, endpoint_drivers, router_drivers);
+
+	/* get queue bank stat pointers - must be done after components are
+	 * assigned to cores */
+	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+		state->queue_bank_stats[i] = router_drivers[i]->get_queue_bank_stats();
+		state->port_drop_stats[i] = router_drivers[i]->get_port_drop_stats();
+	}
 }
 
 void emu_cleanup(struct emu_state *state) {

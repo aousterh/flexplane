@@ -14,8 +14,7 @@
 #include "output.h"
 
 Router *RouterFactory::NewRouter(enum RouterType type, void *args,
-		struct topology_args *topo_args, uint16_t id,
-		struct queue_bank_stats *stats)
+		struct topology_args *topo_args, uint16_t id)
 {
 	struct drop_tail_args *dt_args;
 	switch (type) {
@@ -23,30 +22,29 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
 		if (topo_args->func == TOR_ROUTER)
-			return new DropTailRouter(dt_args->q_capacity, stats,
+			return new DropTailRouter(dt_args->q_capacity,
 					topo_args->rack_index);
 		else
-			return new DropTailCoreRouter(dt_args->q_capacity, stats);
+			return new DropTailCoreRouter(dt_args->q_capacity);
 	case (R_RED):
 		assert(args != NULL);
-		return new REDRouter(id, (struct red_args *)args, stats);
+		return new REDRouter(id, (struct red_args *)args);
 
 	case (R_DCTCP):
 		assert(args != NULL);
-		return new DCTCPRouter(id, (struct dctcp_args *)args, stats);
+		return new DCTCPRouter(id, (struct dctcp_args *)args);
 
 	case (R_Prio):
 		assert(args == NULL);
-		return new PriorityRouter(512, stats, topo_args->rack_index, 8, 8);
+		return new PriorityRouter(512, topo_args->rack_index, 8, 8);
 
 	case (R_RR):
 		assert(args == NULL);
-		return new RRRouter(512, stats, topo_args->rack_index);
+		return new RRRouter(512, topo_args->rack_index);
 
 	case (R_HULL):
 		assert(args != NULL);
-		return new HULLRouter(id, (struct hull_args *)args, stats);
-
+		return new HULLRouter(id, (struct hull_args *)args);
 	}
 
 	throw std::runtime_error("invalid router type\n");

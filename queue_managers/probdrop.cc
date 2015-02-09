@@ -43,9 +43,9 @@ void ProbDropQueueManager::enqueue(struct emu_packet *pkt,
  * All ports of a ProbDropRouter run ProbDrop. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-ProbDropRouter::ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params,
-		struct queue_bank_stats *stats)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, PROBDROP_QUEUE_CAPACITY, stats),
+ProbDropRouter::ProbDropRouter(uint16_t id,
+		struct probdrop_args *probdrop_params)
+    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, PROBDROP_QUEUE_CAPACITY),
       m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, probdrop_params),
@@ -56,6 +56,10 @@ ProbDropRouter::ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_param
 void ProbDropRouter::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat) {
 	m_qm.assign_to_core(dropper, stat);
+}
+
+struct queue_bank_stats *ProbDropRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
 }
 
 ProbDropRouter::~ProbDropRouter() {}

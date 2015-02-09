@@ -10,7 +10,7 @@
 
 SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
 		uint16_t start_id, uint16_t q_capacity)
-: m_bank(num_endpoints, 1, q_capacity, NULL),
+: m_bank(num_endpoints, 1, q_capacity),
   m_cla(),
   m_qm(&m_bank, q_capacity),
   m_sch(&m_bank),
@@ -21,7 +21,7 @@ SimpleEndpointGroup::SimpleEndpointGroup(uint16_t num_endpoints,
 void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output,
 		struct emu_admission_core_statistics *stat)
 {
-	Dropper *dropper = new Dropper(*emu_output, NULL, stat);
+	Dropper *dropper = new Dropper(*emu_output, stat);
 
 	m_emu_output = emu_output;
 	m_sink.assign_to_core(emu_output);

@@ -32,8 +32,7 @@ public:
 	 * @important: queue_max_size must be a power of two
 	 * @important: n_queues must be <= 64
 	 */
-	QueueBank(uint32_t n_ports, uint32_t n_queues, uint32_t queue_max_size,
-			struct queue_bank_stats *stats);
+	QueueBank(uint32_t n_ports, uint32_t n_queues, uint32_t queue_max_size);
 
 	/**
 	 * d'tor
@@ -89,6 +88,11 @@ public:
 	 */
 	inline int full(uint32_t port, uint32_t queue);
 
+	/**
+	 * @returns a pointer to the queue bank stats
+	 */
+	inline struct queue_bank_stats *get_queue_bank_stats();
+
 private:
 	uint32_t m_n_ports;
 
@@ -103,7 +107,7 @@ private:
 	uint64_t *m_non_empty_queues;
 
 	/** logging stats */
-	struct queue_bank_stats *m_stats;
+	struct queue_bank_stats m_stats;
 };
 
 
@@ -113,8 +117,8 @@ typedef QueueBank<struct emu_packet> PacketQueueBank;
 
 template <typename ELEM >
 QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
-		uint32_t queue_max_size, struct queue_bank_stats *stats)
-	: m_n_ports(n_ports), m_n_queues(n_queues), m_stats(stats)
+		uint32_t queue_max_size)
+	: m_n_ports(n_ports), m_n_queues(n_queues)
 {
 	uint32_t i;
 	uint32_t size_bytes = cq_memsize(queue_max_size);
@@ -146,6 +150,8 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 	m_non_empty_queues = (uint64_t *)calloc(1, sizeof(uint64_t) * n_ports);
 	if (m_non_empty_queues == NULL)
 		throw std::runtime_error("could not allocate m_non_empty_queues");
+
+	memset(&m_stats, 0, sizeof(m_stats));
 }
 
 template <typename ELEM >
@@ -176,7 +182,7 @@ inline void QueueBank<ELEM>::enqueue(uint32_t port, uint32_t queue, ELEM *e) {
 	/* enqueue */
 	cq_enqueue(m_queues[flat], (void *)e);
 
-	queue_bank_log_enqueue(m_stats, port);
+	queue_bank_log_enqueue(&m_stats, port);
 }
 
 template <typename ELEM >
@@ -193,7 +199,7 @@ inline ELEM *QueueBank<ELEM>::dequeue(uint32_t port, uint32_t queue)
 	uint64_t port_empty = (m_non_empty_queues[port] == 0) & 0x1;
 	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
 
-	queue_bank_log_dequeue(m_stats, port);
+	queue_bank_log_dequeue(&m_stats, port);
 
 	return res;
 }
@@ -227,6 +233,11 @@ template <typename ELEM >
 inline int QueueBank<ELEM>::full(uint32_t port, uint32_t queue)
 {
 	return cq_full(m_queues[flat_index(port,queue)]);
+}
+
+template <typename ELEM >
+inline struct queue_bank_stats *QueueBank<ELEM>::get_queue_bank_stats() {
+	return &m_stats;
 }
 
 #endif /* QUEUE_BANK_H_ */

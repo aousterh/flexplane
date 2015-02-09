@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include "packet.h"
 #include "endpoint_group.h"
+#include "router.h"
 #include "../graph-algo/platform.h"
 #include "../graph-algo/random.h"
 
@@ -63,6 +64,11 @@ public:
 	 */
 	void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat) {THROW;}
+
+	/**
+	 * Return a pointer to the port drop statistics.
+	 */
+	struct port_drop_stats *get_port_drop_stats() {THROW;}
 };
 
 /**
@@ -111,6 +117,10 @@ public:
     		uint64_t cur_time);
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
     		uint64_t *port_masks);
+
+	struct port_drop_stats *get_port_drop_stats() {
+		return m_qm->get_port_drop_stats();
+	}
 
 private:
     RT *m_rt;

@@ -83,7 +83,8 @@ struct emu_comm_state {
  * @q_admitted_out: queue of admitted structs to comm core
  * @stat: global emulation stats (mostly used by comm core)
  * @comm_state: state allocated per comm core to manage new packets
- * @queue_bank_stats: stats about one queue bank to be output by the log core
+ * @queue_bank_stats: pointers to stats for each queue bank
+ * @port_drop_stats: pointers to stats for each router
  * @core_stats: per-core stats, for easier access from logging core
  * @cores: the emulation cores
  */
@@ -93,7 +94,8 @@ struct emu_state {
 	struct fp_ring							*q_admitted_out;
 	struct emu_admission_statistics			stat;
 	struct emu_comm_state					comm_state;
-	struct queue_bank_stats					queue_bank_stats;
+	struct queue_bank_stats					*queue_bank_stats[EMU_NUM_ROUTERS];
+	struct port_drop_stats					*port_drop_stats[EMU_NUM_ROUTERS];
 	struct emu_admission_core_statistics	*core_stats[ALGO_N_CORES];
 
 	/* this state is not directly accessible from the arbiter */

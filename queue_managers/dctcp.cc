@@ -28,7 +28,7 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
 
     if (qlen >= m_dctcp_params.K_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
-        m_dropper->mark_ecn(pkt);
+        m_dropper->mark_ecn(pkt, port);
     }
 
     m_bank->enqueue(port, queue, pkt);
@@ -38,9 +38,8 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
  * All ports of a DCTCPRouter run DCTCP. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-DCTCPRouter::DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params,
-		struct queue_bank_stats *stats)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, DCTCP_QUEUE_CAPACITY, stats),
+DCTCPRouter::DCTCPRouter(uint16_t id, struct dctcp_args *dctcp_params)
+    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, DCTCP_QUEUE_CAPACITY),
       m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, dctcp_params),
@@ -53,4 +52,8 @@ DCTCPRouter::~DCTCPRouter() {}
 void DCTCPRouter::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat) {
 	m_qm.assign_to_core(dropper, stat);
+}
+
+struct queue_bank_stats *DCTCPRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
 }

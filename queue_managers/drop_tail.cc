@@ -17,9 +17,8 @@ DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 		throw std::runtime_error("bank should be non-NULL");
 }
 
-DropTailRouter::DropTailRouter(uint16_t q_capacity,
-		struct queue_bank_stats *stats, uint32_t rack_index)
-	: m_bank(EMU_ENDPOINTS_PER_RACK*2, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
+DropTailRouter::DropTailRouter(uint16_t q_capacity, uint32_t rack_index)
+	: m_bank(EMU_ENDPOINTS_PER_RACK*2, 1, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  (1 << EMU_RACK_SHIFT) - 1),
 	  m_cla(),
@@ -35,9 +34,12 @@ void DropTailRouter::assign_to_core(Dropper *dropper,
 	m_qm.assign_to_core(dropper, stat);
 }
 
-DropTailCoreRouter::DropTailCoreRouter(uint16_t q_capacity,
-		struct queue_bank_stats *stats)
-	: m_bank(EMU_CORE_ROUTER_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY, stats),
+struct queue_bank_stats *DropTailRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
+}
+
+DropTailCoreRouter::DropTailCoreRouter(uint16_t q_capacity)
+	: m_bank(EMU_CORE_ROUTER_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt((1 << EMU_RACK_SHIFT) - 1),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity),
@@ -52,10 +54,13 @@ void DropTailCoreRouter::assign_to_core(Dropper *dropper,
 	m_qm.assign_to_core(dropper, stat);
 }
 
-PriorityRouter::PriorityRouter(uint16_t q_capacity,
-		struct queue_bank_stats* stats, uint32_t rack_index,
+struct queue_bank_stats *DropTailCoreRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
+}
+
+PriorityRouter::PriorityRouter(uint16_t q_capacity, uint32_t rack_index,
 		uint32_t n_hi_prio, uint32_t n_med_prio)
-	: m_bank(EMU_ENDPOINTS_PER_RACK, 3, DROP_TAIL_QUEUE_CAPACITY, stats),
+	: m_bank(EMU_ENDPOINTS_PER_RACK, 3, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  EMU_ENDPOINTS_PER_RACK),
 	  m_cla(n_hi_prio, n_med_prio),
@@ -69,11 +74,14 @@ void PriorityRouter::assign_to_core(Dropper* dropper,
 	m_qm.assign_to_core(dropper, stat);
 }
 
+struct queue_bank_stats *PriorityRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
+}
+
 PriorityRouter::~PriorityRouter() {}
 
-RRRouter::RRRouter(uint16_t q_capacity,
-		struct queue_bank_stats* stats, uint32_t rack_index)
-	: m_bank(EMU_ENDPOINTS_PER_RACK, 64, DROP_TAIL_QUEUE_CAPACITY, stats),
+RRRouter::RRRouter(uint16_t q_capacity, uint32_t rack_index)
+	: m_bank(EMU_ENDPOINTS_PER_RACK, 64, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  EMU_ENDPOINTS_PER_RACK),
 	  m_cla(),
@@ -85,6 +93,10 @@ RRRouter::RRRouter(uint16_t q_capacity,
 void RRRouter::assign_to_core(Dropper* dropper,
 		struct emu_admission_core_statistics* stat) {
 	m_qm.assign_to_core(dropper, stat);
+}
+
+struct queue_bank_stats *RRRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
 }
 
 RRRouter::~RRRouter() {}

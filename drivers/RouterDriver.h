@@ -28,6 +28,9 @@ public:
 
 	void step();
 	void cleanup();
+
+	struct queue_bank_stats *get_queue_bank_stats();
+	struct port_drop_stats *get_port_drop_stats();
 private:
 	Router *m_router;
 	struct fp_ring *m_q_to_router; /* must free incoming ring from network */

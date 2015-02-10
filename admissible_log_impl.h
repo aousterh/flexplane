@@ -44,11 +44,6 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 	printf("\n  router driver pushed %lu, pulled %lu",
 			st->router_driver_pushed, st->router_driver_pulled);
 
-	printf("\n errors:");
-	if (st->admitted_struct_overflow)
-		printf("\n  %lu admitted struct overflow (too many drops?)",
-				st->admitted_struct_overflow);
-
 	printf("\n warnings:");
 	if (st->send_packet_failed)
 		printf("\n  %lu send packet failed", st->send_packet_failed);

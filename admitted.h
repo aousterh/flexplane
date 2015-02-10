@@ -70,10 +70,7 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted,
 	assert(admitted != NULL);
 	assert(packet->src < EMU_NUM_ENDPOINTS);
 	assert(packet->dst < EMU_NUM_ENDPOINTS);
-
 	assert(admitted->size < EMU_ADMITS_PER_ADMITTED);
-	if (admitted->size >= EMU_ADMITS_PER_ADMITTED)
-		adm_log_emu_admitted_struct_overflow(stat);
 
 	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
 	edge->src = packet->src;

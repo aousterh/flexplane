@@ -29,7 +29,6 @@ struct emu_admission_core_statistics {
 
 	/* framework failures */
 	uint64_t send_packet_failed;
-	uint64_t admitted_struct_overflow;
 
 	/* counters used by drivers */
 	uint64_t endpoint_driver_processed_new;
@@ -103,13 +102,6 @@ void adm_log_emu_send_packets_failed(
 		struct emu_admission_core_statistics *st, uint32_t n_pkts) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->send_packet_failed += n_pkts;
-}
-
-static inline __attribute__((always_inline))
-void adm_log_emu_admitted_struct_overflow(
-		struct emu_admission_core_statistics *st) {
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->admitted_struct_overflow++;
 }
 
 static inline __attribute__((always_inline))

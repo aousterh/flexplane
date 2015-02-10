@@ -6,14 +6,13 @@
  */
 
 #include "emulation.h"
-#include "api.h"
-#include "api_impl.h"
 #include "admitted.h"
 #include "endpoint_group.h"
 #include "router.h"
 #include "drivers/EndpointDriver.h"
 #include "drivers/RouterDriver.h"
 #include "output.h"
+#include "packet_impl.h"
 #include "util/make_ring.h"
 #include "../protocol/topology.h"
 #include "../graph-algo/fp_ring.h"

@@ -28,8 +28,6 @@
 //#include "../protocol/topology.h"
 #include "util/make_ring.h"
 #include "packet.h"
-#include "api.h"
-#include "api_impl.h"
 #include "router.h"
 #include "endpoint_group.h"
 #include "composite.h"
@@ -66,7 +64,6 @@
 %pointer_functions(struct emu_packet, pkt)
 
 %include "util/make_ring.h"
-%include "api.h"
 %include "router.h"
 %include "endpoint_group.h"
 %include "composite.h"

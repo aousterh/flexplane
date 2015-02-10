@@ -1,22 +1,33 @@
 /*
- * api_impl.h
+ * packet_impl.h
  *
- * The implementations of static inline functions declared in api.h
+ * The implementations of static inline functions declared in packet.h
  *
  *  Created on: September 3, 2014
  *      Author: aousterh
  */
 
-#ifndef API_IMPL_H__
-#define API_IMPL_H__
+#ifndef PACKET_IMPL_H__
+#define PACKET_IMPL_H__
 
-#include "admitted.h"
-#include "api.h"
 #include "packet.h"
+#include "admissible_log.h"
+#include "emulation.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
-#include <assert.h>
+static inline
+void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
+		uint16_t flow, uint16_t id, uint8_t *areq_data) {
+	packet->src = src;
+	packet->dst = dst;
+	packet->flow = flow;
+	packet->id = id;
+	packet->flags = EMU_FLAGS_NONE; /* start with no flags */
+
+	/* TODO: add algo-specific fields to emu_packet and populate them from
+	 * areq_data, based on the algorithm used. */
+}
 
 static inline
 struct emu_packet *create_packet(struct emu_state *state, uint16_t src,

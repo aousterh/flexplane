@@ -8,7 +8,6 @@
 #ifndef PROBDROP_H_
 #define PROBDROP_H_
 
-#include "api.h"
 #include "config.h"
 #include "router.h"
 #include "composite.h"

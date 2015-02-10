@@ -12,10 +12,9 @@
 #include "../config.h"
 #include "../endpoint_group.h"
 #include "../emulation.h"
+#include "../packet_impl.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
-#include "../api.h"
-#include "../api_impl.h"
 
 #define MAX_PUSH_BURST			(EMU_ENDPOINTS_PER_RACK)
 #define MAX_PULL_BURST			(EMU_ENDPOINTS_PER_RACK)

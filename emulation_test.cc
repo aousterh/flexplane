@@ -6,7 +6,6 @@
  */
 
 #include "admitted.h"
-#include "api_impl.h"
 #include "config.h"
 #include "emulation.h"
 #include "emulation_impl.h"

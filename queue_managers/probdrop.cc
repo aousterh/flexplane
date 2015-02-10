@@ -6,7 +6,6 @@
  */
 
 #include "queue_managers/probdrop.h"
-#include "api_impl.h"
 #include "../graph-algo/random.h"
 
 #define PROBDROP_QUEUE_CAPACITY 4096

@@ -9,11 +9,9 @@
 #define EMULATION_IMPL_H_
 
 #include "config.h"
-#include "api.h"
-#include "api_impl.h"
 #include "admissible_log.h"
 #include "emulation.h"
-#include "packet.h"
+#include "packet_impl.h"
 #include "../graph-algo/fp_ring.h"
 #include "../protocol/topology.h"
 #include "../protocol/flags.h"

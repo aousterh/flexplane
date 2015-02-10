@@ -12,10 +12,9 @@
 #include "../config.h"
 #include "../emulation.h"
 #include "../router.h"
+#include "../packet_impl.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
-#include "../api.h"
-#include "../api_impl.h"
 #include "../graph-algo/random.h"
 
 #define ROUTER_MAX_BURST	(EMU_ENDPOINTS_PER_RACK)

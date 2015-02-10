@@ -63,8 +63,6 @@ py: _fastemu.so
 
 WRAP_HEADERS = \
 	packet.h \
-	api.h \
-	api_impl.h \
 	router.h \
 	composite.h \
 	classifiers/SingleQueueClassifier.h \

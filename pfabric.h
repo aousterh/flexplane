@@ -8,7 +8,6 @@
 #ifndef PFABRIC_H_
 #define PFABRIC_H_
 
-#include "api.h"
 
 #define PFABRIC_MAX_ENDPOINTS		64
 

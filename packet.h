@@ -11,6 +11,10 @@
 #include "../protocol/flags.h"
 #include <inttypes.h>
 
+/* alignment macros based on /net/pkt_sched.h */
+#define EMU_ALIGNTO				64
+#define EMU_ALIGN(len)			(((len) + EMU_ALIGNTO-1) & ~(EMU_ALIGNTO-1))
+
 /**
  * A representation of an MTU-sized packet in the emulated network.
  * @src: the id of the source endpoint in the emulation
@@ -34,15 +38,25 @@ struct emu_packet {
  */
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
-		uint16_t flow, uint16_t id, uint8_t *areq_data) {
-	packet->src = src;
-	packet->dst = dst;
-	packet->flow = flow;
-	packet->id = id;
-	packet->flags = EMU_FLAGS_NONE; /* start with no flags */
+		uint16_t flow, uint16_t id, uint8_t *areq_data);
 
-	/* TODO: add algo-specific fields to emu_packet and populate them from
-	 * areq_data, based on the algorithm used. */
-}
+/**
+ * Creates a packet, returns a pointer to the packet.
+ */
+static inline
+struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
+		uint16_t dst, uint16_t flow, uint16_t id, uint8_t *areq_data);
+
+/**
+ * Frees a packet when an emulation algorithm is done running.
+ */
+static inline
+void free_packet(struct emu_state *state, struct emu_packet *packet);
+
+/**
+ * Returns the private part of the endpoint struct.
+ */
+static inline
+void *packet_priv(struct emu_packet *packet);
 
 #endif /* PACKET_H_ */

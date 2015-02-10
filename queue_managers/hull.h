@@ -8,7 +8,6 @@
 #ifndef HULL_H_
 #define HULL_H_
 
-#include "api.h"
 #include "config.h"
 #include "router.h"
 #include "composite.h"

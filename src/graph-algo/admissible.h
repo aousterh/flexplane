@@ -166,7 +166,6 @@ void handle_spent_demands(struct admissible_state *state)
 #ifdef EMULATION_ALGO
 
 #include "../emulation/admitted.h"
-#include "../emulation/api.h"
 #include "../emulation/emulation.h"
 #include "../emulation/emulation_impl.h"
 #include "../emulation/packet.h"

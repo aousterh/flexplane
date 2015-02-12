@@ -7,6 +7,7 @@
 
 #include "emulation.h"
 #include "admitted.h"
+#include "emulation_core.h"
 #include "endpoint_group.h"
 #include "router.h"
 #include "drivers/EndpointDriver.h"
@@ -23,77 +24,6 @@
 #include <stdio.h>
 
 emu_state *g_state; /* global emulation state */
-
-EmulationCore::EmulationCore(struct emu_state *state,
-		EndpointDriver **epg_drivers, RouterDriver **router_drivers,
-		uint16_t n_epgs, uint16_t n_rtrs, uint16_t core_index)
-	: m_core_index(core_index)
-{
-	Dropper *dropper;
-	uint32_t i;
-
-	/* initialize the output and dropper for this core */
-	m_out = new EmulationOutput(state->q_admitted_out,
-			state->admitted_traffic_mempool, state->packet_mempool,
-			&m_stat);
-	dropper = new Dropper(*m_out, &m_stat);
-
-	m_n_epgs = n_epgs;
-	m_n_rtrs = n_rtrs;
-
-	for (i = 0; i < n_epgs; i++) {
-		m_endpoint_drivers[i] = epg_drivers[i];
-		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat, core_index);
-	}
-
-	for (i = 0; i < n_rtrs; i++) {
-		m_router_drivers[i] = router_drivers[i];
-		m_router_drivers[i]->assign_to_core(dropper, &m_stat, core_index);
-	}
-
-	/* TODO: do this properly by making the APIs accessible from C, or moving
-	 * the log core to C++ */
-	state->core_stats[core_index] = &m_stat;
-
-	/* initialize log to zeroes */
-	memset(&m_stat, 0, sizeof(struct emu_admission_core_statistics));
-}
-
-void EmulationCore::step() {
-	uint32_t i;
-
-	/* push/pull at endpoints and routers must be done in a specific order to
-	 * ensure that packets pushed in one timeslot cannot be pulled until the
-	 * next. */
-
-	/* push new packets from the network to endpoints */
-	for (i = 0; i < m_n_epgs; i++)
-		m_endpoint_drivers[i]->step();
-
-	/* emulate one timeslot at each router (push and pull) */
-	for (i = 0; i < m_n_rtrs; i++)
-		m_router_drivers[i]->step();
-
-	m_out->flush();
-}
-
-void EmulationCore::cleanup() {
-	uint32_t i;
-
-	/* free all endpoints */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		m_endpoint_drivers[i]->cleanup();
-		delete m_endpoint_drivers[i];
-	}
-
-	/* free all routers */
-	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		m_router_drivers[i]->cleanup();
-		delete m_router_drivers[i];
-	}
-
-	delete m_out;
-}
 
 #if defined(SINGLE_RACK_TOPOLOGY)
 /* construct a topology with 1 rack - 1 router connected to all endpoints */

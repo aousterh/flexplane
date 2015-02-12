@@ -17,6 +17,7 @@
 #include "admission_log.h"
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
+#include "../emulation/emulation_core.h"
 #include "../emulation/endpoint.h"
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"

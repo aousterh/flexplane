@@ -144,29 +144,14 @@ int exec_emu_admission_core(void *void_cmd_p)
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
 	EmulationCore *core = g_emu_state.cores[core_ind];
-	int ret;
 	uint64_t logical_timeslot = cmd->start_timeslot;
-	uint64_t start_time_first_timeslot, time_now, tslot;
-	int64_t timeslots_behind;
+	uint64_t time_now, tslot;
     int16_t i;
 	/* calculate shift and mul for the rdtsc */
 	double tslot_len_seconds = ((double)(1 << TIMESLOT_SHIFT)) / ((double)TIMESLOT_MUL * NSEC_PER_SEC);
     double tslot_len_rdtsc_cycles = tslot_len_seconds * rte_get_timer_hz();
     uint32_t rdtsc_shift = (uint32_t)log(tslot_len_rdtsc_cycles) + 12;
     uint32_t rdtsc_mul = ((double)(1 << rdtsc_shift)) / tslot_len_rdtsc_cycles;
-
-	/* set thread priority to max */
-/*	pthread_t this_thread = pthread_self();
-	struct sched_param params;
-	params.sched_priority = sched_get_priority_max(SCHED_FIFO);
-	ret = pthread_setschedparam(this_thread, SCHED_FIFO, &params);
-	if (ret != 0) {
-	  ADMISSION_DEBUG("core %d admission %d failed to set thread realtime priority\n",
-			  rte_lcore_id(), core_ind);
-	} else {
-	  ADMISSION_DEBUG("core %d admission %d successfully set thread realtime priority\n",
-			  rte_lcore_id(), core_ind);
-                          }*/
 
 	/* do allocation loop */
 	time_now = fp_get_time_ns();
@@ -177,16 +162,6 @@ int exec_emu_admission_core(void *void_cmd_p)
 			rte_lcore_id(), core_ind, cmd->start_timeslot, tslot);
 
 	while (1) {
-		/* check if we're behind */
-/*		timeslots_behind = tslot - logical_timeslot +
-				TIMESLOTS_PER_ONE_WAY_DELAY;
-		if (timeslots_behind > TSLOTS_BEHIND_TOLERANCE) {*/
-			/* skip timeslots to catch up */
-		/*	logical_timeslot += timeslots_behind;
-
-			admission_log_core_skipped_tslots(timeslots_behind);
-		}*/
-
 		/* re-calibrate clock */
 		uint64_t real_time = fp_get_time_ns();
 		uint64_t rdtsc_time = rte_get_timer_cycles();

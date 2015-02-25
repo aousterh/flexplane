@@ -1,12 +1,12 @@
 /*
- * igmp.h
+ * watchdog.h
  *
- *  Created on: January 17, 2014
- *      Author: aousterh
+ *  Created on: March 19, 2014
+ *      Author: yonch
  */
 
-#ifndef IGMP_H_
-#define IGMP_H_
+#ifndef WATCHDOG_H_
+#define WATCHDOG_H_
 
 #include "../protocol/platform/generic.h"
 
@@ -127,4 +127,4 @@ try_sending:
 }
 #endif /* __cplusplus */
 
-#endif /* IGMP_H_ */
+#endif /* WATCHDOG_H_ */

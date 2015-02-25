@@ -20,6 +20,7 @@
 #include "admission_core_common.h"
 #include "fp_timer.h"
 #include "igmp.h"
+#include "watchdog.h"
 #include "../graph-algo/admissible.h"
 #include "../graph-algo/path_selection.h"
 #include "../protocol/flags.h"

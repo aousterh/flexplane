@@ -10,7 +10,6 @@
 #include "../protocol/topology.h"
 #include "fp_timer.h"
 #include "main.h"
-#include "watchdog.h"
 #include "control.h"
 
 #ifdef __cplusplus

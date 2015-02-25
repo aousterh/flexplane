@@ -12,6 +12,7 @@
 #include "log_core.h"
 #include "control.h"
 #include "comm_core.h"
+#include "comm_log.h"
 #include "admission_core.h"
 #include "admission_core_common.h"
 #include "admission_log.h"

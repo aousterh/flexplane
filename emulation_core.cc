@@ -10,18 +10,19 @@
 #include "drivers/RouterDriver.h"
 #include "output.h"
 
-EmulationCore::EmulationCore(struct emu_state *state,
-		EndpointDriver **epg_drivers, RouterDriver **router_drivers,
-		uint16_t n_epgs, uint16_t n_rtrs, uint16_t core_index)
+EmulationCore::EmulationCore(EndpointDriver **epg_drivers,
+		RouterDriver **router_drivers, uint16_t n_epgs, uint16_t n_rtrs,
+		uint16_t core_index, struct fp_ring *q_admitted_out,
+		struct fp_mempool *admitted_traffic_mempool,
+		struct fp_mempool *packet_mempool)
 	: m_core_index(core_index)
 {
 	Dropper *dropper;
 	uint32_t i;
 
 	/* initialize the output and dropper for this core */
-	m_out = new EmulationOutput(state->q_admitted_out,
-			state->admitted_traffic_mempool, state->packet_mempool,
-			&m_stat);
+	m_out = new EmulationOutput(q_admitted_out, admitted_traffic_mempool,
+			packet_mempool, &m_stat);
 	dropper = new Dropper(*m_out, &m_stat);
 
 	m_n_epgs = n_epgs;
@@ -36,10 +37,6 @@ EmulationCore::EmulationCore(struct emu_state *state,
 		m_router_drivers[i] = router_drivers[i];
 		m_router_drivers[i]->assign_to_core(dropper, &m_stat, core_index);
 	}
-
-	/* TODO: do this properly by making the APIs accessible from C, or moving
-	 * the log core to C++ */
-	state->core_stats[core_index] = &m_stat;
 
 	/* initialize log to zeroes */
 	memset(&m_stat, 0, sizeof(struct emu_admission_core_statistics));

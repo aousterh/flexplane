@@ -236,40 +236,54 @@ inline void assign_components_to_cores(struct emu_state *state,
 #if (ALGO_N_CORES == (EMU_NUM_ROUTERS + EMU_NUM_ENDPOINT_GROUPS))
 	/* put 1 router or endpoint group on each core */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		state->cores[core_index] = new EmulationCore(state, &epg_drivers[i],
-				NULL, 1, 0, core_index);
+		state->cores[core_index] = new EmulationCore(&epg_drivers[i], NULL, 1,
+				0, core_index, state->q_admitted_out,
+				state->admitted_traffic_mempool, state->packet_mempool);
+		state->core_stats[core_index] = state->cores[core_index]->stats();
 		core_index++;
 	}
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		state->cores[core_index] = new EmulationCore(state, NULL,
-				&router_drivers[i], 0, 1, core_index);
+		state->cores[core_index] = new EmulationCore(NULL, &router_drivers[i],
+				0, 1, core_index, state->q_admitted_out,
+				state->admitted_traffic_mempool, state->packet_mempool);
+		state->core_stats[core_index] = state->cores[core_index]->stats();
 		core_index++;
 	}
 #elif (ALGO_N_CORES == 3) && defined(TWO_RACK_TOPOLOGY)
 	/* 1 epg + 1 rtr on first two cores, core router on last core */
 	for (i = 0; i < 2; i++) {
-		state->cores[core_index] = new EmulationCore(state, &epg_drivers[i],
-				&router_drivers[i], 1, 1, core_index);
+		state->cores[core_index] = new EmulationCore(&epg_drivers[i],
+				&router_drivers[i], 1, 1, core_index, state->q_admitted_out,
+				state->admitted_traffic_mempool, state->packet_mempool);
+		state->core_stats[core_index] = state->cores[core_index]->stats();
 		core_index++;
 	}
-	state->cores[core_index] = new EmulationCore(state, NULL,
-			&router_drivers[2], 0, 1, core_index);
+	state->cores[core_index] = new EmulationCore(NULL, &router_drivers[2], 0,
+			1, core_index, state->q_admitted_out,
+			state->admitted_traffic_mempool, state->packet_mempool);
+	state->core_stats[core_index] = state->cores[core_index]->stats();
 	core_index++;
 #elif (ALGO_N_CORES == 4) && defined(THREE_RACK_TOPOLOGY)
 	/* 1 epg + 1 rtr on first three cores, core router on last core */
 	for (i = 0; i < 3; i++) {
-		state->cores[core_index] = new EmulationCore(state, &epg_drivers[i],
-				&router_drivers[i], 1, 1, core_index);
+		state->cores[core_index] = new EmulationCore(&epg_drivers[i],
+				&router_drivers[i], 1, 1, core_index, state->q_admitted_out,
+				state->admitted_traffic_mempool, state->packet_mempool);
+		state->core_stats[core_index] = state->cores[core_index]->stats();
 		core_index++;
 	}
-	state->cores[core_index] = new EmulationCore(state, NULL,
-			&router_drivers[3], 0, 1, core_index);
+	state->cores[core_index] = new EmulationCore(NULL, &router_drivers[3], 0,
+			1, core_index, state->q_admitted_out,
+			state->admitted_traffic_mempool, state->packet_mempool);
+	state->core_stats[core_index] = state->cores[core_index]->stats();
 	core_index++;
 #elif (ALGO_N_CORES == 1)
 	/* assign everything to one core */
-	state->cores[core_index] = new EmulationCore(state, epg_drivers,
-			router_drivers, EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS,
-			core_index);
+	state->cores[core_index] = new EmulationCore(epg_drivers, router_drivers,
+			EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS, core_index,
+			state->q_admitted_out, state->admitted_traffic_mempool,
+			state->packet_mempool);
+	state->core_stats[core_index] = state->cores[core_index]->stats();
 #else
 #error "no specified way to assign this number of routers and endpoint groups to available cores"
 #endif

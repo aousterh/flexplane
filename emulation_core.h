@@ -10,6 +10,8 @@
 
 #include "admissible_log.h"
 #include "config.h"
+#include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 #include <inttypes.h>
 
 struct emu_state;
@@ -29,12 +31,18 @@ class RouterDriver;
  */
 class EmulationCore {
 public:
-	EmulationCore(struct emu_state *state, EndpointDriver **epg_drivers,
-			RouterDriver **router_drivers, uint16_t num_epgs,
-			uint16_t num_routers, uint16_t core_index);
+	EmulationCore(EndpointDriver **epg_drivers, RouterDriver **router_drivers,
+			uint16_t num_epgs, uint16_t num_routers, uint16_t core_index,
+			struct fp_ring *q_admitted_out,
+			struct fp_mempool *admitted_traffic_mempool,
+			struct fp_mempool *packet_mempool);
 
 	void step();
 	void cleanup();
+
+	inline struct emu_admission_core_statistics *stats() {
+		return &m_stat;
+	}
 private:
 	EmulationOutput	*m_out;
 	EndpointDriver	*m_endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];

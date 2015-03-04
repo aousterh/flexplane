@@ -23,8 +23,6 @@
 #include <stdexcept>
 #include <stdio.h>
 
-emu_state *g_state; /* global emulation state */
-
 #if defined(SINGLE_RACK_TOPOLOGY)
 /* construct a topology with 1 rack - 1 router connected to all endpoints */
 inline void construct_single_rack_topology(struct emu_state *state,
@@ -303,8 +301,6 @@ void emu_init_state(struct emu_state *state,
 	Dropper *dropper;
 	char s[64];
 	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
-
-	g_state = state;
 
 	/* init packet_queues */
 	pq = 0;

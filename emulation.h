@@ -119,9 +119,4 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 static inline
 void emu_reset_sender(struct emu_state *state, uint16_t src);
 
-/**
- * Frees all the packets in an fp_ring, and frees the ring itself.
- */
-void free_packet_ring(struct emu_state *state, struct fp_ring *packet_ring);
-
 #endif /* EMULATION_H_ */

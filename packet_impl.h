@@ -38,7 +38,7 @@ struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
 	/* allocate a packet */
 	while (fp_mempool_get(state->packet_mempool, (void **) &packet)
 	       == -ENOENT) {
-		adm_log_emu_packet_alloc_failed(&g_state->stat);
+		adm_log_emu_packet_alloc_failed(&state->stat);
 	}
 	packet_init(packet, src, dst, flow, id, areq_data);
 
@@ -46,9 +46,22 @@ struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
 }
 
 static inline
-void free_packet(struct emu_state *state, struct emu_packet *packet) {
+void free_packet(struct emu_packet *packet, struct fp_mempool *packet_mempool)
+{
 	/* return the packet to the mempool */
-	fp_mempool_put(state->packet_mempool, packet);
+	fp_mempool_put(packet_mempool, packet);
+}
+
+static inline
+void free_packet_ring(struct fp_ring *packet_ring,
+		struct fp_mempool *packet_mempool)
+{
+	struct emu_packet *packet;
+
+	while (fp_ring_dequeue(packet_ring, (void **) &packet) == 0) {
+		free_packet(packet, packet_mempool);
+	}
+	fp_free(packet_ring);
 }
 
 static inline

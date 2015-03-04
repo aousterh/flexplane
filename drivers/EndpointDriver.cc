@@ -22,13 +22,15 @@
 
 EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 		struct fp_ring* q_to_router, struct fp_ring* q_from_router,
-		struct fp_ring *q_resets, EndpointGroup* epg)
+		struct fp_ring *q_resets, EndpointGroup* epg,
+		struct fp_mempool *packet_mempool)
 	: m_q_new_packets(q_new_packets),
 	  m_q_to_router(q_to_router),
 	  m_q_from_router(q_from_router),
 	  m_q_resets(q_resets),
 	  m_epg(epg),
-	  m_cur_time(0)
+	  m_cur_time(0),
+	  m_packet_mempool(packet_mempool)
 {}
 
 void EndpointDriver::assign_to_core(EmulationOutput *out,
@@ -39,7 +41,7 @@ void EndpointDriver::assign_to_core(EmulationOutput *out,
 }
 
 void EndpointDriver::cleanup() {
-	free_packet_ring(g_state, m_q_from_router);
+	free_packet_ring(m_q_from_router, m_packet_mempool);
 
 	delete m_epg;
 }
@@ -97,7 +99,7 @@ inline void EndpointDriver::pull() {
 		/* no space in ring. log but don't retry. */
 		adm_log_emu_send_packets_failed(m_stat, n_pkts);
 		for (i = 0; i < n_pkts; i++)
-			free_packet(g_state, pkts[i]);
+			free_packet(pkts[i], m_packet_mempool);
 	} else {
 		adm_log_emu_endpoint_driver_pulled(m_stat, n_pkts);
 	}

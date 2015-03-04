@@ -55,7 +55,7 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	assert(rtr != NULL);
 	rtr_masks[0] = 0xFFFFFFFF; /* 32 ports */
 	router_drivers[0] = new RouterDriver(rtr, q_router_ingress,
-			&q_router_egress[0], &rtr_masks[0], 1);
+			&q_router_egress[0], &rtr_masks[0], 1, state->packet_mempool);
 
 	/* initialize all the endpoints in one endpoint group */
 	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS, 0,
@@ -64,7 +64,7 @@ inline void construct_single_rack_topology(struct emu_state *state,
 	endpoint_drivers[0] =
 			new EndpointDriver(state->comm_state.q_epg_new_pkts[0],
 					q_router_ingress, q_router_egress[0],
-					state->comm_state.q_resets[0], epg);
+					state->comm_state.q_resets[0], epg, state->packet_mempool);
 }
 #endif
 
@@ -100,7 +100,8 @@ inline void construct_two_rack_topology(struct emu_state *state,
 		endpoint_drivers[i] =
 				new EndpointDriver(state->comm_state.q_epg_new_pkts[i],
 						q_router_ingress[i], q_epg_ingress[i],
-						state->comm_state.q_resets[i], epg);
+						state->comm_state.q_resets[i], epg,
+						state->packet_mempool);
 	}
 
 	/* initialize the ToRs. both have 32 ports facing down and 32 ports facing
@@ -118,7 +119,7 @@ inline void construct_two_rack_topology(struct emu_state *state,
 		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
-				&q_router_egress[0], &rtr_masks[0], 2);
+				&q_router_egress[0], &rtr_masks[0], 2, state->packet_mempool);
 	}
 
 	/* initialize the ToR. first 32 ports are for first ToR, next 32 are for
@@ -130,7 +131,7 @@ inline void construct_two_rack_topology(struct emu_state *state,
 	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 2);
 	assert(rtr != NULL);
 	router_drivers[2] = new RouterDriver(rtr, q_router_ingress[2],
-			&q_router_egress[0], &rtr_masks[0], 2);
+			&q_router_egress[0], &rtr_masks[0], 2, state->packet_mempool);
 
 }
 #endif
@@ -167,7 +168,8 @@ inline void construct_three_rack_topology(struct emu_state *state,
 		endpoint_drivers[i] =
 				new EndpointDriver(state->comm_state.q_epg_new_pkts[i],
 						q_router_ingress[i], q_epg_ingress[i],
-						state->comm_state.q_resets[i], epg);
+						state->comm_state.q_resets[i], epg,
+						state->packet_mempool);
 	}
 
 	/* initialize the ToRs. all three have 32 ports facing down and 32 ports facing
@@ -185,7 +187,7 @@ inline void construct_three_rack_topology(struct emu_state *state,
 		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
-				&q_router_egress[0], &rtr_masks[0], 2);
+				&q_router_egress[0], &rtr_masks[0], 2, state->packet_mempool);
 	}
 
 	/* initialize the ToR with 16 ports per ToR. */
@@ -200,7 +202,7 @@ inline void construct_three_rack_topology(struct emu_state *state,
 	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 3);
 	assert(rtr != NULL);
 	router_drivers[3] = new RouterDriver(rtr, q_router_ingress[3],
-			&q_router_egress[0], &rtr_masks[0], 3);
+			&q_router_egress[0], &rtr_masks[0], 3, state->packet_mempool);
 
 }
 #endif
@@ -350,8 +352,9 @@ void emu_cleanup(struct emu_state *state) {
 	/* free queues to comm core */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		/* free packet queues, return packets to mempool */
-		free_packet_ring(state, state->comm_state.q_epg_new_pkts[i]);
-		free_packet_ring(state, state->comm_state.q_resets[i]);
+		free_packet_ring(state->comm_state.q_epg_new_pkts[i],
+				state->packet_mempool);
+		free_packet_ring(state->comm_state.q_resets[i], state->packet_mempool);
 	}
 
 	/* empty queue of admitted traffic, return structs to the mempool */
@@ -368,16 +371,6 @@ void emu_emulate(struct emu_state *state) {
 
 	for (i = 0; i < ALGO_N_CORES; i++)
 		state->cores[i]->step();
-}
-
-void free_packet_ring(struct emu_state *state, struct fp_ring *packet_ring)
-{
-	struct emu_packet *packet;
-
-	while (fp_ring_dequeue(packet_ring, (void **) &packet) == 0) {
-		free_packet(state, packet);
-	}
-	fp_free(packet_ring);
 }
 
 #ifdef NO_DPDK

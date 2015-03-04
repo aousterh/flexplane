@@ -51,7 +51,14 @@ struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
  * Frees a packet when an emulation algorithm is done running.
  */
 static inline
-void free_packet(struct emu_state *state, struct emu_packet *packet);
+void free_packet(struct emu_packet *packet, struct fp_mempool *packet_mempool);
+
+/**
+ * Frees all the packets in an fp_ring, and frees the ring itself.
+ */
+static inline
+void free_packet_ring(struct fp_ring *packet_ring,
+		struct fp_mempool *packet_mempool);
 
 /**
  * Returns the private part of the endpoint struct.

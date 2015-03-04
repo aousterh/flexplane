@@ -9,6 +9,7 @@
 #define DRIVERS_ENDPOINTDRIVER_H_
 
 #include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 
 class EndpointGroup;
 class EmulationOutput;
@@ -18,7 +19,7 @@ class EndpointDriver {
 public:
 	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router, struct fp_ring *q_resets,
-			EndpointGroup *epg);
+			EndpointGroup *epg, struct fp_mempool *packet_mempool);
 
 	/**
 	 * Prepares this driver to run on a specific core.
@@ -49,6 +50,7 @@ private:
 	struct emu_admission_core_statistics	*m_stat;
 	uint16_t m_core_index;
 	uint64_t m_cur_time;
+	struct fp_mempool *m_packet_mempool;
 };
 
 #endif /* DRIVERS_ENDPOINTDRIVER_H_ */

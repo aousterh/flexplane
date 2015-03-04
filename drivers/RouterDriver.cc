@@ -21,11 +21,13 @@
 
 
 RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
-		struct fp_ring **q_from_router, uint64_t *masks, uint16_t n_neighbors)
+		struct fp_ring **q_from_router, uint64_t *masks, uint16_t n_neighbors,
+		struct fp_mempool *packet_mempool)
 	: m_router(router),
 	  m_q_to_router(q_to_router),
 	  m_neighbors(n_neighbors),
-	  m_cur_time(0)
+	  m_cur_time(0),
+	  m_packet_mempool(packet_mempool)
 {
 	uint16_t i;
 
@@ -52,7 +54,7 @@ struct port_drop_stats *RouterDriver::get_port_drop_stats() {
 }
 
 void RouterDriver::cleanup() {
-	free_packet_ring(g_state, m_q_to_router);
+	free_packet_ring(m_q_to_router, m_packet_mempool);
 
 	delete m_router;
 }
@@ -93,7 +95,7 @@ void RouterDriver::step() {
 			/* no space in ring. log but don't retry. */
 			adm_log_emu_send_packets_failed(m_stat, n_pkts);
 			for (i = 0; i < n_pkts; i++)
-				free_packet(g_state, pkt_ptrs[i]);
+				free_packet(pkt_ptrs[i], m_packet_mempool);
 		} else {
 			adm_log_emu_router_driver_pulled(m_stat, n_pkts);
 		}

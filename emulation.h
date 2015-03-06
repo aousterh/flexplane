@@ -91,16 +91,6 @@ void emu_cleanup(struct emu_state *state);
  */
 void emu_emulate(struct emu_state *state);
 
-
-/**
- * Allocates rings and mempools, and initializes an emulation state
- */
-#ifdef NO_DPDK
-void emu_alloc_init(struct emu_state *state,
-		uint32_t admitted_mempool_size, uint32_t admitted_ring_size,
-		uint32_t packet_mempool_size, uint32_t packet_ring_size);
-#endif
-
 /**
  * Add backlog from @src to @dst for @flow. Add @amount MTUs, with the first id
  * of @start_id. @areq_data provides additional information about each MTU.

@@ -20,7 +20,6 @@
 #include "../graph-algo/platform.h"
 
 #include <assert.h>
-#include <stdexcept>
 #include <stdio.h>
 
 #if defined(SINGLE_RACK_TOPOLOGY)
@@ -368,30 +367,3 @@ void emu_emulate(struct emu_state *state) {
 	for (i = 0; i < ALGO_N_CORES; i++)
 		state->cores[i]->step();
 }
-
-#ifdef NO_DPDK
-void emu_alloc_init(struct emu_state* state, uint32_t admitted_mempool_size,
-		uint32_t admitted_ring_size, uint32_t packet_mempool_size,
-		uint32_t packet_ring_size)
-{
-	struct fp_mempool *admitted_traffic_mempool =
-			fp_mempool_create("admitted_mempool", admitted_mempool_size,
-					sizeof(struct emu_admitted_traffic), 0, 0, 0);
-	if (admitted_traffic_mempool == NULL)
-		throw std::runtime_error("couldn't allocate admitted_traffic_mempool");
-
-	struct fp_ring *q_admitted_out = fp_ring_create("q_admitted_out",
-			admitted_ring_size, 0, 0);
-	if (q_admitted_out == NULL)
-		throw std::runtime_error("couldn't allocate q_admitted_out");
-
-	struct fp_mempool *packet_mempool = fp_mempool_create("packet_mempool",
-			packet_mempool_size, EMU_ALIGN(sizeof(struct emu_packet)), 0, 0, 0);
-	if (packet_mempool == NULL)
-		throw std::runtime_error("couldn't allocate packet_mempool");
-
-	emu_init_state(state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_ring_size, R_DropTail, NULL,
-			E_Simple, NULL);
-}
-#endif

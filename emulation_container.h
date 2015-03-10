@@ -60,8 +60,7 @@ EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
 		throw std::runtime_error("couldn't allocate packet_mempool");
 
 	m_emulation = new Emulation(m_admitted_mempool, m_q_admitted_out,
-			m_packet_mempool, packet_ring_size, r_type, r_args, e_type,
-			e_args);
+			packet_ring_size, r_type, r_args, e_type, e_args);
 }
 
 EmulationContainer::~EmulationContainer() {

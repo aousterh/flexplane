@@ -14,6 +14,7 @@
 #include "drivers/RouterDriver.h"
 #include "output.h"
 #include "packet_impl.h"
+#include "util/make_mempool.h"
 #include "util/make_ring.h"
 #include "../protocol/topology.h"
 #include "../graph-algo/fp_ring.h"
@@ -23,9 +24,8 @@
 #include <stdio.h>
 
 Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
-		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-	    uint32_t packet_ring_size, RouterType r_type, void *r_args,
-		EndpointType e_type, void *e_args) {
+		struct fp_ring *q_admitted_out, uint32_t packet_ring_size,
+		RouterType r_type, void *r_args, EndpointType e_type, void *e_args) {
 	uint32_t i, pq;
 	EndpointDriver	*endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
 	RouterDriver	*router_drivers[EMU_NUM_ROUTERS];
@@ -33,6 +33,11 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	Dropper *dropper;
 	char s[64];
 	struct fp_ring *packet_queues[EMU_NUM_PACKET_QS];
+
+	/* create packet mempool */
+	m_packet_mempool = make_mempool("packet_mempool", PACKET_MEMPOOL_SIZE,
+			EMU_ALIGN(sizeof(struct emu_packet)), PACKET_MEMPOOL_CACHE_SIZE, 0,
+			0);
 
 	/* init packet_queues */
 	pq = 0;
@@ -44,7 +49,6 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	/* initialize main emulation state */
 	m_admitted_traffic_mempool = admitted_traffic_mempool;
 	m_q_admitted_out = q_admitted_out;
-	m_packet_mempool = packet_mempool;
 
 	/* initialize log to zeroes */
 	memset(&m_stat, 0, sizeof(struct emu_admission_statistics));

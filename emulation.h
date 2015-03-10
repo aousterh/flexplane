@@ -24,6 +24,7 @@
 #define ADMITTED_MEMPOOL_SIZE	128
 #define ADMITTED_Q_LOG_SIZE		4
 #define PACKET_MEMPOOL_SIZE		(1024 * 1024)
+#define	PACKET_MEMPOOL_CACHE_SIZE		256
 #define PACKET_Q_LOG_SIZE		16
 #define EMU_NUM_PACKET_QS		(3 * EMU_NUM_ENDPOINT_GROUPS + EMU_NUM_ROUTERS)
 #define MIN(X, Y)				(X <= Y ? X : Y)
@@ -47,23 +48,14 @@ struct emu_comm_state {
 };
 
 /**
- * Data structure to store the state of the emulation.
- * @packet_mempool: pool of packet structs
- * @admitted_traffic_mempool: pool of admitted traffic structs
- * @q_admitted_out: queue of admitted structs to comm core
- * @stat: global emulation stats (mostly used by comm core)
- * @comm_state: state allocated per comm core to manage new packets
- * @queue_bank_stats: pointers to stats for each queue bank
- * @port_drop_stats: pointers to stats for each router
- * @core_stats: per-core stats, for easier access from logging core
- * @cores: the emulation cores
+ * Class to store the global state of the emulation.
  */
 class Emulation {
 public:
 	Emulation(struct fp_mempool *admitted_traffic_mempool,
-			struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-			uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
-			enum EndpointType e_type, void *e_args);
+			struct fp_ring *q_admitted_out, uint32_t packet_ring_size,
+			enum RouterType r_type, void *r_args, enum EndpointType e_type,
+			void *e_args);
 
 	/**
 	 * Run the emulation for one step.

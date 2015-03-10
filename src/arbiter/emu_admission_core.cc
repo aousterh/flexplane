@@ -146,7 +146,7 @@ int exec_emu_admission_core(void *void_cmd_p)
 {
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
-	EmulationCore *core = g_emulation->cores[core_ind];
+	EmulationCore *core = g_emulation->m_cores[core_ind];
 	uint64_t logical_timeslot = cmd->start_timeslot;
 	uint64_t time_now, tslot;
     int16_t i;

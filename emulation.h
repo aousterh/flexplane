@@ -11,11 +11,14 @@
 #include "admissible_log.h"
 #include "config.h"
 #include "endpoint.h"
+#include "packet.h"
+#include "packet_impl.h"
 #include "router.h"
 #include "queue_bank_log.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include "../protocol/topology.h"
+#include <assert.h>
 #include <inttypes.h>
 
 #define ADMITTED_MEMPOOL_SIZE	128
@@ -24,14 +27,12 @@
 #define PACKET_Q_LOG_SIZE		16
 #define EMU_NUM_PACKET_QS		(3 * EMU_NUM_ENDPOINT_GROUPS + EMU_NUM_ROUTERS)
 
-#ifdef __cplusplus
 class EmulationCore;
 class EndpointGroup;
 class Router;
 class EmulationOutput;
 class EndpointDriver;
 class RouterDriver;
-#endif
 
 /**
  * Emu state allocated for each comm core
@@ -55,54 +56,90 @@ struct emu_comm_state {
  * @core_stats: per-core stats, for easier access from logging core
  * @cores: the emulation cores
  */
-struct emu_state {
+class Emulation {
+public:
+	Emulation(struct fp_mempool *admitted_traffic_mempool,
+			struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
+			uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
+			enum EndpointType e_type, void *e_args);
+
+	/**
+	 * Run the emulation for one step.
+	 */
+	void step();
+
+	/**
+	 * Add backlog from @src to @dst for @flow. Add @amount MTUs, with the
+	 * 	first id of @start_id. @areq_data provides additional information about
+	 * 	each MTU.
+	 */
+	inline void add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
+			uint32_t amount, uint16_t start_id, u8* areq_data);
+
+	/**
+	 * Reset the emulation state for a single sender @src.
+	 */
+	inline void reset_sender(uint16_t src);
+
+	/**
+	 * Cleanup before destroying this Emulation.
+	 */
+	void cleanup();
+
+private:
+	/**
+	 * Creates a packet, returns a pointer to the packet.
+	 */
+	inline struct emu_packet *create_packet(uint16_t src, uint16_t dst,
+			uint16_t flow, uint16_t id, uint8_t *areq_data);
+
+	void construct_topology(struct fp_ring **packet_queues,
+			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
+			RouterType r_type, void *r_args, EndpointType e_type,
+			void *e_args);
+	void construct_single_rack_topology(struct fp_ring **packet_queues,
+			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
+			RouterType r_type, void *r_args, EndpointType e_type,
+			void *e_args);
+	void construct_two_rack_topology(struct fp_ring **packet_queues,
+			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
+			RouterType r_type, void *r_args, EndpointType e_type,
+			void *e_args);
+	void construct_three_rack_topology(struct fp_ring **packet_queues,
+			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
+			RouterType r_type, void *r_args, EndpointType e_type,
+			void *e_args);
+	void assign_components_to_cores(EndpointDriver **epg_drivers,
+			RouterDriver **router_drivers);
+
+	/* Public variables for easy access from the log and emulation cores. */
+public:
+	struct emu_admission_statistics			stat;
+	struct emu_admission_core_statistics	*core_stats[ALGO_N_CORES];
+	EmulationCore							*cores[ALGO_N_CORES];
+
+private:
 	struct fp_mempool						*packet_mempool;
 	struct fp_mempool						*admitted_traffic_mempool;
 	struct fp_ring							*q_admitted_out;
-	struct emu_admission_statistics			stat;
 	struct emu_comm_state					comm_state;
 	struct queue_bank_stats					*queue_bank_stats[EMU_NUM_ROUTERS];
 	struct port_drop_stats					*port_drop_stats[EMU_NUM_ROUTERS];
-	struct emu_admission_core_statistics	*core_stats[ALGO_N_CORES];
-
-	/* this state is not directly accessible from the arbiter */
-#ifdef __cplusplus
-	EmulationCore							*cores[ALGO_N_CORES];
-#endif
 };
 
-/**
- * Initialize an emulation state.
- */
-void emu_init_state(struct emu_state *state,
-		struct fp_mempool *admitted_traffic_mempool,
-		struct fp_ring *q_admitted_out, struct fp_mempool *packet_mempool,
-		uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
-		enum EndpointType e_type, void *e_args);
 
-/**
- * Cleanup state and memory. Called when emulation terminates.
- */
-void emu_cleanup(struct emu_state *state);
+inline struct emu_packet *Emulation::create_packet(uint16_t src, uint16_t dst,
+		uint16_t flow, uint16_t id, uint8_t *areq_data)
+{
+	struct emu_packet *packet;
 
-/**
- * Emulate a single timeslot - called only for single-core tests. For
- * multicore, should call step on the specific core instead.
- */
-void emu_emulate(struct emu_state *state);
+	/* allocate a packet */
+	while (fp_mempool_get(packet_mempool, (void **) &packet) == -ENOENT) {
+		adm_log_emu_packet_alloc_failed(&stat);
+	}
+	packet_init(packet, src, dst, flow, id, areq_data);
 
-/**
- * Add backlog from @src to @dst for @flow. Add @amount MTUs, with the first id
- * of @start_id. @areq_data provides additional information about each MTU.
- */
-static inline
-void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount, uint16_t start_id, u8* areq_data);
-
-/**
- * Reset the emulation state for a single sender @src.
- */
-static inline
-void emu_reset_sender(struct emu_state *state, uint16_t src);
+	return packet;
+}
 
 #endif /* EMULATION_H_ */

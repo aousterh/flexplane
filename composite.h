@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdexcept>
 #include "packet.h"
+#include "packet_impl.h"
 #include "endpoint_group.h"
 #include "router.h"
 #include "../graph-algo/platform.h"

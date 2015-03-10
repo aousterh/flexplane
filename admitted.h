@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "admissible_log.h"
-#include "emulation.h"
 #include "packet.h"
 #include "../protocol/flags.h"
 #include "../protocol/topology.h"

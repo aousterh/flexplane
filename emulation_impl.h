@@ -21,18 +21,15 @@
 #define MIN(X, Y)	(X <= Y ? X : Y)
 #define EMU_ADD_BACKLOG_BATCH_SIZE	64
 
-static inline
-void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
-		uint16_t flow, uint32_t amount, uint16_t start_id, u8* areq_data) {
+inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
+		uint32_t amount, uint16_t start_id, u8* areq_data) {
 	uint32_t i, n_pkts;
-	struct emu_comm_state *comm_state;
 	struct fp_ring *q_epg_new_pkts;
 	assert(src < EMU_NUM_ENDPOINTS);
 	assert(dst < EMU_NUM_ENDPOINTS);
 	assert(flow < FLOWS_PER_NODE);
 
-	comm_state = &state->comm_state;
-	q_epg_new_pkts = comm_state->q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
+	q_epg_new_pkts = comm_state.q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("adding backlog from %d to %d, amount %d\n", src, dst, amount);
@@ -43,8 +40,8 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	while (amount > 0) {
 		n_pkts = 0;
 		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
-			pkt_ptrs[n_pkts] = create_packet(state, src, dst, flow,
-					start_id++, areq_data);
+			pkt_ptrs[n_pkts] = create_packet(src, dst, flow, start_id++,
+					areq_data);
 			n_pkts++;
 			areq_data += emu_req_data_bytes();
 		}
@@ -54,15 +51,15 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 		if (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
 				n_pkts) == -ENOBUFS) {
 			/* no space in ring. log but don't retry. */
-			adm_log_emu_enqueue_backlog_failed(&state->stat, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&stat, n_pkts);
 			for (i = 0; i < n_pkts; i++)
-				free_packet(pkt_ptrs[i], state->packet_mempool);
+				free_packet(pkt_ptrs[i], packet_mempool);
 		}
 #else
 		while (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
 				n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
-			adm_log_emu_enqueue_backlog_failed(&state->stat, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&stat, n_pkts);
 		}
 #endif
 
@@ -70,20 +67,17 @@ void emu_add_backlog(struct emu_state *state, uint16_t src, uint16_t dst,
 	}
 }
 
-static inline
-void emu_reset_sender(struct emu_state *state, uint16_t src) {
-	struct emu_comm_state *comm_state;
+inline void Emulation::reset_sender(uint16_t src) {
 	struct fp_ring *q_resets;
 	uint64_t endpoint_id = src;
 
-	comm_state = &state->comm_state;
-	q_resets = comm_state->q_resets[src / EMU_ENDPOINTS_PER_EPG];
+	q_resets = comm_state.q_resets[src / EMU_ENDPOINTS_PER_EPG];
 
 	/* enqueue a notification to the endpoint driver's reset queue */
 	/* cast src id to a pointer */
 	while (fp_ring_enqueue(q_resets, (void *) endpoint_id) == -ENOBUFS) {
 		/* no space in ring. this should never happen. log and retry. */
-		adm_log_emu_enqueue_reset_failed(&state->stat);
+		adm_log_emu_enqueue_reset_failed(&stat);
 	}
 }
 

@@ -8,6 +8,7 @@
 
 #include "emulation_c_compat.h"
 #include "emulation.h"
+#include "emulation_impl.h"
 
 void emu_add_backlog(void* emu, uint16_t src, uint16_t dst, uint16_t flow,
 		uint32_t amt, uint16_t start_id, u8* areq_data)

@@ -17,8 +17,6 @@
 #include "../graph-algo/platform.h"
 #include <stdexcept>
 
-struct emu_state;
-
 /**
  * A class for containing an emulation and all communication in and out of it,
  * 	to facilitate testing outside the arbiter.
@@ -29,13 +27,14 @@ public:
 			uint32_t admitted_ring_size, uint32_t packet_mempool_size,
 			uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
 			enum EndpointType e_type, void *e_args);
+	~EmulationContainer();
 
 	inline void add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 			uint32_t amount, uint16_t start_id, u8* areq_data);
 	inline void step();
 	inline void print_admitted();
 private:
-	struct emu_state	m_emulation;
+	Emulation			*m_emulation;
 	struct fp_mempool	*m_admitted_mempool;
 	struct fp_ring		*m_q_admitted_out;
 	struct fp_mempool	*m_packet_mempool;
@@ -61,14 +60,19 @@ EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
 	if (m_packet_mempool == NULL)
 		throw std::runtime_error("couldn't allocate packet_mempool");
 
-	emu_init_state(&m_emulation, m_admitted_mempool, m_q_admitted_out,
+	m_emulation = new Emulation(m_admitted_mempool, m_q_admitted_out,
 			m_packet_mempool, packet_ring_size, r_type, r_args, e_type,
 			e_args);
 }
 
+EmulationContainer::~EmulationContainer() {
+	m_emulation->cleanup();
+	delete m_emulation;
+}
+
 inline void EmulationContainer::add_backlog(uint16_t src, uint16_t dst,
 		uint16_t flow, uint32_t amount, uint16_t start_id, u8* areq_data) {
-	emu_add_backlog(&m_emulation, src, dst, flow, amount, start_id, areq_data);
+	m_emulation->add_backlog(src, dst, flow, amount, start_id, areq_data);
 }
 
 inline void EmulationContainer::step() {
@@ -80,7 +84,7 @@ inline void EmulationContainer::step() {
 	}
 
 	/* step emulation by one timeslot */
-	emu_emulate(&m_emulation);
+	m_emulation->step();
 }
 
 inline void EmulationContainer::print_admitted() {

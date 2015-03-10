@@ -15,7 +15,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 void emu_add_backlog(void *emu, uint16_t src, uint16_t dst, uint16_t flow,
-		uint32_t amt, uint16_t start_id, u8 *areq_data);
+		uint32_t amt, uint16_t start_id, uint8_t *areq_data);
 
 void emu_reset_sender(void *emu, uint16_t src);
 

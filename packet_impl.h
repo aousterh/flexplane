@@ -13,8 +13,6 @@
 #include "packet.h"
 #include "admissible_log.h"
 #include "emulation.h"
-#include "../graph-algo/fp_ring.h"
-#include "../graph-algo/platform.h"
 
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
@@ -27,22 +25,6 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 
 	/* TODO: add algo-specific fields to emu_packet and populate them from
 	 * areq_data, based on the algorithm used. */
-}
-
-static inline
-struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
-		uint16_t dst, uint16_t flow, uint16_t id, uint8_t *areq_data)
-{
-	struct emu_packet *packet;
-
-	/* allocate a packet */
-	while (fp_mempool_get(state->packet_mempool, (void **) &packet)
-	       == -ENOENT) {
-		adm_log_emu_packet_alloc_failed(&state->stat);
-	}
-	packet_init(packet, src, dst, flow, id, areq_data);
-
-	return packet;
 }
 
 static inline

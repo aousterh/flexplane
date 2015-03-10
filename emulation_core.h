@@ -14,7 +14,6 @@
 #include "../graph-algo/platform.h"
 #include <inttypes.h>
 
-struct emu_state;
 class EmulationOutput;
 class EndpointDriver;
 class RouterDriver;

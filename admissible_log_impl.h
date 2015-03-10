@@ -17,8 +17,11 @@ struct emu_admission_statistics emu_saved_admission_statistics;
 
 void print_core_admission_log_emulation(uint16_t core_index) {
 	uint64_t dropped_in_algo;
-	struct emu_admission_core_statistics *st = g_emu_state.core_stats[core_index];
-	struct emu_admission_core_statistics *sv = &emu_saved_admission_core_statistics[core_index];
+	Emulation *emulation = emu_get_instance();
+	struct emu_admission_core_statistics *st =
+			emulation->core_stats[core_index];
+	struct emu_admission_core_statistics *sv =
+			&emu_saved_admission_core_statistics[core_index];
 
 	printf("\nadmission core %d", core_index);
 /*#define D(X) (st->X - sv->X)
@@ -52,7 +55,8 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 
 void print_global_admission_log_emulation() {
 	uint64_t dropped_in_algo;
-	struct emu_admission_statistics *st = &g_emu_state.stat;
+	Emulation *emulation = emu_get_instance();
+	struct emu_admission_statistics *st = &emulation->stat;
 	struct emu_admission_statistics *sv = &emu_saved_admission_statistics;
 
 	printf("\nemulation with %d nodes", NUM_NODES);
@@ -77,14 +81,16 @@ void print_global_admission_log_emulation() {
 }
 
 void emu_save_admission_stats() {
-	memcpy(&emu_saved_admission_statistics, &g_emu_state.stat,
+	Emulation *emulation = emu_get_instance();
+	memcpy(&emu_saved_admission_statistics, &emulation->stat,
 			sizeof(emu_saved_admission_statistics));
 }
 
 void emu_save_admission_core_stats(int core_index) {
 	uint16_t i;
 
+	Emulation *emulation = emu_get_instance();
 	memcpy(&emu_saved_admission_core_statistics[core_index],
-			g_emu_state.core_stats[core_index],
+			emulation->core_stats[core_index],
 			sizeof(struct emu_admission_core_statistics));
 }

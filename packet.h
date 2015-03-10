@@ -8,6 +8,8 @@
 #ifndef PACKET_H_
 #define PACKET_H_
 
+#include "../graph-algo/fp_ring.h"
+#include "../graph-algo/platform.h"
 #include "../protocol/flags.h"
 #include <inttypes.h>
 
@@ -39,13 +41,6 @@ struct emu_packet {
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 		uint16_t flow, uint16_t id, uint8_t *areq_data);
-
-/**
- * Creates a packet, returns a pointer to the packet.
- */
-static inline
-struct emu_packet *create_packet(struct emu_state *state, uint16_t src,
-		uint16_t dst, uint16_t flow, uint16_t id, uint8_t *areq_data);
 
 /**
  * Frees a packet when an emulation algorithm is done running.

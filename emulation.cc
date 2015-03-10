@@ -42,17 +42,17 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	}
 
 	/* initialize main emulation state */
-	this->admitted_traffic_mempool = admitted_traffic_mempool;
-	this->q_admitted_out = q_admitted_out;
-	this->packet_mempool = packet_mempool;
+	m_admitted_traffic_mempool = admitted_traffic_mempool;
+	m_q_admitted_out = q_admitted_out;
+	m_packet_mempool = packet_mempool;
 
 	/* initialize log to zeroes */
-	memset(&stat, 0, sizeof(struct emu_admission_statistics));
+	memset(&m_stat, 0, sizeof(struct emu_admission_statistics));
 
 	/* initialize state used to communicate with comm cores */
 	for (i = 0; i < EPGS_PER_COMM; i++) {
-		comm_state.q_epg_new_pkts[i] = packet_queues[pq++];
-		comm_state.q_resets[i] = packet_queues[pq++];
+		m_comm_state.q_epg_new_pkts[i] = packet_queues[pq++];
+		m_comm_state.q_resets[i] = packet_queues[pq++];
 	}
 
 	/* initialize the topology */
@@ -65,8 +65,8 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	/* get queue bank stat pointers - must be done after components are
 	 * assigned to cores */
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		queue_bank_stats[i] = router_drivers[i]->get_queue_bank_stats();
-		port_drop_stats[i] = router_drivers[i]->get_port_drop_stats();
+		m_queue_bank_stats[i] = router_drivers[i]->get_queue_bank_stats();
+		m_port_drop_stats[i] = router_drivers[i]->get_port_drop_stats();
 	}
 }
 
@@ -74,7 +74,7 @@ void Emulation::step() {
 	uint32_t i;
 
 	for (i = 0; i < ALGO_N_CORES; i++)
-		cores[i]->step();
+		m_cores[i]->step();
 }
 
 void Emulation::cleanup() {
@@ -83,24 +83,24 @@ void Emulation::cleanup() {
 
 	/* cleanup cores */
 	for (i = 0; i < ALGO_N_CORES; i++) {
-		cores[i]->cleanup();
-		delete cores[i];
+		m_cores[i]->cleanup();
+		delete m_cores[i];
 	}
 
 	/* free queues to comm core */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
 		/* free packet queues, return packets to mempool */
-		free_packet_ring(comm_state.q_epg_new_pkts[i], packet_mempool);
-		free_packet_ring(comm_state.q_resets[i], packet_mempool);
+		free_packet_ring(m_comm_state.q_epg_new_pkts[i], m_packet_mempool);
+		free_packet_ring(m_comm_state.q_resets[i], m_packet_mempool);
 	}
 
 	/* empty queue of admitted traffic, return structs to the mempool */
-	while (fp_ring_dequeue(q_admitted_out, (void **) &admitted) == 0)
-		fp_mempool_put(admitted_traffic_mempool, admitted);
-	fp_free(q_admitted_out);
+	while (fp_ring_dequeue(m_q_admitted_out, (void **) &admitted) == 0)
+		fp_mempool_put(m_admitted_traffic_mempool, admitted);
+	fp_free(m_q_admitted_out);
 
-	fp_free(admitted_traffic_mempool);
-	fp_free(packet_mempool);
+	fp_free(m_admitted_traffic_mempool);
+	fp_free(m_packet_mempool);
 }
 
 /* configure the topology of endpoints and routers */
@@ -151,16 +151,16 @@ void Emulation::construct_single_rack_topology(struct fp_ring **packet_queues,
 	assert(rtr != NULL);
 	rtr_masks[0] = 0xFFFFFFFF; /* 32 ports */
 	router_drivers[0] = new RouterDriver(rtr, q_router_ingress,
-			&q_router_egress[0], &rtr_masks[0], 1, packet_mempool);
+			&q_router_egress[0], &rtr_masks[0], 1, m_packet_mempool);
 
 	/* initialize all the endpoints in one endpoint group */
 	epg = EndpointGroupFactory::NewEndpointGroup(e_type, EMU_NUM_ENDPOINTS, 0,
 			e_args);
 	assert(epg != NULL);
 	endpoint_drivers[0] =
-			new EndpointDriver(comm_state.q_epg_new_pkts[0], q_router_ingress,
-					q_router_egress[0], comm_state.q_resets[0], epg,
-					packet_mempool);
+			new EndpointDriver(m_comm_state.q_epg_new_pkts[0], q_router_ingress,
+					q_router_egress[0], m_comm_state.q_resets[0], epg,
+					m_packet_mempool);
 }
 
 /* construct a topology with 2 racks and one core router connecting the tors */
@@ -191,9 +191,9 @@ void Emulation::construct_two_rack_topology(struct fp_ring **packet_queues,
 				EMU_ENDPOINTS_PER_RACK, i * EMU_ENDPOINTS_PER_RACK, e_args);
 		assert(epg != NULL);
 		endpoint_drivers[i] =
-				new EndpointDriver(comm_state.q_epg_new_pkts[i],
+				new EndpointDriver(m_comm_state.q_epg_new_pkts[i],
 						q_router_ingress[i], q_epg_ingress[i],
-						comm_state.q_resets[i], epg, packet_mempool);
+						m_comm_state.q_resets[i], epg, m_packet_mempool);
 	}
 
 	/* initialize the ToRs. both have 32 ports facing down and 32 ports facing
@@ -211,7 +211,7 @@ void Emulation::construct_two_rack_topology(struct fp_ring **packet_queues,
 		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
-				&q_router_egress[0], &rtr_masks[0], 2, packet_mempool);
+				&q_router_egress[0], &rtr_masks[0], 2, m_packet_mempool);
 	}
 
 	/* initialize the ToR. first 32 ports are for first ToR, next 32 are for
@@ -223,7 +223,7 @@ void Emulation::construct_two_rack_topology(struct fp_ring **packet_queues,
 	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 2);
 	assert(rtr != NULL);
 	router_drivers[2] = new RouterDriver(rtr, q_router_ingress[2],
-			&q_router_egress[0], &rtr_masks[0], 2, packet_mempool);
+			&q_router_egress[0], &rtr_masks[0], 2, m_packet_mempool);
 
 }
 
@@ -255,9 +255,9 @@ void Emulation::construct_three_rack_topology(struct fp_ring **packet_queues,
 				EMU_ENDPOINTS_PER_RACK, i * EMU_ENDPOINTS_PER_RACK, e_args);
 		assert(epg != NULL);
 		endpoint_drivers[i] =
-				new EndpointDriver(comm_state.q_epg_new_pkts[i],
+				new EndpointDriver(m_comm_state.q_epg_new_pkts[i],
 						q_router_ingress[i], q_epg_ingress[i],
-						comm_state.q_resets[i], epg, packet_mempool);
+						m_comm_state.q_resets[i], epg, m_packet_mempool);
 	}
 
 	/* initialize the ToRs. all three have 32 ports facing down and 32 ports facing
@@ -275,7 +275,7 @@ void Emulation::construct_three_rack_topology(struct fp_ring **packet_queues,
 		rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, i);
 		assert(rtr != NULL);
 		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
-				&q_router_egress[0], &rtr_masks[0], 2, packet_mempool);
+				&q_router_egress[0], &rtr_masks[0], 2, m_packet_mempool);
 	}
 
 	/* initialize the ToR with 16 ports per ToR. */
@@ -290,7 +290,7 @@ void Emulation::construct_three_rack_topology(struct fp_ring **packet_queues,
 	rtr = RouterFactory::NewRouter(r_type, r_args, &topo_args, 3);
 	assert(rtr != NULL);
 	router_drivers[3] = new RouterDriver(rtr, q_router_ingress[3],
-			&q_router_egress[0], &rtr_masks[0], 3, packet_mempool);
+			&q_router_egress[0], &rtr_masks[0], 3, m_packet_mempool);
 }
 
 /* map drivers to cores based on number of cores available */
@@ -302,53 +302,53 @@ void Emulation::assign_components_to_cores(EndpointDriver **epg_drivers,
 #if (ALGO_N_CORES == (EMU_NUM_ROUTERS + EMU_NUM_ENDPOINT_GROUPS))
 	/* put 1 router or endpoint group on each core */
 	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
-		cores[core_index] = new EmulationCore(&epg_drivers[i], NULL, 1, 0,
-				core_index, q_admitted_out, admitted_traffic_mempool,
-				packet_mempool);
-		core_stats[core_index] = cores[core_index]->stats();
+		m_cores[core_index] = new EmulationCore(&epg_drivers[i], NULL, 1, 0,
+				core_index, m_q_admitted_out, m_admitted_traffic_mempool,
+				m_packet_mempool);
+		m_core_stats[core_index] = m_cores[core_index]->stats();
 		core_index++;
 	}
 	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
-		cores[core_index] = new EmulationCore(NULL, &router_drivers[i], 0, 1,
-				core_index, q_admitted_out, admitted_traffic_mempool,
-				packet_mempool);
-		core_stats[core_index] = cores[core_index]->stats();
+		m_cores[core_index] = new EmulationCore(NULL, &router_drivers[i], 0, 1,
+				core_index, m_q_admitted_out, m_admitted_traffic_mempool,
+				m_packet_mempool);
+		m_core_stats[core_index] = m_cores[core_index]->stats();
 		core_index++;
 	}
 #elif (ALGO_N_CORES == 3) && defined(TWO_RACK_TOPOLOGY)
 	/* 1 epg + 1 rtr on first two cores, core router on last core */
 	for (i = 0; i < 2; i++) {
-		cores[core_index] = new EmulationCore(&epg_drivers[i],
-				&router_drivers[i], 1, 1, core_index, q_admitted_out,
-				admitted_traffic_mempool, packet_mempool);
-		core_stats[core_index] = cores[core_index]->stats();
+		m_cores[core_index] = new EmulationCore(&epg_drivers[i],
+				&router_drivers[i], 1, 1, core_index, m_q_admitted_out,
+				m_admitted_traffic_mempool, m_packet_mempool);
+		m_core_stats[core_index] = m_cores[core_index]->stats();
 		core_index++;
 	}
-	cores[core_index] = new EmulationCore(NULL, &router_drivers[2], 0, 1,
-			core_index, q_admitted_out, admitted_traffic_mempool,
-			packet_mempool);
-	core_stats[core_index] = cores[core_index]->stats();
+	m_cores[core_index] = new EmulationCore(NULL, &router_drivers[2], 0, 1,
+			core_index, m_q_admitted_out, m_admitted_traffic_mempool,
+			m_packet_mempool);
+	m_core_stats[core_index] = m_cores[core_index]->stats();
 	core_index++;
 #elif (ALGO_N_CORES == 4) && defined(THREE_RACK_TOPOLOGY)
 	/* 1 epg + 1 rtr on first three cores, core router on last core */
 	for (i = 0; i < 3; i++) {
-		cores[core_index] = new EmulationCore(&epg_drivers[i],
-				&router_drivers[i], 1, 1, core_index, q_admitted_out,
-				admitted_traffic_mempool, packet_mempool);
-		core_stats[core_index] = cores[core_index]->stats();
+		m_cores[core_index] = new EmulationCore(&epg_drivers[i],
+				&router_drivers[i], 1, 1, core_index, m_q_admitted_out,
+				m_admitted_traffic_mempool, m_packet_mempool);
+		m_core_stats[core_index] = m_cores[core_index]->stats();
 		core_index++;
 	}
-	cores[core_index] = new EmulationCore(NULL, &router_drivers[3], 0, 1,
-			core_index, q_admitted_out, admitted_traffic_mempool,
-			packet_mempool);
-	core_stats[core_index] = cores[core_index]->stats();
+	m_cores[core_index] = new EmulationCore(NULL, &router_drivers[3], 0, 1,
+			core_index, m_q_admitted_out, m_admitted_traffic_mempool,
+			m_packet_mempool);
+	m_core_stats[core_index] = m_cores[core_index]->stats();
 	core_index++;
 #elif (ALGO_N_CORES == 1)
 	/* assign everything to one core */
-	cores[core_index] = new EmulationCore(epg_drivers, router_drivers,
+	m_cores[core_index] = new EmulationCore(epg_drivers, router_drivers,
 			EMU_NUM_ENDPOINT_GROUPS, EMU_NUM_ROUTERS, core_index,
-			q_admitted_out, admitted_traffic_mempool, packet_mempool);
-	core_stats[core_index] = cores[core_index]->stats();
+			m_q_admitted_out, m_admitted_traffic_mempool, m_packet_mempool);
+	m_core_stats[core_index] = m_cores[core_index]->stats();
 #else
 #error "no specified way to assign this number of routers and endpoint groups to available cores"
 #endif

@@ -116,17 +116,17 @@ private:
 
 	/* Public variables for easy access from the log and emulation cores. */
 public:
-	struct emu_admission_statistics			stat;
-	struct emu_admission_core_statistics	*core_stats[ALGO_N_CORES];
-	EmulationCore							*cores[ALGO_N_CORES];
+	struct emu_admission_statistics			m_stat;
+	struct emu_admission_core_statistics	*m_core_stats[ALGO_N_CORES];
+	EmulationCore							*m_cores[ALGO_N_CORES];
 
 private:
-	struct fp_mempool						*packet_mempool;
-	struct fp_mempool						*admitted_traffic_mempool;
-	struct fp_ring							*q_admitted_out;
-	struct emu_comm_state					comm_state;
-	struct queue_bank_stats					*queue_bank_stats[EMU_NUM_ROUTERS];
-	struct port_drop_stats					*port_drop_stats[EMU_NUM_ROUTERS];
+	struct fp_mempool						*m_packet_mempool;
+	struct fp_mempool						*m_admitted_traffic_mempool;
+	struct fp_ring							*m_q_admitted_out;
+	struct emu_comm_state					m_comm_state;
+	struct queue_bank_stats					*m_queue_bank_stats[EMU_NUM_ROUTERS];
+	struct port_drop_stats					*m_port_drop_stats[EMU_NUM_ROUTERS];
 };
 
 
@@ -138,7 +138,7 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 	assert(dst < EMU_NUM_ENDPOINTS);
 	assert(flow < FLOWS_PER_NODE);
 
-	q_epg_new_pkts = comm_state.q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
+	q_epg_new_pkts = m_comm_state.q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("adding backlog from %d to %d, amount %d\n", src, dst, amount);
@@ -160,15 +160,15 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 		if (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
 				n_pkts) == -ENOBUFS) {
 			/* no space in ring. log but don't retry. */
-			adm_log_emu_enqueue_backlog_failed(&stat, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&m_stat, n_pkts);
 			for (i = 0; i < n_pkts; i++)
-				free_packet(pkt_ptrs[i], packet_mempool);
+				free_packet(pkt_ptrs[i], m_packet_mempool);
 		}
 #else
 		while (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
 				n_pkts) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
-			adm_log_emu_enqueue_backlog_failed(&stat, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&m_stat, n_pkts);
 		}
 #endif
 
@@ -180,13 +180,13 @@ inline void Emulation::reset_sender(uint16_t src) {
 	struct fp_ring *q_resets;
 	uint64_t endpoint_id = src;
 
-	q_resets = comm_state.q_resets[src / EMU_ENDPOINTS_PER_EPG];
+	q_resets = m_comm_state.q_resets[src / EMU_ENDPOINTS_PER_EPG];
 
 	/* enqueue a notification to the endpoint driver's reset queue */
 	/* cast src id to a pointer */
 	while (fp_ring_enqueue(q_resets, (void *) endpoint_id) == -ENOBUFS) {
 		/* no space in ring. this should never happen. log and retry. */
-		adm_log_emu_enqueue_reset_failed(&stat);
+		adm_log_emu_enqueue_reset_failed(&m_stat);
 	}
 }
 
@@ -196,8 +196,8 @@ inline struct emu_packet *Emulation::create_packet(uint16_t src, uint16_t dst,
 	struct emu_packet *packet;
 
 	/* allocate a packet */
-	while (fp_mempool_get(packet_mempool, (void **) &packet) == -ENOENT) {
-		adm_log_emu_packet_alloc_failed(&stat);
+	while (fp_mempool_get(m_packet_mempool, (void **) &packet) == -ENOENT) {
+		adm_log_emu_packet_alloc_failed(&m_stat);
 	}
 	packet_init(packet, src, dst, flow, id, areq_data);
 

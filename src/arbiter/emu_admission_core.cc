@@ -58,30 +58,6 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	int i;
-	char s[64];
-	struct rte_mempool *packet_mempool;
-	uint32_t packet_size;
-
-	/* setup for specific emulation algorithm */
-	packet_size = EMU_ALIGN(sizeof(struct emu_packet)) + 0;
-
-	/* allocate packet_mempool */
-	uint32_t pool_index = 0;
-	uint32_t socketid = 0;
-	snprintf(s, sizeof(s), "packet_pool_%d", pool_index);
-	packet_mempool =
-			rte_mempool_create(s, PACKET_MEMPOOL_SIZE, /* num elements */
-					packet_size, /* element size */
-					PACKET_MEMPOOL_CACHE_SIZE, /* cache size */
-					0, NULL, NULL, NULL, NULL, /* custom init, disabled */
-					socketid, 0);
-	if (packet_mempool == NULL)
-		rte_exit(EXIT_FAILURE, "Cannot init packet mempool on socket %d: %s\n",
-				socketid, rte_strerror(rte_errno));
-	else
-		RTE_LOG(INFO, ADMISSION,
-				"Allocated packet mempool on socket %d - %lu bufs\n", socketid,
-				(uint64_t) PACKET_MEMPOOL_SIZE);
 
 	/* init log */
 	for (i = 0; i < RTE_MAX_LCORE; i++)
@@ -144,12 +120,12 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 #endif
 
 	RTE_LOG(INFO, ADMISSION,
-			"admitted_traffic_mempool=%p q_admitted_out=%p packet_mempool=%p\n",
-			admitted_traffic_mempool, q_admitted_out, packet_mempool);
+			"admitted_traffic_mempool=%p q_admitted_out=%p\n",
+			admitted_traffic_mempool, q_admitted_out);
 
 	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
-			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
-			(1 << PACKET_Q_LOG_SIZE), rtype, rtr_args, E_Simple, NULL);
+			(fp_ring *) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
+			rtr_args, E_Simple, NULL);
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

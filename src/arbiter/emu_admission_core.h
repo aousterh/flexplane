@@ -13,8 +13,6 @@
 #define		ADMITTED_TRAFFIC_MEMPOOL_SIZE		(16*1024)
 #define		ADMITTED_TRAFFIC_CACHE_SIZE			512
 
-#define		PACKET_MEMPOOL_CACHE_SIZE		256
-
 /* emu state */
 struct Emulation;
 struct queue_bank_stats;

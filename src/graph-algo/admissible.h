@@ -262,14 +262,12 @@ static inline
 struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_ring *e, struct fp_ring *q_admitted_out, struct fp_ring *f,
-		struct fp_mempool *packet_mempool,
-		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **g,
-		uint32_t packet_rings_size, struct fp_ring **h,
+		struct fp_mempool *g, struct fp_mempool *admitted_traffic_mempool,
+		struct fp_ring **h, uint32_t packet_rings_size, struct fp_ring **i,
 		enum RouterType r_type, void *r_args, enum EndpointType e_type,
 		void *e_args) {
 	Emulation *emulation = new Emulation(admitted_traffic_mempool,
-			q_admitted_out, packet_mempool, packet_rings_size, r_type, r_args,
-			e_type, e_args);
+			q_admitted_out, packet_rings_size, r_type, r_args, e_type, e_args);
 	return (struct admissible_state *) emulation;
 }
 

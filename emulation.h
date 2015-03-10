@@ -119,14 +119,14 @@ public:
 	struct emu_admission_statistics			m_stat;
 	struct emu_admission_core_statistics	*m_core_stats[ALGO_N_CORES];
 	EmulationCore							*m_cores[ALGO_N_CORES];
+	struct queue_bank_stats					*m_queue_bank_stats[EMU_NUM_ROUTERS];
+	struct port_drop_stats					*m_port_drop_stats[EMU_NUM_ROUTERS];
 
 private:
 	struct fp_mempool						*m_packet_mempool;
 	struct fp_mempool						*m_admitted_traffic_mempool;
 	struct fp_ring							*m_q_admitted_out;
 	struct emu_comm_state					m_comm_state;
-	struct queue_bank_stats					*m_queue_bank_stats[EMU_NUM_ROUTERS];
-	struct port_drop_stats					*m_port_drop_stats[EMU_NUM_ROUTERS];
 };
 
 

@@ -16,11 +16,13 @@
 #define		PACKET_MEMPOOL_CACHE_SIZE		256
 
 /* emu state */
-extern struct emu_state g_emu_state;
+struct Emulation;
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+struct Emulation *emu_get_instance(void);
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool);

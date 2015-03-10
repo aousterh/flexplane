@@ -119,7 +119,6 @@ struct admission_statistics *g_admission_stats(void) {
 #ifdef EMULATION_ALGO
 /* emulation algo */
 #include "emu_admission_core.h"
-#include "../emulation/emulation.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,18 +143,17 @@ int exec_admission_core(void *void_cmd_p) {
 
 static inline
 struct admissible_state *g_admissible_status(void) {
-	return (struct admissible_state *) &g_emu_state;
+	return (struct admissible_state *) emu_get_instance();
 }
 
 static inline
 struct admission_core_statistics *g_admission_core_stats(uint16_t i) {
-	return NULL;
-//        return (struct admission_core_statistics *) &g_emu_state.core_stats;
+	return NULL; /* unused */
 }
 
 static inline
 struct admission_statistics *g_admission_stats(void) {
-	return (struct admission_statistics *) &g_emu_state.stat;
+	return NULL; /* unused */
 }
 
 #ifdef __cplusplus

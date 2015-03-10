@@ -166,8 +166,7 @@ void handle_spent_demands(struct admissible_state *state)
 #ifdef EMULATION_ALGO
 
 #include "../emulation/admitted.h"
-#include "../emulation/emulation.h"
-#include "../emulation/emulation_impl.h"
+#include "../emulation/emulation_c_compat.h"
 #include "../emulation/packet.h"
 
 #define SMALL_BIN_SIZE				0
@@ -183,19 +182,17 @@ void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
 		uint32_t amount, uint16_t start_id, u8 *areq_data) {
 	uint16_t dst_node;
 	uint8_t flow;
-	struct emu_state *emu_state = (struct emu_state *) state;
 
 	flow = dst & FLOW_MASK;
 	dst_node = dst >> FLOW_SHIFT;
-	emu_add_backlog(emu_state, src, dst_node, flow, amount, start_id,
+	emu_add_backlog(state, src, dst_node, flow, amount, start_id,
 			areq_data);
 }
 
 static inline
 void reset_sender(struct admissible_state *state, uint16_t src)
 {
-	struct emu_state *emu_state = (struct emu_state *) state;
-	emu_reset_sender(emu_state, src);
+	emu_reset_sender(state, src);
 }
 
 static inline
@@ -252,11 +249,13 @@ uint32_t bin_num_bytes(uint32_t param)
 /* functions called only in benchmark_graph_algo (not arbiter) */
 #ifdef __cplusplus
 
+#include "../emulation/emulation.h"
+
 static inline
 void get_admissible_traffic(struct admissible_state *state, uint32_t a,
 		uint64_t b, uint32_t c, uint32_t d) {
-	struct emu_state *emu_state = (struct emu_state *) state;
-	emu_emulate(emu_state);
+	Emulation *emu_state = (Emulation *) state;
+	emu_state->step();
 }
 
 static inline
@@ -268,11 +267,10 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		uint32_t packet_rings_size, struct fp_ring **h,
 		enum RouterType r_type, void *r_args, enum EndpointType e_type,
 		void *e_args) {
-	struct emu_state *emu_state = (struct emu_state *) malloc(sizeof(struct emu_state));
-
-	emu_init_state(emu_state, admitted_traffic_mempool, q_admitted_out,
-			packet_mempool, packet_rings_size, r_type, r_args, e_type, e_args);
-	return (struct admissible_state *) emu_state;
+	Emulation *emulation = new Emulation(admitted_traffic_mempool,
+			q_admitted_out, packet_mempool, packet_rings_size, r_type, r_args,
+			e_type, e_args);
+	return (struct admissible_state *) emulation;
 }
 
 #endif

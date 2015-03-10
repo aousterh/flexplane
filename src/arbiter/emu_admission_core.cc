@@ -31,13 +31,18 @@
 #define TIMESLOTS_PER_ONE_WAY_DELAY 4
 #define TIMESLOTS_PER_TIME_SYNC	64
 
-struct emu_state g_emu_state;
+Emulation *g_emulation;
 
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 
 #ifndef NSEC_PER_SEC
 #define NSEC_PER_SEC (1000*1000*1000)
 #endif
+
+Emulation *emu_get_instance(void)
+{
+	return g_emulation;
+}
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
@@ -132,18 +137,16 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 			"admitted_traffic_mempool=%p q_admitted_out=%p packet_mempool=%p\n",
 			admitted_traffic_mempool, q_admitted_out, packet_mempool);
 
-	emu_init_state(&g_emu_state, (fp_mempool *) admitted_traffic_mempool,
+	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
 			(fp_ring *) q_admitted_out, (fp_mempool *) packet_mempool,
 			(1 << PACKET_Q_LOG_SIZE), rtype, rtr_args, E_Simple, NULL);
-
-
 }
 
 int exec_emu_admission_core(void *void_cmd_p)
 {
 	struct admission_core_cmd *cmd = (struct admission_core_cmd *)void_cmd_p;
 	uint32_t core_ind = cmd->admission_core_index;
-	EmulationCore *core = g_emu_state.cores[core_ind];
+	EmulationCore *core = g_emulation->cores[core_ind];
 	uint64_t logical_timeslot = cmd->start_timeslot;
 	uint64_t time_now, tslot;
     int16_t i;

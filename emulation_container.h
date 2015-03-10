@@ -10,7 +10,6 @@
 
 #include "admitted.h"
 #include "emulation.h"
-#include "emulation_impl.h"
 #include "endpoint.h"
 #include "router.h"
 #include "../graph-algo/fp_ring.h"

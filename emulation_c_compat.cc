@@ -10,7 +10,7 @@
 #include "emulation.h"
 
 void emu_add_backlog(void* emu, uint16_t src, uint16_t dst, uint16_t flow,
-		uint32_t amt, uint16_t start_id, u8* areq_data)
+		uint32_t amt, uint16_t start_id, uint8_t* areq_data)
 {
 	((Emulation *)emu)->add_backlog(src, dst, flow, amt, start_id, areq_data);
 }

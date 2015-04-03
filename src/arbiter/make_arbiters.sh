@@ -25,3 +25,8 @@ mv build/fast build/fast_hull
 # make arbiter that runs drop tail. drop tail is the default and must come last.
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DDROP_TAIL -j22
 cp build/fast build/fast_drop_tail
+
+# copy build arbiters to build directory for deployment to arbiter machines
+cp build/fast $BUILD
+cp build/fast_* $BUILD
+cp run_mlx.sh $BUILD

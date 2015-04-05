@@ -10,7 +10,7 @@
 
 #include "../protocol/platform/generic.h"
 
-#define MAINTAIN_QUEUE_BANK_LOG_COUNTERS	0
+#define MAINTAIN_QUEUE_BANK_LOG_COUNTERS	1
 #define QUEUE_BANK_MAX_PORTS				64
 
 /**

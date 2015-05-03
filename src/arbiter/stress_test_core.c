@@ -57,7 +57,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 
 	/* Process newly allocated timeslots */
 	rc = rte_ring_dequeue_burst(q_admitted, (void **) &admitted[0],
-								STRESS_TEST_MAX_ADMITTED_PER_LOOP);
+			STRESS_TEST_MAX_ADMITTED_PER_LOOP);
 	if (unlikely(rc < 0)) {
 		/* error in dequeuing.. should never happen?? */
 		comm_log_dequeue_admitted_failed(rc);
@@ -68,7 +68,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 		partition = get_admitted_partition(admitted[i]);
 		current_timeslot = ++core->latest_timeslot[partition];
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
-					    current_timeslot, partition);
+				current_timeslot, partition);
 #if defined(EMULATION_ALGO)
 		struct emu_admitted_traffic *emu_admitted;
 		emu_admitted = (struct emu_admitted_traffic *) admitted[i];
@@ -110,15 +110,15 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			rte_get_timer_hz() * STRESS_TEST_MIN_LOOP_TIME_SEC;
 	uint64_t next_rate_increase_time;
 	double next_mean_t_btwn_requests;
-        double cur_increase_factor;
-        uint64_t last_successful_mean_t;
-        uint64_t prev_node_tslots = 0;
-        uint64_t cur_node_tslots = 0;
-        uint64_t max_node_tslots = 0;
-        bool re_init_gen = true;
+	double cur_increase_factor;
+	uint64_t last_successful_mean_t;
+	uint64_t prev_node_tslots = 0;
+	uint64_t cur_node_tslots = 0;
+	uint64_t max_node_tslots = 0;
+	bool re_init_gen = true;
 
-        for (i = 0; i < N_PARTITIONS; i++)
-                core->latest_timeslot[i] = first_time_slot - 1;
+	for (i = 0; i < N_PARTITIONS; i++)
+		core->latest_timeslot[i] = first_time_slot - 1;
 	stress_test_log_init(&stress_test_core_logs[lcore_id]);
 	comm_log_init(&comm_core_logs[lcore_id]);
 
@@ -130,12 +130,12 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 
 	/* Initialize gen */
 	next_mean_t_btwn_requests = cmd->mean_t_btwn_requests * STRESS_TEST_RATE_INCREASE_FACTOR;
-        last_successful_mean_t = next_mean_t_btwn_requests;
-        cur_increase_factor = STRESS_TEST_RATE_INCREASE_FACTOR;
-        comm_log_stress_test_increase_factor(cur_increase_factor);
+	last_successful_mean_t = next_mean_t_btwn_requests;
+	cur_increase_factor = STRESS_TEST_RATE_INCREASE_FACTOR;
+	comm_log_stress_test_increase_factor(cur_increase_factor);
 
-        if (STRESS_TEST_IS_AUTOMATED)
-                comm_log_stress_test_mode(STRESS_TEST_RATE_MAINTAIN);
+	if (STRESS_TEST_IS_AUTOMATED)
+		comm_log_stress_test_mode(STRESS_TEST_RATE_MAINTAIN);
 
 	while (rte_get_timer_cycles() < cmd->start_time);
 
@@ -143,8 +143,8 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	now = rte_get_timer_cycles();
 	next_rate_increase_time = now;
 
-	init_request_generator(&gen, next_mean_t_btwn_requests,
-						now, cmd->num_nodes, cmd->demand_tslots);
+	init_request_generator(&gen, next_mean_t_btwn_requests, now,
+			cmd->num_nodes, cmd->demand_tslots);
 
 	/* MAIN LOOP */
 	while (now < cmd->end_time) {
@@ -201,7 +201,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			get_next_request(&gen, &next_request);
 
 			next_rate_increase_time = rte_get_timer_cycles() +
-			rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
+					rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
 
 			/* update node tslots */
 			cur_node_tslots = comm_log_get_occupied_node_tslots();

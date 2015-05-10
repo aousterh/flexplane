@@ -86,10 +86,11 @@ struct tsq_sched_stat {
 	u64		classify_errors;
 	u64		classified_ipv6;
 	u64		above_plimit;
+	u64		enqueued;
 	u64		allocation_errors;
 	u64		pkt_too_big;
-	/* dequeue-related */
 	u64		added_tslots;
+	/* dequeue-related */
 	u64		used_timeslots;
 	u64		dropped_timeslots;
 	u64		modified_timeslots;
@@ -473,6 +474,8 @@ static int tsq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 	spin_lock(&q->enqueue_lock);
 	skb_q_enqueue(&q->enqueue_skb_q, skb);
 	spin_unlock(&q->enqueue_lock);
+
+	q->stat.enqueued++;
 
 	sch->q.qlen++;
 	tasklet_schedule(&q->enqueue_tasklet);
@@ -1356,6 +1359,7 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", %llu igmp", scs->igmp_pkts);
 	seq_printf(seq, ", %llu ssh", scs->ssh_pkts);
 	seq_printf(seq, ", %llu data", scs->data_pkts);
+	seq_printf(seq, ", %llu enqueued", scs->enqueued);
 	seq_printf(seq, ", %llu above_plimit", scs->above_plimit);
 	seq_printf(seq, ", %llu too big", scs->pkt_too_big);
 

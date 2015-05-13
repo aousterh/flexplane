@@ -130,9 +130,8 @@ struct tsq_sched_data {
 
 	struct timeslot_skb_q	reg_prio;			/* for regular queue */
 	struct timeslot_skb_q	hi_prio;			/* for high prio traffic */
- 	u64					next_zero_queue_time; /* approx time when internal will be free */
 
-	struct timeslot_skb_q	prequeue;		/* a flow for packets that need to go into internal */
+	struct timeslot_skb_q	prequeue;		/* a flow for data packets ready to be sent */
 	spinlock_t		prequeue_lock;
 
 	u64		current_timeslot;
@@ -207,14 +206,14 @@ static struct sk_buff *skb_q_dequeue(struct timeslot_skb_q *queue)
 }
 
 /* moves content of 'what' into 'queue'. 'queue' must be empty! */
-static void skb_q_move(struct timeslot_skb_q *queue,
+/*static void skb_q_move(struct timeslot_skb_q *queue,
 		struct timeslot_skb_q *what)
 {
 	FASTPASS_BUG_ON(queue->head != NULL);
 	queue->head = what->head;
 	queue->tail = what->tail;
 	what->head = NULL;
-}
+}*/
 
 /* Appends 'what' to the end of 'queue' */
 static void skb_q_append(struct timeslot_skb_q *queue,
@@ -871,27 +870,20 @@ static struct sk_buff *tsq_dequeue(struct Qdisc *sch)
 	if (skb)
 		goto out_got_skb;
 
-	/* any packets already queued? */
+	/* any packets in regular priority queues? */
 	skb = skb_q_dequeue(&q->reg_prio);
 	if (skb)
 		goto out_got_skb;
 
 	/* try to get ready skbs from the prequeue */
 	spin_lock(&q->prequeue_lock);
-	if (!skb_q_empty(&q->prequeue))
-		skb_q_move(&q->reg_prio, &q->prequeue);
+	skb = skb_q_dequeue(&q->prequeue);
 	spin_unlock(&q->prequeue_lock);
-
-	/* try the internal queue again, might be non-empty after timeslot update*/
-	skb = skb_q_dequeue(&q->reg_prio);
 	if (skb)
 		goto out_got_skb;
 
 	/* no packets in queue, go to sleep */
 	qdisc_throttled(sch);
-	/* will re-read time, to make sure we sleep >0 time */
-//	qdisc_watchdog_schedule_ns(&q->watchdog,
-//				   fp_monotonic_time_ns() + q->update_timeslot_timer_ns);
 	return NULL;
 
 out_got_skb:
@@ -948,7 +940,6 @@ static void tsq_tc_reset(struct Qdisc *sch)
 
 	q->flows			= 0;
 	q->inactive_flows	= 0;
-	q->next_zero_queue_time = fp_monotonic_time_ns();
 }
 
 /*
@@ -1221,7 +1212,6 @@ static int tsq_tc_init(struct Qdisc *sch, struct nlattr *opt)
 	struct tsq_sched_data *q = qdisc_priv(sch);
 	struct tsq_qdisc_entry *reg = container_of(sch->ops, struct tsq_qdisc_entry, qdisc_ops);
 	u64 now_real = fp_get_time_ns();
-	u64 now_monotonic = fp_monotonic_time_ns();
 	struct tc_ratespec data_rate_spec ={
 #if LINUX_VERSION_CODE != KERNEL_VERSION(3,2,45)
 			.linklayer = TC_LINKLAYER_ETHERNET,
@@ -1247,7 +1237,6 @@ static int tsq_tc_init(struct Qdisc *sch, struct nlattr *opt)
 	skb_q_init(&q->reg_prio);
 	skb_q_init(&q->hi_prio);
 	skb_q_init(&q->prequeue);
-	q->next_zero_queue_time = now_monotonic;
 
 	/* calculate timeslot from beginning of Epoch */
 	q->tslot_len_approx		= (1 << q->tslot_shift);

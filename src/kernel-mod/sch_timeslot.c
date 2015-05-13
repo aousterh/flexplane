@@ -87,10 +87,12 @@ struct tsq_sched_stat {
 	u64		classified_ipv6;
 	u64		above_plimit;
 	u64		enqueued;
+	u64		enqueued_hi_pri;
 	u64		allocation_errors;
 	u64		pkt_too_big;
 	u64		added_tslots;
 	/* dequeue-related */
+	u64		dequeued;
 	u64		used_timeslots;
 	u64		dropped_timeslots;
 	u64		modified_timeslots;
@@ -453,6 +455,7 @@ static int tsq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 	/* high prio flows enqueued directly */
 	if (unlikely(skb_q != NULL)) {
 		skb_q_enqueue(skb_q, skb);
+		q->stat.enqueued_hi_pri++;
 		sch->q.qlen++;
 		fp_debug("enqueued hi/reg-prio packet of len %d\n", qdisc_pkt_len(skb));
 
@@ -804,6 +807,7 @@ found_entry:
 		/* drop the packets */
 		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
 			skb_next = skb->next;
+			q->stat.dequeued++;
 			q->qdisc->q.qlen--;
 			qdisc_drop(skb, q->qdisc);
 		}
@@ -891,6 +895,7 @@ static struct sk_buff *tsq_dequeue(struct Qdisc *sch)
 	return NULL;
 
 out_got_skb:
+	q->stat.dequeued++;
 	sch->q.qlen--;
 	qdisc_bstats_update(sch, skb);
 	qdisc_unthrottled(sch);
@@ -1360,9 +1365,11 @@ static int tsq_proc_show(struct seq_file *seq, void *v)
 	seq_printf(seq, ", %llu igmp", scs->igmp_pkts);
 	seq_printf(seq, ", %llu ssh", scs->ssh_pkts);
 	seq_printf(seq, ", %llu data", scs->data_pkts);
-	seq_printf(seq, ", %llu enqueued", scs->enqueued);
 	seq_printf(seq, ", %llu above_plimit", scs->above_plimit);
 	seq_printf(seq, ", %llu too big", scs->pkt_too_big);
+	seq_printf(seq, "\n  totals %llu enqueued_data", scs->enqueued);
+	seq_printf(seq, ", %llu enqueued_hi_pri", scs->enqueued_hi_pri);
+	seq_printf(seq, ", %llu dequeued", scs->dequeued);
 
 	/* error statistics */
 	seq_printf(seq, "\n errors:");

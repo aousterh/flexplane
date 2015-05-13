@@ -804,7 +804,7 @@ found_entry:
 		/* drop the packets */
 		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
 			skb_next = skb->next;
-                        q->qdisc->q.qlen--;
+			q->qdisc->q.qlen--;
 			qdisc_drop(skb, q->qdisc);
 		}
 	} else if (q->timeslot_ops->prepare_to_send != NULL &&

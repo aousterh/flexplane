@@ -131,8 +131,11 @@ struct tsq_sched_data {
 	struct timeslot_skb_q	reg_prio;			/* for regular queue */
 	struct timeslot_skb_q	hi_prio;			/* for high prio traffic */
 
-	struct timeslot_skb_q	prequeue;		/* a flow for data packets ready to be sent */
-	spinlock_t		prequeue_lock;
+	struct timeslot_skb_q	prequeue;			/* a queue for data packets ready to be sent */
+	spinlock_t				prequeue_lock;
+
+	struct timeslot_skb_q	dropqueue;			/* a queue for data packets to be dropped */
+	spinlock_t				dropqueue_lock;
 
 	u64		current_timeslot;
 	u64		schedule[(1 << FASTPASS_WND_LOG)];	/* flows scheduled in the next time slots */
@@ -803,13 +806,11 @@ found_entry:
 	spin_unlock(&q->hash_tbl_lock);
 
 	if (action == TSLOT_ACTION_DROP_BY_ID) {
-		/* drop the packets */
-		for (skb = timeslot_q->head; skb != NULL; skb = skb_next) {
-			skb_next = skb->next;
-			q->stat.dequeued++;
-			q->qdisc->q.qlen--;
-			qdisc_drop(skb, q->qdisc);
-		}
+		/* put in drop queue. must be dropped by the thread that handles
+		 * enqueues and dequeues to handle qdisc state correctly. */
+		spin_lock(&q->dropqueue_lock);
+		skb_q_append(&q->dropqueue, timeslot_q);
+		spin_unlock(&q->dropqueue_lock);
 	} else if (q->timeslot_ops->prepare_to_send != NULL &&
 			(action == TSLOT_ACTION_MODIFY_BY_ID)) {
 		/* give sch_fastpass a chance to modify headers in all packets in this
@@ -827,11 +828,11 @@ found_entry:
 		spin_lock(&q->prequeue_lock);
 		skb_q_append(&q->prequeue, timeslot_q);
 		spin_unlock(&q->prequeue_lock);
-
-		/* unthrottle qdisc */
-		qdisc_unthrottled(q->qdisc);
-		__netif_schedule(qdisc_root(q->qdisc));
 	}
+
+	/* unthrottle qdisc */
+	qdisc_unthrottled(q->qdisc);
+	__netif_schedule(qdisc_root(q->qdisc));
 
 	/* free the timeslot_q */
 	kmem_cache_free(timeslot_skb_q_cachep, timeslot_q);
@@ -863,7 +864,7 @@ void tsq_reset_ids(void *priv, u64 src_dst_key)
 static struct sk_buff *tsq_dequeue(struct Qdisc *sch)
 {
 	struct tsq_sched_data *q = qdisc_priv(sch);
-	struct sk_buff *skb;
+	struct sk_buff *skb, *skb_next;
 
 	/* try hi_prio queue first */
 	skb = skb_q_dequeue(&q->hi_prio);
@@ -882,7 +883,18 @@ static struct sk_buff *tsq_dequeue(struct Qdisc *sch)
 	if (skb)
 		goto out_got_skb;
 
-	/* no packets in queue, go to sleep */
+	/* if there are packets in the drop queue, drop them */
+	spin_lock(&q->dropqueue_lock);
+	skb = skb_q_dequeue(&q->dropqueue);
+	spin_unlock(&q->dropqueue_lock);
+	for (; skb != NULL; skb = skb_next) {
+		skb_next = skb->next;
+		q->stat.dequeued++;
+		sch->q.qlen--;
+		qdisc_drop(skb, q->qdisc);
+	}
+
+	/* no packets to send, go to sleep */
 	qdisc_throttled(sch);
 	return NULL;
 
@@ -919,6 +931,11 @@ static void tsq_tc_reset(struct Qdisc *sch)
 	while ((skb = skb_q_dequeue(&q->prequeue)) != NULL)
 		kfree_skb(skb);
 	spin_unlock(&q->prequeue_lock);
+
+	spin_lock(&q->dropqueue_lock);
+	while ((skb = skb_q_dequeue(&q->dropqueue)) != NULL)
+		kfree_skb(skb);
+	spin_unlock(&q->dropqueue_lock);
 
 	spin_lock(&q->hash_tbl_lock);
 	for (idx = 0; idx < (1U << q->hash_tbl_log); idx++) {
@@ -1237,6 +1254,7 @@ static int tsq_tc_init(struct Qdisc *sch, struct nlattr *opt)
 	skb_q_init(&q->reg_prio);
 	skb_q_init(&q->hi_prio);
 	skb_q_init(&q->prequeue);
+	skb_q_init(&q->dropqueue);
 
 	/* calculate timeslot from beginning of Epoch */
 	q->tslot_len_approx		= (1 << q->tslot_shift);

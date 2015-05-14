@@ -23,11 +23,7 @@ public:
 
 	inline struct emu_packet *schedule(uint32_t output_port) {
 		if (unlikely(m_bank->empty(output_port, 0)))
-#ifdef EMU_NO_BATCH_CALLS
-			return NULL;
-#else
 			throw std::runtime_error("called schedule on an empty port");
-#endif
 		else
 			return m_bank->dequeue(output_port, 0);
 	}

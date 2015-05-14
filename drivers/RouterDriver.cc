@@ -69,18 +69,8 @@ void RouterDriver::step() {
 
 	/* fetch packets to send from router to endpoints */
 	for (j = 0; j < m_neighbors; j++) {
-#ifdef EMU_NO_BATCH_CALLS
-		n_pkts = 0;
-		for (uint32_t i = 0; i < ROUTER_MAX_BURST; i++) {
-			pkt_ptrs[n_pkts] = m_router->pull(i);
-
-			if (pkt_ptrs[n_pkts] != NULL)
-				n_pkts++;
-		}
-#else
 		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,
 				&m_port_masks[j]);
-#endif
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 		for (i = 0; i < n_pkts; i++) {
@@ -131,13 +121,7 @@ void RouterDriver::step() {
 	}
 
 	/* pass all incoming packets to the router */
-#ifdef EMU_NO_BATCH_CALLS
-	for (i = 0; i < n_pkts; i++) {
-		m_router->push(pkt_ptrs[i]);
-	}
-#else
 	m_router->push_batch(&pkt_ptrs[0], n_pkts, m_cur_time);
-#endif
 	adm_log_emu_router_driver_pushed(m_stat, n_pkts);
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG

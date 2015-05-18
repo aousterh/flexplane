@@ -10,6 +10,7 @@
 #include "router.h"
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
+#include "../graph-algo/generate_requests.h"
 
 EmulationContainer *create_container(enum RouterType rtype) {
 	EmulationContainer *container;
@@ -82,8 +83,19 @@ int main() {
     /* test RED behavior at routers */
     printf("\nTEST 3: RED\n");
     container = create_container(R_RED);
+    /* generate some random requests */
+    uint32_t max_requests = 1000 * EMU_NUM_ENDPOINTS;
+    struct request_info *requests = (struct request_info *)
+    		malloc(max_requests * sizeof(struct request_info));
+    uint32_t num_requests = generate_requests_poisson(requests, max_requests,
+    		EMU_NUM_ENDPOINTS, 1000, 0.5, 10);
+    struct request_info *current_request = requests;
     for (i = 0; i < 1000; i++) {
-        container->add_backlog(i % EMU_NUM_ENDPOINTS, 13, 0, 3, 0, NULL);
+    	while (current_request->timeslot <= i) {
+    		container->add_backlog(current_request->src, current_request->dst,
+    				0, current_request->backlog, 0, NULL);
+    		current_request++;
+    	}
         container->step();
         container->print_admitted();
     }

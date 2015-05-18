@@ -70,7 +70,7 @@ void RouterDriver::step() {
 	/* fetch packets to send from router to endpoints */
 	for (j = 0; j < m_neighbors; j++) {
 		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,
-				&m_port_masks[j]);
+				&m_port_masks[j], m_cur_time);
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 		for (i = 0; i < n_pkts; i++) {

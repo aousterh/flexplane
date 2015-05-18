@@ -91,7 +91,7 @@ inline void EndpointDriver::pull() {
 	struct emu_packet *pkts[MAX_PULL_BURST];
 
 	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = m_epg->pull_batch(&pkts[0], MAX_PULL_BURST);
+	n_pkts = m_epg->pull_batch(&pkts[0], MAX_PULL_BURST, m_cur_time);
 	assert(n_pkts <= MAX_PULL_BURST);
 #ifdef DROP_ON_FAILED_ENQUEUE
 	if (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_to_router,

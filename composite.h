@@ -112,12 +112,12 @@ public:
     virtual ~CompositeRouter();
 
     virtual void push(struct emu_packet *packet, uint64_t cur_time);
-    virtual struct emu_packet *pull(uint16_t port);
+    virtual struct emu_packet *pull(uint16_t port, uint64_t cur_time);
 
     virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts,
     		uint64_t cur_time);
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
-    		uint64_t *port_masks);
+    		uint64_t *port_masks, uint64_t cur_time);
 
 	struct port_drop_stats *get_port_drop_stats() {
 		return m_qm->get_port_drop_stats();
@@ -145,7 +145,8 @@ public:
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts,
 			uint64_t cur_time);
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
-	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts);
+	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
+			uint64_t cur_time);
 
 private:
 	CLA *m_cla;
@@ -160,7 +161,8 @@ private:
 template < class SCH >
 inline  __attribute__((always_inline))
 uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
-		struct emu_packet **pkts, uint32_t n_pkts, uint64_t *port_masks)
+		struct emu_packet **pkts, uint32_t n_pkts, uint64_t *port_masks,
+		uint64_t cur_time)
 {
 	uint64_t *non_empty_port_mask = sch->non_empty_port_mask();
 	uint32_t res = 0;
@@ -223,7 +225,8 @@ void CompositeRouter<RT,CLA,QM,SCH>::push(struct emu_packet *packet,
 	{ composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, packet, cur_time); }
 
 template < class RT, class CLA, class QM, class SCH >
-struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port)
+struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port,
+		uint64_t cur_time)
 {
 	return m_sch->schedule(port);
 }
@@ -238,8 +241,9 @@ void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
 
 template < class RT, class CLA, class QM, class SCH >
 uint32_t CompositeRouter<RT,CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
-		uint32_t n_pkts, uint64_t *port_masks)
-{ return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts, port_masks); }
+		uint32_t n_pkts, uint64_t *port_masks, uint64_t cur_time)
+{ return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts, port_masks,
+		cur_time); }
 
 
 /***
@@ -285,10 +289,11 @@ inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::push_batch(
 
 template<class CLA, class QM, class SCH, class SINK>
 inline uint32_t CompositeEndpointGroup<CLA, QM, SCH, SINK>::pull_batch(
-		struct emu_packet** pkts, uint32_t n_pkts)
+		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time)
 {
 	uint64_t mask = 0xFFFFFFFFFFFFFFFF;
-	return composite_pull_batch<SCH>(m_sch, m_n_endpoints, pkts, n_pkts, &mask);
+	return composite_pull_batch<SCH>(m_sch, m_n_endpoints, pkts, n_pkts, &mask,
+			cur_time);
 }
 
 #endif /* COMPOSITE_H_ */

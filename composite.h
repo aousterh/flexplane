@@ -80,7 +80,8 @@ public:
 	/**
 	 * @return the packet to transmit, or NULL if no packets should be transmitted
 	 */
-	struct emu_packet *schedule(uint32_t output_port) {THROW;}
+	struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time) {
+		THROW;}
 
 	/**
 	 * @return a pointer to a bit mask with 1 for ports with packets, 0 o/w.
@@ -181,7 +182,7 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 			mask &= (mask - 1);
 			port += 64 * i;
 
-			pkts[res++] = sch->schedule(port);
+			pkts[res++] = sch->schedule(port, cur_time);
 		}
 	}
 
@@ -228,7 +229,7 @@ template < class RT, class CLA, class QM, class SCH >
 struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port,
 		uint64_t cur_time)
 {
-	return m_sch->schedule(port);
+	return m_sch->schedule(port, cur_time);
 }
 
 template < class RT, class CLA, class QM, class SCH >

@@ -31,6 +31,10 @@ void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output,
 void SimpleEndpointGroup::reset(uint16_t endpoint_id)
 {
 	/* dequeue all queued packets */
-	while (!m_bank.empty(endpoint_id, 0))
-		m_emu_output->free_packet(m_bank.dequeue(endpoint_id, 0));
+	while (!m_bank.empty(endpoint_id, 0)) {
+		/* note: cur_time of 0 on dequeue might not result in correct behavior,
+		 * but schemes that use it (e.g. RED) are unlikely to be run on
+		 * endpoints anyway */
+		m_emu_output->free_packet(m_bank.dequeue(endpoint_id, 0, 0));
+	}
 }

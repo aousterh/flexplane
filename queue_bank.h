@@ -58,7 +58,7 @@ public:
 	 * @param queue_index: the flat index of the queue to dequeue
 	 * @assumes the queue is non-empty
 	 */
-	inline ELEM *dequeue(uint32_t port, uint32_t queue);
+	inline ELEM *dequeue(uint32_t port, uint32_t queue, uint64_t cur_time);
 
 	/**
 	 * @return a pointer to a bit mask with 1 for ports with packets, 0 o/w.
@@ -186,7 +186,8 @@ inline void QueueBank<ELEM>::enqueue(uint32_t port, uint32_t queue, ELEM *e) {
 }
 
 template <typename ELEM >
-inline ELEM *QueueBank<ELEM>::dequeue(uint32_t port, uint32_t queue)
+inline ELEM *QueueBank<ELEM>::dequeue(uint32_t port, uint32_t queue,
+		uint64_t cur_time)
 {
 	uint32_t flat = flat_index(port, queue);
 	ELEM *res;

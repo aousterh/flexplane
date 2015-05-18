@@ -15,7 +15,8 @@ public:
 	PyScheduler() {};
 	virtual ~PyScheduler() {};
 
-	virtual struct emu_packet *schedule(uint32_t output_port) {return NULL;}
+	virtual struct emu_packet *schedule(uint32_t output_port,
+			uint64_t cur_time) {return NULL;}
 
 	virtual uint64_t *non_empty_port_mask() {return NULL;}
 };

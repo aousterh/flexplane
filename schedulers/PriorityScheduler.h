@@ -16,7 +16,7 @@
 class PriorityScheduler : public Scheduler {
 public:
 	PriorityScheduler(PacketQueueBank *bank);
-	inline struct emu_packet *schedule(uint32_t port);
+	inline struct emu_packet *schedule(uint32_t port, uint64_t cur_time);
 	inline uint64_t *non_empty_port_mask();
 private:
 	PacketQueueBank *m_bank;
@@ -27,7 +27,7 @@ inline PriorityScheduler::PriorityScheduler(PacketQueueBank* bank)
 {}
 
 inline struct emu_packet* __attribute__((always_inline))
-PriorityScheduler::schedule(uint32_t port)
+PriorityScheduler::schedule(uint32_t port, uint64_t cur_time)
 {
 	/* get the non empty queue mask for the port */
 	uint64_t q_mask = m_bank->non_empty_queue_mask(port);
@@ -35,7 +35,7 @@ PriorityScheduler::schedule(uint32_t port)
 	uint64_t q_index;
 	asm("bsfq %1,%0" : "=r"(q_index) : "r"(q_mask));
 
-	return m_bank->dequeue(port, q_index);
+	return m_bank->dequeue(port, q_index, cur_time);
 }
 
 inline uint64_t* PriorityScheduler::non_empty_port_mask() {

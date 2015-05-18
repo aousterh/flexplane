@@ -89,6 +89,11 @@ public:
 	inline int full(uint32_t port, uint32_t queue);
 
 	/**
+	 * @returns the last time the queue went from non-empty to empty
+	 */
+	inline int last_empty_time(uint32_t port, uint32_t queue);
+
+	/**
 	 * @returns a pointer to the queue bank stats
 	 */
 	inline struct queue_bank_stats *get_queue_bank_stats();
@@ -98,7 +103,11 @@ private:
 
 	uint32_t m_n_queues;
 
+	/** a queue of packets for each port */
 	std::vector<struct circular_queue *> m_queues;
+
+	/** the last time the queue was empty, for each port */
+	std::vector<uint64_t> m_q_times;
 
 	/** a mask with 1 for non-empty ports, 0 for empty ports */
 	uint64_t *m_non_empty_ports;
@@ -128,6 +137,7 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 	if (queue_max_size & (queue_max_size - 1))
 		throw std::runtime_error("queue_max_size must be a power of 2");
 
+	/* initialize packet queues as empty */
 	m_queues.reserve(n_ports * n_queues);
 
 	/* for every queue in the queue bank: */
@@ -140,6 +150,12 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 		cq_init(q, queue_max_size);
 		/* add to queue list */
 		m_queues.push_back(q);
+	}
+
+	/* initialize all last empty times to zero */
+	m_q_times.reserve(n_ports * n_queues);
+	for (i = 0; i < (n_ports * n_queues); i++) {
+		m_q_times.push_back(0);
 	}
 
 	uint32_t mask_n_64 = (n_ports + 63) / 64;
@@ -202,6 +218,11 @@ inline ELEM *QueueBank<ELEM>::dequeue(uint32_t port, uint32_t queue,
 
 	queue_bank_log_dequeue(&m_stats, port);
 
+	/* update last queue empty time if the queue has just become empty. note
+	 * that if dequeue was called, the queue must have been non-empty before */
+	if (queue_empty)
+		m_q_times[flat] = cur_time;
+
 	return res;
 }
 
@@ -234,6 +255,12 @@ template <typename ELEM >
 inline int QueueBank<ELEM>::full(uint32_t port, uint32_t queue)
 {
 	return cq_full(m_queues[flat_index(port,queue)]);
+}
+
+template <typename ELEM >
+inline int QueueBank<ELEM>::last_empty_time(uint32_t port, uint32_t queue)
+{
+	return m_q_times[flat_index(port,queue)];
 }
 
 template <typename ELEM >

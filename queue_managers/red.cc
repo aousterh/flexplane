@@ -59,7 +59,8 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
 		/* TODO: do this exponentiation more efficiently by using a table
 		 * lookup */
 		q_avg = q_avg << m_red_params.wq_shift;
-		for (; time_diff > 0 && q_avg > 1; time_diff--) {
+		for (; time_diff > 0 && q_avg >= (1 << m_red_params.wq_shift);
+				time_diff--) {
 			q_avg -= q_avg >> m_red_params.wq_shift;
 		}
 		q_avg = q_avg >> m_red_params.wq_shift;

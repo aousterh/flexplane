@@ -83,7 +83,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
     red_params.min_th = 50;
     red_params.max_th = 250;
     red_params.max_p = 0.1;
-    red_params.wq_shift = 9;
+    red_params.wq_shift = 5;
 	RTE_LOG(INFO, ADMISSION,
 			"Using RED routers with q_capacity %d, ecn %d, min_th %d, max_th %d, max_p %f, wq_shift %d\n",
 			red_params.q_capacity, red_params.ecn, red_params.min_th,

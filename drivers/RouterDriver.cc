@@ -105,6 +105,10 @@ void RouterDriver::step() {
 #endif
 	}
 
+	/* increase time before pushing so that queue managers always see at least
+	 * one timeslot since last_empty_time */
+	m_cur_time++;
+
 	/* fetch a batch of packets from the network */
 	n_pkts = fp_ring_dequeue_burst(m_q_to_router,
 			(void **) &pkt_ptrs, ROUTER_MAX_BURST);
@@ -128,8 +132,6 @@ void RouterDriver::step() {
 	printf("RouterDriver on core %d pushed %d packets\n", m_core_index,
 			n_pkts);
 #endif
-
-	m_cur_time++;
 }
 
 

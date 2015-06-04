@@ -26,7 +26,7 @@
 
 struct red_args {
     uint16_t q_capacity;
-    bool     ecn;
+    bool     ecn; // TODO: this should be conveyed in abstract packets
     uint32_t min_th;
     uint32_t max_th;
     float    max_p;

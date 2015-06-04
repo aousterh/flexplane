@@ -26,7 +26,8 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
         return;
     }
 
-    if (qlen >= m_dctcp_params.K_threshold) {
+    /* mark if queue occupancy is greater than K */
+    if (qlen > m_dctcp_params.K_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
         m_dropper->mark_ecn(pkt, port);
     }

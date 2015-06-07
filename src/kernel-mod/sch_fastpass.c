@@ -1140,6 +1140,9 @@ static int fastpass_proc_show(struct seq_file *seq, void *v)
 	if (scs->unsupported_alloc_data_type)
 		seq_printf(seq, "\n  %llu times received packets to be modified with unsupported alloc data type",
 				scs->unsupported_alloc_data_type);
+	if (scs->unrecognized_proto_in_mark)
+		seq_printf(seq, "\n  %llu times could not mark packet due to unrecognized protocol",
+				scs->unrecognized_proto_in_mark);
 
 	fpproto_print_errors(&q->conn.stat, seq);
 	fpproto_print_socket_errors(q->ctrl_sock->sk, seq);
@@ -1374,21 +1377,25 @@ static inline void mark_ecn(struct fp_sched_data *q, struct sk_buff *skb)
 	struct iphdr * iph;
 	__be16 old_word, new_word;
 
-	if (proto != __constant_htons(ETH_P_IP)) {
-		/* not IPv4. probably IPv6? */
+	/* mark ECN Congestion Encountered if in IPv4 packet */
+	switch(proto) {
+	case __constant_htons(ETH_P_IP):
+		/* mark IPv4 packet */
+		iph = (struct iphdr *) skb_network_header(skb);
+		old_word = ((__be16 *) iph)[0];
+		iph->tos |= ECN_CE;
+
+		/* update checksum */
+		new_word = ((__be16 *) iph)[0];
+		csum_replace2(&iph->check, old_word, new_word);
+		break;
+	default:
+		/* not IPv4 - cannot mark */
 		fp_debug("cannot mark ecn in packet with protocol %u:\n",
 				skb->protocol);
+		q->stat.unrecognized_proto_in_mark++;
 		return;
 	}
-
-	/* mark ECN Congestion Encountered in IPv4 packet */
-	iph = (struct iphdr *) skb_network_header(skb);
-	old_word = ((__be16 *) iph)[0];
-	iph->tos |= ECN_CE;
-
-    /* update checksum */
-	new_word = ((__be16 *) iph)[0];
-	csum_replace2(&iph->check, old_word, new_word);
 
 	q->stat.marked_packets++;
 }

@@ -21,6 +21,7 @@ struct fp_sched_stat {
 
 	/* prepare to send related */
 	__u64		marked_packets;
+	__u64		unrecognized_proto_in_mark;
 
 	/* request-related */
 	__u64		req_alloc_errors;

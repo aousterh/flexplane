@@ -1375,9 +1375,10 @@ static inline void mark_ecn(struct fp_sched_data *q, struct sk_buff *skb)
 {
 	__be16 proto = skb->protocol;
 	struct iphdr * iph;
+	struct ipv6hdr *iph6;
 	__be16 old_word, new_word;
 
-	/* mark ECN Congestion Encountered if in IPv4 packet */
+	/* mark ECN Congestion Encountered if IPv4 or IPv6 packet */
 	switch(proto) {
 	case __constant_htons(ETH_P_IP):
 		/* mark IPv4 packet */
@@ -1389,8 +1390,16 @@ static inline void mark_ecn(struct fp_sched_data *q, struct sk_buff *skb)
 		new_word = ((__be16 *) iph)[0];
 		csum_replace2(&iph->check, old_word, new_word);
 		break;
+	case __constant_htons(ETH_P_IPV6):
+		/* mark IPv6 packet */
+		iph6 = (struct ipv6hdr *) skb_network_header(skb);
+		iph6->flow_lbl[0] |= ECN_CE << 4;
+
+		/* IPv6 headers don't have checksums - no update necessary */
+
+		break;
 	default:
-		/* not IPv4 - cannot mark */
+		/* not IPv4 or IPv6 - cannot mark */
 		fp_debug("cannot mark ecn in packet with protocol %u:\n",
 				skb->protocol);
 		q->stat.unrecognized_proto_in_mark++;

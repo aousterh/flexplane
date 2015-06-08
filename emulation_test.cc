@@ -10,6 +10,7 @@
 #include "router.h"
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
+#include "queue_managers/dctcp.h"
 #include "../graph-algo/generate_requests.h"
 
 EmulationContainer *create_container(enum RouterType rtype) {
@@ -34,6 +35,15 @@ EmulationContainer *create_container(enum RouterType rtype) {
     	red_params.wq_shift = 8;
 
     	rtr_args = (void *) &red_params;
+    	break;
+
+    case R_DCTCP:
+    	struct dctcp_args dctcp_args;
+    	dctcp_args.q_capacity = 512;
+    	dctcp_args.K_threshold = 64;
+    	rtr_args = (void *) &dctcp_args;
+
+    	printf("router type DCTCP with param: %d\n", dctcp_args.K_threshold);
     	break;
 
     default:

@@ -17,8 +17,8 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/SingleQueueScheduler.h"
 
-#define HULL_QUEUE_CAPACITY DCTCP_QUEUE_CAPACITY
-#define HULL_ATOM_SIZE      1000
+#define HULL_QUEUE_CAPACITY	DCTCP_QUEUE_CAPACITY
+#define HULL_ATOM_SIZE      1500
 
 struct hull_args {
     uint16_t q_capacity;

@@ -28,20 +28,26 @@ void HULLQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
     if (qlen >= m_hull_params.q_capacity) {
         /* no space to enqueue, drop this packet */
         m_dropper->drop(pkt, port);
-	return;
+        return;
     }
 
-    m_phantom_len -= (time - m_last_phantom_update_time) * m_hull_params.GAMMA;
-    if (m_phantom_len < 0) {
-        m_phantom_len = 0;
+    /* drain phantom length if we haven't already in this timeslot */
+    if (time > m_last_phantom_update_time) {
+    	m_phantom_len -= (time - m_last_phantom_update_time) *
+    			m_hull_params.GAMMA;
+    	if (m_phantom_len < 0) {
+    		m_phantom_len = 0;
+    	}
+    	m_last_phantom_update_time = time;
     }
-    m_phantom_len += HULL_ATOM_SIZE;
+
+    /* add to phantom length */
+	m_phantom_len += HULL_ATOM_SIZE;
 
     if (m_phantom_len > m_hull_params.mark_threshold) {
-      /* Set ECN mark on packet, then drop into enqueue */
+    	/* Set ECN mark on packet, then enqueue */
         m_dropper->mark_ecn(pkt, port);
     }
-
     m_bank->enqueue(port, queue, pkt);
 }
 

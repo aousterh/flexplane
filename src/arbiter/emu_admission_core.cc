@@ -110,6 +110,8 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 #elif defined(HULL)
     struct hull_args hl_args;
     hl_args.q_capacity = 512;
+    hl_args.mark_threshold = 3000;
+    hl_args.GAMMA = 0.95;
 	RTE_LOG(INFO, ADMISSION, "Using HULL routers with q_capacity %d mark_threshold %d gamma %f\n",
 			hl_args.q_capacity, hl_args.mark_threshold, hl_args.GAMMA);
 

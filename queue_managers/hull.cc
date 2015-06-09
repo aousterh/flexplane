@@ -15,7 +15,7 @@ HULLQueueManager::HULLQueueManager(PacketQueueBank *bank,
       m_last_phantom_update_time(0)
 {
     // HULL_QUEUE_CAPACITY should be smaller than MAXINT/HULL_ATOM_SIZE
-    assert(HULL_QUEUE_CAPACITY < std::numeric_limits<int>::max()/HULL_ATOM_SIZE);
+    assert(HULL_QUEUE_CAPACITY < std::numeric_limits<int>::max()/HULL_MTU_SIZE);
     if (bank == NULL)
         throw std::runtime_error("bank should be non-NULL");
     /* initialize other state */
@@ -34,7 +34,7 @@ void HULLQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
     /* drain phantom length if we haven't already in this timeslot */
     if (time > m_last_phantom_update_time) {
     	m_phantom_len -= (time - m_last_phantom_update_time) *
-    			m_hull_params.GAMMA;
+    			m_hull_params.GAMMA * HULL_MTU_SIZE;
     	if (m_phantom_len < 0) {
     		m_phantom_len = 0;
     	}
@@ -42,7 +42,7 @@ void HULLQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
     }
 
     /* add to phantom length */
-	m_phantom_len += HULL_ATOM_SIZE;
+	m_phantom_len += HULL_MTU_SIZE;
 
     if (m_phantom_len > m_hull_params.mark_threshold) {
     	/* Set ECN mark on packet, then enqueue */

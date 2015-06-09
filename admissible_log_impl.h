@@ -67,6 +67,8 @@ void print_global_admission_log_emulation() {
 	printf("\nrouter type RED");
 #elif defined(DROP_TAIL)
 	printf("\nrouter type drop tail");
+#elif defined(HULL)
+	printf("\nrouter type HULL");
 #endif
 
 	printf("\n warnings:");

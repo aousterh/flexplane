@@ -43,7 +43,8 @@ extern "C" {
 static inline u16 emu_req_data_bytes(void) {
 	u16 req_data_bytes;
 
-#if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP))
+#if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP) || defined(HULL) \
+	||	defined(ROUND_ROBIN) || defined(PRIO_QUEUEING))
 	req_data_bytes = 0;
 #else
 	req_data_bytes = MAX_REQ_DATA_BYTES;
@@ -59,7 +60,8 @@ static inline u16 emu_req_data_bytes(void) {
 static inline u16 emu_alloc_data_bytes(void) {
 	u16 alloc_data_bytes;
 
-#if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP))
+#if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP) || defined(HULL) \
+	||	defined(ROUND_ROBIN) || defined(PRIO_QUEUEING))
 	alloc_data_bytes = 0;
 #else
 	alloc_data_bytes = MAX_ALLOC_DATA_BYTES;

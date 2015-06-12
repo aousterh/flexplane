@@ -157,7 +157,6 @@ void Emulation::construct_single_rack_topology(struct fp_ring **packet_queues,
 		rtr_masks[0] = 0xFFFFFFFF; /* 32 ports */
 	else
 		rtr_masks[0] = 0xFFFFFFFFFFFFFFFF; /* 64 ports */
-	printf("router mask: %"PRIx64"\n", rtr_masks[0]);
 	router_drivers[0] = new RouterDriver(rtr, q_router_ingress,
 			&q_router_egress[0], &rtr_masks[0], 1, m_packet_mempool);
 

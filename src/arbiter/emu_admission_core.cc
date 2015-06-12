@@ -19,6 +19,7 @@
 #include "../emulation/emulation.h"
 #include "../emulation/emulation_core.h"
 #include "../emulation/endpoint.h"
+#include "../emulation/classifiers/BySourceClassifier.h"
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"
 #include "../emulation/queue_managers/red.h"
@@ -100,13 +101,22 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
     rtype = R_DropTail;
     rtr_args = &dt_args;
 #elif defined(PRIO_QUEUEING)
-	RTE_LOG(INFO, ADMISSION, "Using Priority Queueing with default parameters\n");
+    struct prio_by_src_args prio_args;
+    prio_args.q_capacity = 171; /* divide 512 evenly amongst queues */
+    prio_args.n_hi_prio = 8;
+    prio_args.n_med_prio = 8;
+	RTE_LOG(INFO, ADMISSION,
+			"Using Priority Queueing with q_capacity %d, %d hi prio srcs and %d med prio srcs\n",
+			prio_args.q_capacity, prio_args.n_hi_prio, prio_args.n_med_prio);
     rtype = R_Prio;
-    rtr_args = NULL;
+    rtr_args = &prio_args;
 #elif defined(ROUND_ROBIN)
-	RTE_LOG(INFO, ADMISSION, "Using Round-Robin with default parameters\n");
+    struct drop_tail_args dt_args;
+    dt_args.q_capacity = 16;
+	RTE_LOG(INFO, ADMISSION, "Using Round-Robin with q_capacity %d\n",
+			dt_args.q_capacity);
     rtype = R_RR;
-    rtr_args = NULL;
+    rtr_args = &dt_args;
 #elif defined(HULL)
     struct hull_args hl_args;
     hl_args.q_capacity = 512;

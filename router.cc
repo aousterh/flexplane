@@ -17,6 +17,8 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		struct topology_args *topo_args, uint16_t id)
 {
 	struct drop_tail_args *dt_args;
+	struct prio_by_src_args *prio_args;
+
 	switch (type) {
 	case (R_DropTail):
 		assert(args != NULL);
@@ -35,12 +37,14 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		return new DCTCPRouter(id, (struct dctcp_args *)args);
 
 	case (R_Prio):
-		assert(args == NULL);
-		return new PriorityRouter(512, topo_args->rack_index, 8, 8);
+		assert(args != NULL);
+		prio_args = (struct prio_by_src_args *) args;
+		return new PriorityRouter(prio_args, topo_args->rack_index);
 
 	case (R_RR):
-		assert(args == NULL);
-		return new RRRouter(512, topo_args->rack_index);
+		assert(args != NULL);
+		dt_args = (struct drop_tail_args *) args;
+		return new RRRouter(dt_args->q_capacity, topo_args->rack_index);
 
 	case (R_HULL):
 		assert(args != NULL);

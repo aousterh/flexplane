@@ -11,6 +11,12 @@
 #include <stdint.h>
 #include "../composite.h"
 
+struct prio_by_src_args {
+    uint16_t q_capacity;
+    uint32_t n_hi_prio;
+    uint32_t n_med_prio;
+};
+
 /**
  * Classifies packets by source.
  *

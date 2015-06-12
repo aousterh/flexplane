@@ -58,13 +58,13 @@ struct queue_bank_stats *DropTailCoreRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
 }
 
-PriorityRouter::PriorityRouter(uint16_t q_capacity, uint32_t rack_index,
-		uint32_t n_hi_prio, uint32_t n_med_prio)
+PriorityRouter::PriorityRouter(struct prio_by_src_args *args,
+		uint32_t rack_index)
 	: m_bank(EMU_ENDPOINTS_PER_RACK, 3, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
 			  EMU_ENDPOINTS_PER_RACK),
-	  m_cla(n_hi_prio, n_med_prio),
-	  m_qm(&m_bank, q_capacity),
+	  m_cla(args->n_hi_prio, args->n_med_prio),
+	  m_qm(&m_bank, args->q_capacity),
 	  m_sch(&m_bank),
 	  PriorityRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
 {}

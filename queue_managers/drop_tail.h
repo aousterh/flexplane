@@ -123,8 +123,7 @@ typedef CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManage
 
 class PriorityRouter : public PriorityRouterBase {
 public:
-    PriorityRouter(uint16_t q_capacity, uint32_t rack_index,
-    		uint32_t n_hi_prio, uint32_t n_med_prio);
+    PriorityRouter(struct prio_by_src_args *args, uint32_t rack_index);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

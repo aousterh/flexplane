@@ -1,3 +1,4 @@
+import argparse
 import random
 import socket
 import sys
@@ -5,8 +6,6 @@ import time
 
 from stats import *
 
-# max possible to fit in one 1500 byte MTU
-response_size = 1448
 receive_buffer_size = 1024 * 1024
 
 def setup_socket(server_addr, server_port):
@@ -16,13 +15,15 @@ def setup_socket(server_addr, server_port):
 
     return client_socket
 
-def run_client(server_addr, server_port, qps):
-    avail_socket = setup_socket(server_addr, server_port)
+def run_client(params):
+    avail_socket = setup_socket(params.server_addr, params.server_port)
     stats = ConnectionStats(time.time())
+
+    print params
 
     print ConnectionStats.header_names()
 
-    t_btwn_requests = 1.0 / qps
+    t_btwn_requests = 1.0 / params.qps
     current_time = time.time()
     next_send_time = current_time + t_btwn_requests
 
@@ -36,11 +37,11 @@ def run_client(server_addr, server_port, qps):
         current_socket = avail_socket
 
         t_before = time.time()
-        current_socket.send(str(response_size))
+        current_socket.send(str(params.response_size))
 
         # wait for reply
         amount_received = 0
-        while amount_received < response_size:
+        while amount_received < params.response_size:
             data = current_socket.recv(receive_buffer_size)
             amount_received += len(data)
         t_after = time.time()
@@ -53,16 +54,23 @@ def run_client(server_addr, server_port, qps):
     for s in sockets:
         s.close()
 
-def main():
-    args = sys.argv
-    if len(args) < 4:
-        print "Usage: python %s server_addr server_port qps" % str(args[0])
-        exit()
-    server_addr = args[1]
-    server_port = int(args[2])
-    qps = int(args[3])
+def get_args():
+    parser = argparse.ArgumentParser(description="Run an RPC client")
+    parser.add_argument('server_addr', metavar='s_addr', type=str,
+                        help='the IP address or hostname of the server')
+    parser.add_argument('server_port', metavar='s_port', type=int,
+                        help='the port of the server')
+    parser.add_argument('qps', metavar='qps', type=int,
+                        help='the target queries per second')
+    parser.add_argument('response_size', metavar='r_size', type=int,
+                        help='the size of the response (1448 is max for 1 MTU)')
 
-    run_client(server_addr, server_port, qps)
+    return parser.parse_args()
+
+def main():
+    args = get_args()
+
+    run_client(args)
 
 if __name__ == "__main__":
     main()

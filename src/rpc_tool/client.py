@@ -23,16 +23,18 @@ def run_client(params):
 
     print ConnectionStats.header_names()
 
-    t_btwn_requests = 1.0 / params.qps
     current_time = time.time()
-    next_send_time = current_time + t_btwn_requests
+
+    # Poisson distribution with a mean time between requests of
+    # 1 / params.qps
+    next_send_time = current_time + random.expovariate(params.qps)
 
     while 1:
         # spin until next send time
         while current_time < next_send_time:
             current_time = time.time()
         # update next sent time
-        next_send_time += t_btwn_requests
+        next_send_time += random.expovariate(params.qps)
 
         current_socket = avail_socket
 

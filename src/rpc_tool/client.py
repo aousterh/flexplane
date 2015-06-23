@@ -30,9 +30,18 @@ def run_client(params):
     next_send_time = current_time + random.expovariate(params.qps)
 
     while 1:
-        # spin until next send time
-        while current_time < next_send_time:
+        too_late = 0
+        if current_time > next_send_time:
+            too_late = 1
+        else:
             current_time = time.time()
+            if current_time > next_send_time:
+                too_late = 1
+            else:
+                # early! spin until next send time
+                while current_time < next_send_time:
+                    current_time = time.time()
+
         # update next sent time
         next_send_time += random.expovariate(params.qps)
 
@@ -50,7 +59,7 @@ def run_client(params):
         fct = t_after - t_before
 
         # handle logging
-        stats.add_sample(t_after, fct)
+        stats.add_sample(t_after, fct, too_late)
         stats.start_new_interval_if_time(t_after)
 
     for s in sockets:

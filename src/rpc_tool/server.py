@@ -1,6 +1,6 @@
+import argparse
 import os
 import socket
-import sys
 
 response_dict = {}
 
@@ -9,16 +9,16 @@ def generate_response(size):
     data = os.urandom(size)
     response_dict[size] = data
 
-def run_server(addr, port):
+def run_server(params):
     # set up a socket
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.bind((addr, port))
+    serversocket.bind((params.server_addr, params.server_port))
     serversocket.listen(1) # become a server socket, maximum 1 connections
 
     # accept a connection
     connection, address = serversocket.accept()
 
-    print "connected to port %d" % port
+    print "connected to port %d" % params.server_port
 
     while True:
         buf = connection.recv(64)
@@ -31,15 +31,19 @@ def run_server(addr, port):
 
     serversocket.close()
 
-def main():
-    args = sys.argv
-    if len(args) < 3:
-        print "Usage: python %s addr port" % str(args[0])
-        exit()
-    addr = args[1]
-    port = int(args[2])
+def get_args():
+    parser = argparse.ArgumentParser(description="Run an RPC server")
+    parser.add_argument('server_addr', metavar='s_addr', type=str,
+                        help='the IP address or hostname of this server')
+    parser.add_argument('server_port', metavar='s_port', type=int,
+                        help='the port of this server')
 
-    run_server(addr, port)
+    return parser.parse_args()
+
+def main():
+    args = get_args()
+
+    run_server(args)
 
 if __name__ == "__main__":
     main()

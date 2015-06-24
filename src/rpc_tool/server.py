@@ -10,6 +10,8 @@ def generate_response(size):
     response_dict[size] = data
 
 def run_server(params):
+    print params
+
     # prepare a response before connecting if a size is specified. this is
     # helpful when responses are large and take a long time to generate
     if params.r_size is not None:

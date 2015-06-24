@@ -9,21 +9,36 @@ def generate_response(size):
     data = os.urandom(size)
     response_dict[size] = data
 
-def run_server(params):
-    print params
-
+def setup_socket(params):
     # prepare a response before connecting if a size is specified. this is
     # helpful when responses are large and take a long time to generate
     if params.r_size is not None:
         generate_response(params.r_size)
 
-    # set up a socket
-    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.bind((params.server_addr, params.server_port))
-    serversocket.listen(1) # become a server socket, maximum 1 connections
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((params.server_addr, params.server_port))
+
+    # set TOS on socket if applicable. must be done before accepting a
+    # connection.
+    if params.tos != None:
+        try:
+            # lower two bits reserved for ECN
+            server_socket.setsockopt(socket.IPPROTO_IP, socket.IP_TOS,
+                                     params.tos << 2)
+            print "set tos"
+        except:
+            print "WARNING: failed to set TOS correctly"
 
     # accept a connection
-    connection, address = serversocket.accept()
+    server_socket.listen(1) # become a server socket, maximum 1 connections
+    connection, address = server_socket.accept()
+
+    return (server_socket, connection, address)
+
+def run_server(params):
+    print params
+
+    server_socket, connection, address = setup_socket(params)
 
     print "connected to port %d" % params.server_port
 
@@ -36,7 +51,7 @@ def run_server(params):
                 generate_response(response_size)
             connection.send(response_dict[response_size])
 
-    serversocket.close()
+    server_socket.close()
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run an RPC server")
@@ -46,6 +61,8 @@ def get_args():
                         help='the port of this server')
     parser.add_argument('--r_size', metavar='r_size', type=int, required=False,
                         help='the size of the response (1448 is max for 1 MTU)')
+    parser.add_argument('--tos', metavar='tos', type=int,
+                        help='tos (Type of Service), now called DSCP')
 
     return parser.parse_args()
 

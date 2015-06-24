@@ -7,26 +7,35 @@ from stats import *
 
 receive_buffer_size = 1024 * 1024
 
-def setup_socket(server_addr, server_port):
+def setup_socket(params):
     # set up connections (one for now)
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # repeatedly try to connect until it succeeds
     while 1:
         try:
-            client_socket.connect((server_addr, server_port))
+            client_socket.connect((params.server_addr, params.server_port))
             break
         except socket.error:
             pass
 
+    # set TOS on socket if applicable
+    if params.tos != None:
+        try:
+            # lower two bits reserved for ECN
+            client_socket.setsockopt(socket.IPPROTO_IP, socket.IP_TOS,
+                                     params.tos << 2)
+        except:
+            "WARNING: failed to set TOS correctly"
+
     return client_socket
 
 def run_client(params):
-    avail_socket = setup_socket(params.server_addr, params.server_port)
-    stats = ConnectionStats(time.time())
-
     print params
 
+    client_socket = setup_socket(params)
+
+    stats = ConnectionStats(time.time())
     print ConnectionStats.header_names()
 
     current_time = time.time()
@@ -51,15 +60,13 @@ def run_client(params):
         # update next sent time
         next_send_time += random.expovariate(params.qps)
 
-        current_socket = avail_socket
-
         t_before = time.time()
-        current_socket.send(str(params.response_size))
+        client_socket.send(str(params.response_size))
 
         # wait for reply
         amount_received = 0
         while amount_received < params.response_size:
-            data = current_socket.recv(receive_buffer_size)
+            data = client_socket.recv(receive_buffer_size)
             amount_received += len(data)
         t_after = time.time()
         fct = t_after - t_before
@@ -68,8 +75,7 @@ def run_client(params):
         stats.add_sample(t_after, fct, too_late)
         stats.start_new_interval_if_time(t_after)
 
-    for s in sockets:
-        s.close()
+    client_socket.close()
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run an RPC client")
@@ -81,6 +87,8 @@ def get_args():
                         help='the target queries per second')
     parser.add_argument('response_size', metavar='r_size', type=int,
                         help='the size of the response (1448 is max for 1 MTU)')
+    parser.add_argument('--tos', metavar='tos', type=int,
+                        help='tos (Type of Service), now called DSCP')
 
     return parser.parse_args()
 

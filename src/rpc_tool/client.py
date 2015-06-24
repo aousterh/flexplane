@@ -77,7 +77,7 @@ def get_args():
                         help='the IP address or hostname of the server')
     parser.add_argument('server_port', metavar='s_port', type=int,
                         help='the port of the server')
-    parser.add_argument('qps', metavar='qps', type=int,
+    parser.add_argument('qps', metavar='qps', type=float,
                         help='the target queries per second')
     parser.add_argument('response_size', metavar='r_size', type=int,
                         help='the size of the response (1448 is max for 1 MTU)')

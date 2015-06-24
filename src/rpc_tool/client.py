@@ -10,7 +10,14 @@ receive_buffer_size = 1024 * 1024
 def setup_socket(server_addr, server_port):
     # set up connections (one for now)
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((server_addr, server_port))
+
+    # repeatedly try to connect until it succeeds
+    while 1:
+        try:
+            client_socket.connect((server_addr, server_port))
+            break
+        except socket.error:
+            pass
 
     return client_socket
 

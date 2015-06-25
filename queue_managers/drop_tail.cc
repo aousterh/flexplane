@@ -58,7 +58,30 @@ struct queue_bank_stats *DropTailCoreRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
 }
 
-PriorityRouter::PriorityRouter(struct prio_by_src_args *args,
+PriorityByFlowRouter::PriorityByFlowRouter(uint16_t q_capacity,
+		uint32_t rack_index)
+	: m_bank(EMU_ENDPOINTS_PER_RACK, 3, DROP_TAIL_QUEUE_CAPACITY),
+	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
+			  EMU_ENDPOINTS_PER_RACK),
+	  m_cla(),
+	  m_qm(&m_bank, q_capacity),
+	  m_sch(&m_bank),
+	  PriorityByFlowRouterBase(&m_rt, &m_cla, &m_qm, &m_sch,
+			  EMU_ENDPOINTS_PER_RACK)
+{}
+
+void PriorityByFlowRouter::assign_to_core(Dropper* dropper,
+		struct emu_admission_core_statistics* stat) {
+	m_qm.assign_to_core(dropper, stat);
+}
+
+struct queue_bank_stats *PriorityByFlowRouter::get_queue_bank_stats() {
+	return m_bank.get_queue_bank_stats();
+}
+
+PriorityByFlowRouter::~PriorityByFlowRouter() {}
+
+PriorityBySourceRouter::PriorityBySourceRouter(struct prio_by_src_args *args,
 		uint32_t rack_index)
 	: m_bank(EMU_ENDPOINTS_PER_RACK, 3, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(EMU_RACK_SHIFT, rack_index, EMU_ENDPOINTS_PER_RACK,
@@ -66,19 +89,20 @@ PriorityRouter::PriorityRouter(struct prio_by_src_args *args,
 	  m_cla(args->n_hi_prio, args->n_med_prio),
 	  m_qm(&m_bank, args->q_capacity),
 	  m_sch(&m_bank),
-	  PriorityRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
+	  PriorityBySourceRouterBase(&m_rt, &m_cla, &m_qm, &m_sch,
+			  EMU_ENDPOINTS_PER_RACK)
 {}
 
-void PriorityRouter::assign_to_core(Dropper* dropper,
+void PriorityBySourceRouter::assign_to_core(Dropper* dropper,
 		struct emu_admission_core_statistics* stat) {
 	m_qm.assign_to_core(dropper, stat);
 }
 
-struct queue_bank_stats *PriorityRouter::get_queue_bank_stats() {
+struct queue_bank_stats *PriorityBySourceRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
 }
 
-PriorityRouter::~PriorityRouter() {}
+PriorityBySourceRouter::~PriorityBySourceRouter() {}
 
 RRRouter::RRRouter(uint16_t q_capacity, uint32_t rack_index)
 	: m_bank(EMU_ENDPOINTS_PER_RACK, 64, DROP_TAIL_QUEUE_CAPACITY),

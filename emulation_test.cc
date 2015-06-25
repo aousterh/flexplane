@@ -17,11 +17,11 @@
 EmulationContainer *create_container(enum RouterType rtype) {
 	EmulationContainer *container;
 	void *rtr_args;
+	struct drop_tail_args args;
 
     /* initialize algo-specific state */
     switch (rtype) {
     case R_DropTail:
-       	struct drop_tail_args args;
     	args.q_capacity = 5; // small capacity for testing
     	rtr_args = (void *) &args;
     	break;
@@ -58,6 +58,11 @@ EmulationContainer *create_container(enum RouterType rtype) {
     			hull_args.q_capacity, hull_args.mark_threshold,
     			hull_args.GAMMA);
 
+    	break;
+
+    case R_Prio_by_flow:
+    	args.q_capacity = 5; // small capacity for testing
+    	rtr_args = (void *) &args;
     	break;
 
     default:

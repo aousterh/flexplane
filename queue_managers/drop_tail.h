@@ -118,16 +118,35 @@ private:
     SingleQueueScheduler m_sch;
 };
 
-typedef CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManager, PriorityScheduler>
-	PriorityRouterBase;
+typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, PriorityScheduler>
+	PriorityByFlowRouterBase;
 
-class PriorityRouter : public PriorityRouterBase {
+class PriorityByFlowRouter : public PriorityByFlowRouterBase {
 public:
-    PriorityRouter(struct prio_by_src_args *args, uint32_t rack_index);
+    PriorityByFlowRouter(uint16_t q_capacity, uint32_t rack_index);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
-    virtual ~PriorityRouter();
+    virtual ~PriorityByFlowRouter();
+
+private:
+    PacketQueueBank m_bank;
+    TorRoutingTable m_rt;
+    FlowIDClassifier m_cla;
+    DropTailQueueManager m_qm;
+    PriorityScheduler m_sch;
+};
+
+typedef CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManager, PriorityScheduler>
+	PriorityBySourceRouterBase;
+
+class PriorityBySourceRouter : public PriorityBySourceRouterBase {
+public:
+    PriorityBySourceRouter(struct prio_by_src_args *args, uint32_t rack_index);
+	virtual void assign_to_core(Dropper *dropper,
+			struct emu_admission_core_statistics *stat);
+	virtual struct queue_bank_stats *get_queue_bank_stats();
+    virtual ~PriorityBySourceRouter();
 
 private:
     PacketQueueBank m_bank;

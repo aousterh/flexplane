@@ -39,7 +39,12 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 	case (R_Prio):
 		assert(args != NULL);
 		prio_args = (struct prio_by_src_args *) args;
-		return new PriorityRouter(prio_args, topo_args->rack_index);
+		return new PriorityBySourceRouter(prio_args, topo_args->rack_index);
+
+	case (R_Prio_by_flow):
+		assert(args != NULL);
+		dt_args = (struct drop_tail_args *) args;
+		return new PriorityByFlowRouter(dt_args->q_capacity, topo_args->rack_index);
 
 	case (R_RR):
 		assert(args != NULL);

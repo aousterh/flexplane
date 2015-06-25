@@ -13,7 +13,7 @@
 struct emu_packet;
 
 enum RouterType {
-    R_DropTail, R_RED, R_DCTCP, R_Prio, R_RR, R_HULL,
+    R_DropTail, R_RED, R_DCTCP, R_Prio, R_RR, R_HULL, R_Prio_by_flow
 };
 
 enum RouterFunction {

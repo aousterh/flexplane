@@ -73,6 +73,8 @@ void print_global_admission_log_emulation() {
 	printf("\nrouter type round robin");
 #elif defined(HULL)
 	printf("\nrouter type HULL");
+#elif defined(HULL_SCHED)
+	printf("\nrouter type HULL as scheduler");
 #endif
 
 	printf("\n warnings:");

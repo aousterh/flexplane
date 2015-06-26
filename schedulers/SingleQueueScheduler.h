@@ -33,7 +33,7 @@ public:
 		return m_bank->non_empty_port_mask();
 	}
 
-private:
+protected:
 	/** the QueueBank where packets are stored */
 	PacketQueueBank *m_bank;
 };

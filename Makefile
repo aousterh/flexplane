@@ -40,6 +40,8 @@ endif
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 %.qm.o: queue_managers/%.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+%.sch.o: schedulers/%.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 %.pic.o: %.cc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
@@ -47,12 +49,13 @@ endif
 .PHONY: clean
 all: emulation py
 clean:
-	rm -f emulation *.o drivers/*.o queue_managers/*.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
+	rm -f emulation *.o drivers/*.o queue_managers/*.o schedulers/*.o *~ _fastemu.so fastemu.py fastemu.pyc fastemu_wrap.cc
 
 # Dependency rules for file targets
 emulation: emulation_test.o emulation.o endpoint_group.o simple_endpoint.o \
 			router.o emulation_core.o \
 			drop_tail.qm.o red.qm.o dctcp.qm.o hull.qm.o probdrop.qm.o \
+			hull_sched.sch.o \
 			RouterDriver.drv.o EndpointDriver.drv.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 

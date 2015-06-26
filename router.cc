@@ -10,6 +10,7 @@
 #include "queue_managers/red.h"
 #include "queue_managers/dctcp.h"
 #include "queue_managers/hull.h"
+#include "schedulers/hull_sched.h"
 #include <assert.h>
 #include "output.h"
 
@@ -54,6 +55,10 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 	case (R_HULL):
 		assert(args != NULL);
 		return new HULLRouter(id, (struct hull_args *)args);
+
+	case (R_HULL_sched):
+		assert(args != NULL);
+		return new HULLSchedRouter(id, (struct hull_args *) args);
 	}
 
 	throw std::runtime_error("invalid router type\n");

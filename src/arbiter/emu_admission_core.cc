@@ -122,10 +122,22 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
     hl_args.q_capacity = 512;
     hl_args.mark_threshold = 3000;
     hl_args.GAMMA = 0.95;
-	RTE_LOG(INFO, ADMISSION, "Using HULL routers with q_capacity %d mark_threshold %d gamma %f\n",
+	RTE_LOG(INFO, ADMISSION,
+			"Using HULL routers with q_capacity %d mark_threshold %d gamma %f\n",
 			hl_args.q_capacity, hl_args.mark_threshold, hl_args.GAMMA);
 
     rtype = R_HULL;
+    rtr_args = &hl_args;
+#elif defined(HULL_SCHED)
+    struct hull_args hl_args;
+    hl_args.q_capacity = 512;
+    hl_args.mark_threshold = 3000;
+    hl_args.GAMMA = 0.95;
+	RTE_LOG(INFO, ADMISSION,
+			"Using HULL SCHED routers with q_capacity %d mark_threshold %d gamma %f\n",
+			hl_args.q_capacity, hl_args.mark_threshold, hl_args.GAMMA);
+
+    rtype = R_HULL_sched;
     rtr_args = &hl_args;
 #else
 #error "Unrecognized router type"

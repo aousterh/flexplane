@@ -23,6 +23,9 @@ elif [ "$1" = "rr" ]; then
 elif [ "$1" = "hull" ]; then
     FAST="./fast_hull"
     echo "running hull arbiter"
+elif [ "$1" = "hull_sched" ]; then
+    FAST="./fast_hull_sched"
+    echo "running hull as a scheduler arbiter"
 else
     echo "unrecognized arbiter type $1"
     exit

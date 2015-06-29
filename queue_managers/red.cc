@@ -24,8 +24,8 @@ REDQueueManager::REDQueueManager(PacketQueueBank *bank,
 	 /* shift out thresholds to maintain precision. min_th, max_th, and q_avg
 	  * are maintained as shifted out by wq_shift (i.e. multiplied by
 	  * 2^wq_shift) */
-	m_red_params.min_th << m_red_params.wq_shift;
-	m_red_params.max_th << m_red_params.wq_shift;
+	m_red_params.min_th = m_red_params.min_th << m_red_params.wq_shift;
+	m_red_params.max_th = m_red_params.max_th << m_red_params.wq_shift;
 }
 
 void REDQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,

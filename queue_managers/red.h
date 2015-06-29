@@ -52,10 +52,14 @@ private:
     /** the means to drop packets */
     Dropper *m_dropper;
 
+    /* min_th, max_th, and q_avg are maintained as their values * 2^wq_shift
+     * so that we can maintain better precision while operating on integers.
+     * otherwise, q_avg would remain zero until the queue was at least
+     * 2^wq_shift. */
     struct red_args m_red_params;
-    
+
     /** RED state **/
-    uint32_t q_avg; // EWMA-based queue length
+    uint32_t q_avg; // EWMA-based queue length * 2^wq_shift
     uint32_t count_since_last; // number of pkts since last drop or marked one
 
     /** Other state **/

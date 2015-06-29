@@ -20,6 +20,12 @@ REDQueueManager::REDQueueManager(PacketQueueBank *bank,
 	seed_random(&random_state, time(NULL));
 	q_avg = 0;             // follows Floyd's 1993 paper pseudocode
 	count_since_last = -1; // follows Floyd's 1993 paper pseudocode
+
+	 /* shift out thresholds to maintain precision. min_th, max_th, and q_avg
+	  * are maintained as shifted out by wq_shift (i.e. multiplied by
+	  * 2^wq_shift) */
+	m_red_params.min_th << m_red_params.wq_shift;
+	m_red_params.max_th << m_red_params.wq_shift;
 }
 
 void REDQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
@@ -40,30 +46,27 @@ void REDQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
 
 uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
 		uint32_t port, uint32_t queue, uint64_t cur_time) {
+	uint32_t qlen_shifted = qlen << m_red_params.wq_shift;
+
 	// note that the EWMA weight is specified as a bit shift factor
 	if (!m_bank->empty(port, queue)) {
-		if (qlen >= q_avg) {
-			q_avg += (qlen - q_avg) >> m_red_params.wq_shift;
+		if (qlen_shifted >= q_avg) {
+			q_avg += (qlen_shifted - q_avg) >> m_red_params.wq_shift;
 		} else {
-			q_avg -= (q_avg - qlen) >> m_red_params.wq_shift;
+			q_avg -= (q_avg - qlen_shifted) >> m_red_params.wq_shift;
 		}
 	} else {
 		/* if packet arrives to an empty queue, must handle idle slots since it
 		 * became empty */
 		uint64_t time_diff = cur_time - m_bank->last_empty_time(port, queue);
 
-		/* q_avg = (1-w_q)^(cur_time - q_time)*q_avg
-		 * we shift q_avg out by wq_shift before the exponentiation and back by
-		 * the same amount afterwards so that it is possible to achieve q_avg
-		 * values less than 2^wq_shift - 1. */
+		/* q_avg = (1-w_q)^(cur_time - q_time)*q_avg */
 		/* TODO: do this exponentiation more efficiently by using a table
 		 * lookup */
-		q_avg = q_avg << m_red_params.wq_shift;
 		for (; time_diff > 0 && q_avg >= (1 << m_red_params.wq_shift);
 				time_diff--) {
 			q_avg -= q_avg >> m_red_params.wq_shift;
 		}
-		q_avg = q_avg >> m_red_params.wq_shift;
 	}
 
 	//    printf("red_rules: qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);

@@ -1,3 +1,4 @@
+import sys
 
 # seconds per logging interval
 LOGGING_INTERVAL = 1
@@ -31,7 +32,10 @@ class ConnectionStats():
         fields = [self.start_time, time_now, duration, qps, mean_fct, min_fct,
                   max_fct, self.too_late]
         fields_str = [str(x) for x in fields]
+
+        # print and flush
         print ",".join(fields_str)
+        sys.stdout.flush()
 
         # start new interval
         self.start_time = time_now

@@ -182,7 +182,9 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 			mask &= (mask - 1);
 			port += 64 * i;
 
-			pkts[res++] = sch->schedule(port, cur_time);
+			pkts[res] = sch->schedule(port, cur_time);
+			if (pkts[res] != NULL)
+				res++;
 		}
 	}
 

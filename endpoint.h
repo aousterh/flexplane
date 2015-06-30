@@ -13,7 +13,8 @@
 struct emu_packet;
 
 enum EndpointType {
-	E_Simple
+	E_Simple,
+	E_Rate_limiting
 };
 
 #ifdef __cplusplus

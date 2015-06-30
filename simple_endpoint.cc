@@ -38,3 +38,36 @@ void SimpleEndpointGroup::reset(uint16_t endpoint_id)
 		m_emu_output->free_packet(m_bank.dequeue(endpoint_id, 0, 0));
 	}
 }
+
+
+RateLimitingEndpointGroup::RateLimitingEndpointGroup(uint16_t num_endpoints,
+		uint16_t start_id, uint16_t q_capacity, uint16_t t_btwn_pkts)
+: m_bank(num_endpoints, 1, q_capacity),
+  m_cla(),
+  m_qm(&m_bank, q_capacity),
+  m_sch(&m_bank, num_endpoints, t_btwn_pkts),
+  m_sink(start_id >> EMU_RACK_SHIFT),
+  RateLimitingEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
+		  num_endpoints)
+{}
+
+void RateLimitingEndpointGroup::assign_to_core(EmulationOutput *emu_output,
+		struct emu_admission_core_statistics *stat)
+{
+	Dropper *dropper = new Dropper(*emu_output, stat);
+
+	m_emu_output = emu_output;
+	m_sink.assign_to_core(emu_output);
+	m_qm.assign_to_core(dropper, stat);
+}
+
+void RateLimitingEndpointGroup::reset(uint16_t endpoint_id)
+{
+	/* dequeue all queued packets */
+	while (!m_bank.empty(endpoint_id, 0)) {
+		/* note: cur_time of 0 on dequeue might not result in correct behavior,
+		 * but schemes that use it (e.g. RED) are unlikely to be run on
+		 * endpoints anyway */
+		m_emu_output->free_packet(m_bank.dequeue(endpoint_id, 0, 0));
+	}
+}

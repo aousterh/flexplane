@@ -17,6 +17,7 @@
 #include "composite.h"
 #include "classifiers/SingleQueueClassifier.h"
 #include "queue_managers/drop_tail.h"
+#include "schedulers/RateLimitingScheduler.h"
 
 #define SIMPLE_ENDPOINT_QUEUE_CAPACITY 8192
 
@@ -40,7 +41,8 @@ private:
 	uint16_t m_rack_id;
 };
 
-typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager, SingleQueueScheduler, SimpleSink>
+typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager,
+		SingleQueueScheduler, SimpleSink>
 	SimpleEndpointGroupBase;
 
 /**
@@ -60,6 +62,36 @@ private:
     SingleQueueClassifier m_cla;
     DropTailQueueManager m_qm;
     SingleQueueScheduler m_sch;
+    SimpleSink m_sink;
+};
+
+
+struct rate_limiting_ep_args {
+    uint16_t q_capacity;
+    uint16_t t_btwn_pkts;
+};
+
+typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager,
+		RateLimitingScheduler, SimpleSink>
+	RateLimitingEndpointGroupBase;
+
+/**
+ * A drop tail rate-limiting endpoint group.
+ */
+class RateLimitingEndpointGroup : public RateLimitingEndpointGroupBase {
+public:
+	RateLimitingEndpointGroup(uint16_t num_endpoints, uint16_t start_id,
+			uint16_t q_capacity, uint16_t t_btwn_pkts);
+	virtual void assign_to_core(EmulationOutput *out,
+			struct emu_admission_core_statistics *stat);
+
+	virtual void reset(uint16_t endpoint_id);
+private:
+    PacketQueueBank m_bank;
+    EmulationOutput *m_emu_output;
+    SingleQueueClassifier m_cla;
+    DropTailQueueManager m_qm;
+    RateLimitingScheduler m_sch;
     SimpleSink m_sink;
 };
 

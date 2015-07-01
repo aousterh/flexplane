@@ -70,7 +70,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 #if defined(DCTCP)
 	struct dctcp_args dctcp_args;
     dctcp_args.q_capacity = 512;
-    dctcp_args.K_threshold = 64;
+    dctcp_args.K_threshold = 65;
 	RTE_LOG(INFO, ADMISSION,
 			"Using DCTCP routers with q_capacity %d and K threshold %d\n",
 			dctcp_args.q_capacity, dctcp_args.K_threshold);
@@ -81,8 +81,8 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
     struct red_args red_params;
     red_params.q_capacity = 512;
     red_params.ecn = true;
-    red_params.min_th = 50;
-    red_params.max_th = 250;
+    red_params.min_th = 150;
+    red_params.max_th = 300;
     red_params.max_p = 0.1;
     red_params.wq_shift = 5;
 	RTE_LOG(INFO, ADMISSION,
@@ -102,9 +102,9 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
     rtr_args = &dt_args;
 #elif defined(PRIO_QUEUEING)
     struct prio_by_src_args prio_args;
-    prio_args.q_capacity = 171; /* divide 512 evenly amongst queues */
-    prio_args.n_hi_prio = 8;
-    prio_args.n_med_prio = 8;
+    prio_args.q_capacity = 256; /* divide 512 evenly amongst queues */
+    prio_args.n_hi_prio = 24;
+    prio_args.n_med_prio = 0;
 	RTE_LOG(INFO, ADMISSION,
 			"Using Priority Queueing with q_capacity %d, %d hi prio srcs and %d med prio srcs\n",
 			prio_args.q_capacity, prio_args.n_hi_prio, prio_args.n_med_prio);
@@ -131,7 +131,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 #elif defined(HULL_SCHED)
     struct hull_args hl_args;
     hl_args.q_capacity = 512;
-    hl_args.mark_threshold = 3000;
+    hl_args.mark_threshold = 15000;
     hl_args.GAMMA = 0.95;
 	RTE_LOG(INFO, ADMISSION,
 			"Using HULL SCHED routers with q_capacity %d mark_threshold %d gamma %f\n",

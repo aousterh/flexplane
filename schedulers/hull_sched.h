@@ -21,7 +21,8 @@
 
 class HULLScheduler : public SingleQueueScheduler {
 public:
-    HULLScheduler(PacketQueueBank *bank, struct hull_args *hull_params);
+    HULLScheduler(PacketQueueBank *bank, uint32_t n_ports,
+    		struct hull_args *hull_params);
 
 	struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time);
 
@@ -32,8 +33,10 @@ private:
     Dropper *m_dropper;
 
     struct hull_args m_hull_params;
-    int32_t          m_phantom_len;
-    uint64_t         m_last_phantom_update_time;
+
+    /* state for each port */
+    std::vector<int32_t>	m_phantom_len;
+    std::vector<uint64_t>	m_last_phantom_update_time;
 };
 
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier,

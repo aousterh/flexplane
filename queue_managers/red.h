@@ -36,14 +36,16 @@ struct red_args {
 
 class REDQueueManager : public QueueManager {
 public:
-    REDQueueManager(PacketQueueBank *bank, struct red_args *red_params);
+    REDQueueManager(PacketQueueBank *bank, uint32_t n_queues_total,
+    		struct red_args *red_params);
 	inline void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
     		uint64_t cur_time);
     uint8_t red_rules(struct emu_packet *pkt, uint32_t qlen, uint32_t port,
     		uint32_t queue, uint64_t cur_time);
-    uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port);
+    uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port,
+    		uint32_t queue);
 	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
@@ -58,9 +60,9 @@ private:
      * 2^wq_shift. */
     struct red_args m_red_params;
 
-    /** RED state **/
-    uint32_t q_avg; // EWMA-based queue length * 2^wq_shift
-    uint32_t count_since_last; // number of pkts since last drop or marked one
+    /** RED state, tracked separately for each queue **/
+    std::vector<uint32_t> m_q_avg; // EWMA-based queue length * 2^wq_shift
+    std::vector<uint32_t> m_count_since_last; // number of pkts since last drop or marked one
 
     /** Other state **/
     uint32_t random_state; // for random drop/mark generation

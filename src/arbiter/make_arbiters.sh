@@ -14,6 +14,10 @@ mv build/fast build/fast_dctcp
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DPRIO_QUEUEING -j22
 mv build/fast build/fast_prio
 
+# make arbiter that runs priority queueing by flow
+make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DPRIO_BY_FLOW_QUEUEING -j22
+mv build/fast build/fast_prio_by_flow
+
 # make arbiter that runs round robin
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DROUND_ROBIN -j22
 mv build/fast build/fast_rr

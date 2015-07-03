@@ -110,6 +110,14 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 			prio_args.q_capacity, prio_args.n_hi_prio, prio_args.n_med_prio);
     rtype = R_Prio;
     rtr_args = &prio_args;
+#elif defined(PRIO_BY_FLOW_QUEUEING)
+    struct drop_tail_args prio_by_flow_args;
+    prio_by_flow_args.q_capacity = 256; /* divide 1024 evenly amongst queues */
+	RTE_LOG(INFO, ADMISSION,
+			"Using Priority Queueing by flow with q_capacity %d\n",
+			prio_by_flow_args.q_capacity);
+    rtype = R_Prio_by_flow;
+    rtr_args = &prio_by_flow_args;
 #elif defined(ROUND_ROBIN)
     struct drop_tail_args dt_args;
     dt_args.q_capacity = 32;

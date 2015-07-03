@@ -18,10 +18,6 @@ mv build/fast build/fast_prio
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DROUND_ROBIN -j22
 mv build/fast build/fast_rr
 
-# make arbiter that runs HULL
-make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DHULL -j22
-mv build/fast build/fast_hull
-
 # make arbiter that runs HULL as a scheduler
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DHULL_SCHED -j22
 mv build/fast build/fast_hull_sched

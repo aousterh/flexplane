@@ -69,6 +69,8 @@ void print_global_admission_log_emulation() {
 	printf("\nrouter type drop tail");
 #elif defined(PRIO_QUEUEING)
 	printf("\nrouter type priority");
+#elif defined(PRIO_BY_FLOW_QUEUEING)
+	printf("\nrouter type priority by flow");
 #elif defined(ROUND_ROBIN)
 	printf("\nrouter type round robin");
 #elif defined(HULL)

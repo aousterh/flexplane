@@ -17,6 +17,9 @@ elif [ "$1" = "dctcp" ]; then
 elif [ "$1" = "prio" ]; then
     FAST="./fast_prio"
     echo "running prio arbiter"
+elif [ "$1" = "prio_by_flow" ]; then
+    FAST="./fast_prio_by_flow"
+    echo "running prio by flow arbiter"
 elif [ "$1" = "rr" ]; then
     FAST="./fast_rr"
     echo "running rr arbiter"
@@ -34,4 +37,4 @@ fi
 # clear switch logs
 rm -fr ./log/queues-*.csv
 
-sudo $FAST -c 7 -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1 > arbiter_log.txt
+sudo $FAST -c 7 -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1 > arbiter_log.txt 2> arbiter_error.txt

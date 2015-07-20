@@ -41,11 +41,14 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
 	printf("\n  packets: %lu admitted, %lu dropped, %lu marked",
 			st->admitted_packet, st->dropped_packet, st->marked_packet);
-	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu",
+	int64_t diff = st->endpoint_driver_processed_new -
+			st->endpoint_driver_pulled;
+	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu, diff %ld",
 			st->endpoint_driver_pushed, st->endpoint_driver_pulled,
-			st->endpoint_driver_processed_new);
-	printf("\n  router driver pushed %lu, pulled %lu",
-			st->router_driver_pushed, st->router_driver_pulled);
+			st->endpoint_driver_processed_new, diff);
+	diff = st->router_driver_pushed - st->router_driver_pulled;
+	printf("\n  router driver pushed %lu, pulled %lu, diff %ld",
+			st->router_driver_pushed, st->router_driver_pulled, diff);
 
 	printf("\n warnings:");
 	if (st->send_packet_failed)

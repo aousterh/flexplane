@@ -388,7 +388,6 @@ int LogCore::exec()
 		print_comm_log(m_comm_lcores[0]);
 		print_global_admission_log();
 
-        /* just print one admission core log for now */
 		for (i = 0; i < m_admission_lcores.size(); i++)
 			print_admission_core_log(m_admission_lcores[i], i);
 		fflush(stdout);

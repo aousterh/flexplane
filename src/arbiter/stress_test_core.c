@@ -20,6 +20,7 @@
 #include "comm_log.h"
 
 #define STRESS_TEST_MIN_LOOP_TIME_SEC		1e-6
+#define STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC	1
 #define STRESS_TEST_MAX_ALLOWED_BACKLOG         (100 * 1000)
 #define STRESS_TEST_RATE_INCREASE               1
 #define STRESS_TEST_RATE_MAINTAIN               2
@@ -116,6 +117,10 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	uint64_t cur_node_tslots = 0;
 	uint64_t max_node_tslots = 0;
 	bool re_init_gen = true;
+	uint64_t admitted_tslots[STRESS_TEST_DURATION_SEC /
+	                         STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC];
+	uint64_t next_record_admitted_time;
+	uint32_t admitted_index = 0;
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = first_time_slot - 1;
@@ -142,6 +147,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	/* Generate first request */
 	now = rte_get_timer_cycles();
 	next_rate_increase_time = now;
+	next_record_admitted_time = now;
 
 	init_request_generator(&gen, next_mean_t_btwn_requests, now,
 			cmd->num_nodes, cmd->demand_tslots);
@@ -159,6 +165,13 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 				&& (comm_log_get_total_demand()
 						> comm_log_get_occupied_node_tslots() +
 						STRESS_TEST_MAX_ALLOWED_BACKLOG)) {
+			if (comm_log_get_total_demand() >
+				comm_log_get_occupied_node_tslots() + 100 *
+				STRESS_TEST_MAX_ALLOWED_BACKLOG) {
+				printf("exceeded 100 times maximum allowed backlog\n");
+				goto stress_test_done; /* far exceeded max allowed backlog */
+			}
+
 			if (next_mean_t_btwn_requests != last_successful_mean_t) {
 				re_init_gen = true;
 				next_mean_t_btwn_requests = last_successful_mean_t;
@@ -237,6 +250,15 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		/* flush q_head's buffer into q_head */
 		flush_backlog(g_admissible_status());
 
+		/* record the cumulative number of tslots allocated at each second
+		 * throughout the experiment */
+		if (next_record_admitted_time <= now) {
+			admitted_tslots[admitted_index++] =
+					comm_log_get_occupied_node_tslots();
+			next_record_admitted_time += rte_get_timer_hz() *
+					STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC;
+		}
+
 		/* wait until at least loop_minimum_iteration_time has passed from
 		 * beginning of loop */
 		min_next_iteration_time = now + loop_minimum_iteration_time;
@@ -245,8 +267,21 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		} while (now < min_next_iteration_time);
 	}
 
+stress_test_done:
 	/* Dump some stats */
-	printf("Stress test finished; %lu processed timeslots, %lu node-tslots\n",
-			CL->processed_tslots, CL->occupied_node_tslots);
+	printf("Stress test finished\n");
+
+	if (admitted_index > 30) {
+		double tput_gbps = (admitted_tslots[admitted_index - 1] -
+				admitted_tslots[admitted_index - 31]) * 1500 * 8 /
+						((double) 30 * 1000 * 1000 * 1000);
+		printf("Throughput over last 30 seconds: %f\n", tput_gbps);
+	} else if (admitted_index > 10) {
+		double tput_gbps = (admitted_tslots[admitted_index - 1] -
+				admitted_tslots[admitted_index - 11]) * 1500 * 8 /
+						((double) 10 * 1000 * 1000 * 1000);
+		printf("Ran for less than 30 seconds. Throughput over last 10 seconds: %f\n",
+				tput_gbps);
+	}
 	rte_exit(0, "Done!\n");
 }

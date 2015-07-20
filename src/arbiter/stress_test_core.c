@@ -134,7 +134,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			cmd->num_initial_dsts_per_src, cmd->initial_flow_size);
 
 	/* Initialize gen */
-	next_mean_t_btwn_requests = cmd->mean_t_btwn_requests * STRESS_TEST_RATE_INCREASE_FACTOR;
+	next_mean_t_btwn_requests = cmd->mean_t_btwn_requests;
 	last_successful_mean_t = next_mean_t_btwn_requests;
 	cur_increase_factor = STRESS_TEST_RATE_INCREASE_FACTOR;
 	comm_log_stress_test_increase_factor(cur_increase_factor);

@@ -43,10 +43,17 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 		uint16_t flow, uint16_t id, uint8_t *areq_data);
 
 /**
- * Frees a packet when an emulation algorithm is done running.
+ * Frees a packet.
  */
 static inline
 void free_packet(struct emu_packet *packet, struct fp_mempool *packet_mempool);
+
+/**
+ * Frees a batch of packets.
+ */
+static inline
+void free_packet_bulk(struct emu_packet **packets,
+		struct fp_mempool *packet_mempool, uint32_t n);
 
 /**
  * Frees all the packets in an fp_ring, and frees the ring itself.

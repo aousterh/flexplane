@@ -35,6 +35,14 @@ void free_packet(struct emu_packet *packet, struct fp_mempool *packet_mempool)
 }
 
 static inline
+void free_packet_bulk(struct emu_packet **packets,
+		struct fp_mempool *packet_mempool, uint32_t n)
+{
+	/* return the packet to the mempool */
+	fp_mempool_put_bulk(packet_mempool, (void **) packets, n);
+}
+
+static inline
 void free_packet_ring(struct fp_ring *packet_ring,
 		struct fp_mempool *packet_mempool)
 {

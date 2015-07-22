@@ -153,8 +153,7 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 				n_pkts) == -ENOBUFS) {
 			/* no space in ring. log but don't retry. */
 			adm_log_emu_enqueue_backlog_failed(&m_stat, n_pkts);
-			for (i = 0; i < n_pkts; i++)
-				free_packet(pkt_ptrs[i], m_packet_mempool);
+			free_packet_bulk(&pkt_ptrs[0], m_packet_mempool, n_pkts);
 		}
 #else
 		while (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],

@@ -84,8 +84,7 @@ void RouterDriver::step() {
 				(void **) &pkt_ptrs[0], n_pkts) == -ENOBUFS) {
 			/* no space in ring. log but don't retry. */
 			adm_log_emu_send_packets_failed(m_stat, n_pkts);
-			for (i = 0; i < n_pkts; i++)
-				free_packet(pkt_ptrs[i], m_packet_mempool);
+			free_packet_bulk(&pkt_ptrs[0], m_packet_mempool, n_pkts);
 		} else {
 			adm_log_emu_router_driver_pulled(m_stat, n_pkts);
 		}

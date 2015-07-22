@@ -23,6 +23,7 @@
 #define fp_mempool_get	 		rte_mempool_get
 #define fp_mempool_put	 		rte_mempool_put
 #define fp_mempool_get_bulk		rte_mempool_get_bulk
+#define fp_mempool_put_bulk		rte_mempool_put_bulk
 
 static struct fp_mempool * fp_mempool_create(const char *name, unsigned n,
 		unsigned elt_size, unsigned cache_size, int socket_id, unsigned flags)
@@ -117,6 +118,12 @@ fp_mempool_get_bulk(struct fp_mempool *mp, void **obj_table, unsigned n)
 	mp->cur_elements -= n;
 	memcpy(obj_table, &mp->elements[mp->cur_elements], n * sizeof(void *));
 	return 0;
+}
+static inline void __attribute__((always_inline))
+fp_mempool_put_bulk(struct fp_mempool *mp, void **obj_table, unsigned n)
+{
+	memcpy(&mp->elements[mp->cur_elements], obj_table, n * sizeof(void *));
+	mp->cur_elements += n;
 }
 static const char *fp_strerror() {
 	return("strerr not implemented");

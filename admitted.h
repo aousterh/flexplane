@@ -18,6 +18,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#define EMU_ADMITS_PER_ADMITTED	128
+
 struct emu_admitted_edge {
 	uint16_t	src;
 	uint16_t	dst;

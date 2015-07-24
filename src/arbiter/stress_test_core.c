@@ -46,7 +46,8 @@ static inline void stress_test_log_got_admitted_tslot(uint16_t size, uint64_t ti
 	CL->occupied_node_tslots += size;
 }
 
-static inline void process_allocated_traffic(struct comm_core_state *core,
+/* process allocated traffic and return the number of MTUs admitted */
+static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
 		struct rte_ring *q_admitted,
 		struct rte_mempool *admitted_traffic_mempool)
 {
@@ -55,6 +56,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	struct admitted_traffic* admitted[STRESS_TEST_MAX_ADMITTED_PER_LOOP];
 	uint16_t partition;
 	uint64_t current_timeslot;
+	uint64_t num_admitted = 0;
 
 	/* Process newly allocated timeslots */
 	rc = rte_ring_dequeue_burst(q_admitted, (void **) &admitted[0],
@@ -70,6 +72,7 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 		current_timeslot = ++core->latest_timeslot[partition];
 		comm_log_got_admitted_tslot(get_num_admitted(admitted[i]),
 				current_timeslot, partition);
+		num_admitted += get_num_admitted(admitted[i]);
 #if defined(EMULATION_ALGO)
 		struct emu_admitted_traffic *emu_admitted;
 		emu_admitted = (struct emu_admitted_traffic *) admitted[i];
@@ -78,6 +81,8 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	}
 	/* free memory */
 	rte_mempool_put_bulk(admitted_traffic_mempool, (void **) admitted, rc);
+
+	return num_admitted;
 }
 
 /**
@@ -121,6 +126,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	                         STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC];
 	uint64_t next_record_admitted_time;
 	uint32_t admitted_index = 0;
+	uint64_t total_demand, total_occupied_node_tslots = 0;
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = first_time_slot - 1;
@@ -162,11 +168,9 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		 * allocator fails, it increases the mean_t to the last successful value,
 		 * decreases the constant factor, and repeats */
 		if (STRESS_TEST_IS_AUTOMATED
-				&& (comm_log_get_total_demand()
-						> comm_log_get_occupied_node_tslots() +
+				&& (total_demand > total_occupied_node_tslots +
 						STRESS_TEST_MAX_ALLOWED_BACKLOG)) {
-			if (comm_log_get_total_demand() >
-				comm_log_get_occupied_node_tslots() + 100 *
+			if (total_demand > total_occupied_node_tslots + 100 *
 				STRESS_TEST_MAX_ALLOWED_BACKLOG) {
 				printf("exceeded 100 times maximum allowed backlog\n");
 				goto stress_test_done; /* far exceeded max allowed backlog */
@@ -186,7 +190,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		/* if need to change rate, do it */
 		if (now >= next_rate_increase_time && !re_init_gen) {
 			prev_node_tslots = cur_node_tslots;
-			cur_node_tslots = comm_log_get_occupied_node_tslots();
+			cur_node_tslots = total_occupied_node_tslots;
 			if (STRESS_TEST_IS_AUTOMATED && cur_node_tslots != 0) {
 				/* did successfully allocate the offered demand */
 				last_successful_mean_t = next_mean_t_btwn_requests;
@@ -217,7 +221,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 					rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
 
 			/* update node tslots */
-			cur_node_tslots = comm_log_get_occupied_node_tslots();
+			cur_node_tslots = total_occupied_node_tslots;
 		}
 
 		/* if time to enqueue request, do so now */
@@ -230,6 +234,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 					next_request.dst, next_request.backlog, 0, NULL);
 			comm_log_demand_increased(next_request.src, next_request.dst, 0,
 					next_request.backlog, next_request.backlog);
+			total_demand += next_request.backlog;
 
 			n_processed_requests++;
 
@@ -240,8 +245,8 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		comm_log_processed_batch(n_processed_requests, now);
 
 		/* Process newly allocated timeslots */
-		process_allocated_traffic(core, cmd->q_allocated,
-				cmd->admitted_traffic_mempool);
+		total_occupied_node_tslots += process_allocated_traffic(core,
+				cmd->q_allocated, cmd->admitted_traffic_mempool);
 
 		/* Process the spent demands, launching a new demand for demands where
 		 * backlog increased while the original demand was being allocated */
@@ -253,8 +258,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		/* record the cumulative number of tslots allocated at each second
 		 * throughout the experiment */
 		if (next_record_admitted_time <= now) {
-			admitted_tslots[admitted_index++] =
-					comm_log_get_occupied_node_tslots();
+			admitted_tslots[admitted_index++] = total_occupied_node_tslots;
 			next_record_admitted_time += rte_get_timer_hz() *
 					STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC;
 		}

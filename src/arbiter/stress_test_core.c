@@ -261,6 +261,9 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			admitted_tslots[admitted_index++] = total_occupied_node_tslots;
 			next_record_admitted_time += rte_get_timer_hz() *
 					STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC;
+			if (admitted_index >= 2)
+				printf("allocated %"PRIu64" tslots\n", (admitted_tslots[admitted_index - 1] -
+						admitted_tslots[admitted_index - 2]));
 		}
 
 		/* wait until at least loop_minimum_iteration_time has passed from

@@ -21,10 +21,11 @@
 
 #define STRESS_TEST_MIN_LOOP_TIME_SEC		1e-6
 #define STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC	1
-#define STRESS_TEST_MAX_ALLOWED_BACKLOG         (10 * 1000)
+#define STRESS_TEST_BACKLOG_TOLERANCE			1.01
 #define STRESS_TEST_RATE_INCREASE               1
 #define STRESS_TEST_RATE_MAINTAIN               2
 #define STRESS_TEST_RATE_DECREASE               3
+#define STRESS_TEST_MIN_RATE_CHECK_TIME_SEC		1e-4
 
 /* logs */
 struct stress_test_log {
@@ -124,9 +125,12 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	bool re_init_gen = true;
 	uint64_t admitted_tslots[STRESS_TEST_DURATION_SEC /
 	                         STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC];
-	uint64_t next_record_admitted_time;
+	uint64_t next_record_admitted_time, next_rate_check_time;
+	uint64_t min_rate_check_interval = rte_get_timer_hz() *
+			STRESS_TEST_MIN_RATE_CHECK_TIME_SEC;
 	uint32_t admitted_index = 0;
 	uint64_t total_demand, total_occupied_node_tslots = 0;
+	uint64_t prev_demand, prev_occupied_node_tslots = 0;
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = first_time_slot - 1;
@@ -154,6 +158,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	now = rte_get_timer_cycles();
 	next_rate_increase_time = now;
 	next_record_admitted_time = now;
+	next_rate_check_time = now;
 
 	init_request_generator(&gen, next_mean_t_btwn_requests, now,
 			cmd->num_nodes, cmd->demand_tslots);
@@ -163,65 +168,76 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		uint32_t n_processed_requests = 0;
 		re_init_gen = false;
 
-		/* the automated test decreases the mean_t by a constant factor as long as the
-		 * timeslot allocator is able to approximately match the demand. when the
-		 * allocator fails, it increases the mean_t to the last successful value,
-		 * decreases the constant factor, and repeats */
-		if (STRESS_TEST_IS_AUTOMATED
-				&& (total_demand > total_occupied_node_tslots +
-						STRESS_TEST_MAX_ALLOWED_BACKLOG)) {
-			if (total_demand > total_occupied_node_tslots + 100 *
-				STRESS_TEST_MAX_ALLOWED_BACKLOG) {
-				printf("exceeded 100 times maximum allowed backlog\n");
-				goto stress_test_done; /* far exceeded max allowed backlog */
-			}
+		/* check rate periodically but not every iteration of main loop (to
+		 * smooth out variation in when requests arrive, etc.) */
+		if (now > next_rate_check_time) {
+			/* the automated test decreases the mean_t by a constant factor as long as the
+			 * timeslot allocator is able to approximately match the demand. when the
+			 * allocator fails, it increases the mean_t to the last successful value,
+			 * decreases the constant factor, and repeats */
+			if (STRESS_TEST_IS_AUTOMATED
+					&& ((total_occupied_node_tslots - prev_occupied_node_tslots) *
+							STRESS_TEST_BACKLOG_TOLERANCE) < (total_demand - prev_demand)) {
 
-			if (next_mean_t_btwn_requests != last_successful_mean_t) {
-				re_init_gen = true;
-				next_mean_t_btwn_requests = last_successful_mean_t;
-			}
-			if (comm_log_get_stress_test_mode() == STRESS_TEST_RATE_INCREASE) {
-				cur_increase_factor = (cur_increase_factor + 1) / 2;
-				comm_log_stress_test_increase_factor(cur_increase_factor);
-			}
-			comm_log_stress_test_mode(STRESS_TEST_RATE_DECREASE);
-		}
-
-		/* if need to change rate, do it */
-		if (now >= next_rate_increase_time && !re_init_gen) {
-			prev_node_tslots = cur_node_tslots;
-			cur_node_tslots = total_occupied_node_tslots;
-			if (STRESS_TEST_IS_AUTOMATED && cur_node_tslots != 0) {
-				/* did successfully allocate the offered demand */
-				last_successful_mean_t = next_mean_t_btwn_requests;
-				next_mean_t_btwn_requests /= cur_increase_factor;
-				comm_log_stress_test_mode(STRESS_TEST_RATE_INCREASE);
-
-				/* log the node tslots achieved in this interval */
-				uint64_t node_tslots_in_interval = cur_node_tslots
-						- prev_node_tslots;
-				if (node_tslots_in_interval > max_node_tslots) {
-					max_node_tslots = node_tslots_in_interval;
-					comm_log_stress_test_max_node_tslots(max_node_tslots);
+				if (next_mean_t_btwn_requests < last_successful_mean_t) {
+					/* go back to last successful mean time */
+					re_init_gen = true;
+					next_mean_t_btwn_requests = last_successful_mean_t;
+				} else if ((next_mean_t_btwn_requests == last_successful_mean_t) &&
+						(next_mean_t_btwn_requests < cmd->mean_t_btwn_requests)) {
+					/* decrease rate below last successful mean time to allow
+					 * queues to drain */
+					re_init_gen = true;
+					next_mean_t_btwn_requests *= cur_increase_factor;
 				}
-			} else {
-				next_mean_t_btwn_requests /= STRESS_TEST_RATE_INCREASE_FACTOR;
+
+				if (comm_log_get_stress_test_mode() == STRESS_TEST_RATE_INCREASE) {
+					cur_increase_factor = (cur_increase_factor + 1) / 2;
+					comm_log_stress_test_increase_factor(cur_increase_factor);
+				}
+				comm_log_stress_test_mode(STRESS_TEST_RATE_DECREASE);
+
+				prev_occupied_node_tslots = total_occupied_node_tslots;
+				prev_demand = total_demand;
 			}
-			re_init_gen = true;
-		}
 
-		if (re_init_gen) {
-			/* reinitialize the request generator */
-			comm_log_mean_t(next_mean_t_btwn_requests);
-			reinit_request_generator(&gen, next_mean_t_btwn_requests, now,
-					cmd->num_nodes, cmd->demand_tslots);
-			get_next_request(&gen, &next_request);
+			/* if need to change rate, do it */
+			if (now >= next_rate_increase_time && !re_init_gen) {
+				prev_node_tslots = cur_node_tslots;
+				cur_node_tslots = total_occupied_node_tslots;
+				if (STRESS_TEST_IS_AUTOMATED && cur_node_tslots != 0) {
+					/* did successfully allocate the offered demand */
+					last_successful_mean_t = next_mean_t_btwn_requests;
+					next_mean_t_btwn_requests /= cur_increase_factor;
+					comm_log_stress_test_mode(STRESS_TEST_RATE_INCREASE);
 
-			next_rate_increase_time = rte_get_timer_cycles() +
-					rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
+					/* log the node tslots achieved in this interval */
+					uint64_t node_tslots_in_interval = cur_node_tslots
+							- prev_node_tslots;
+					if (node_tslots_in_interval > max_node_tslots) {
+						max_node_tslots = node_tslots_in_interval;
+						comm_log_stress_test_max_node_tslots(max_node_tslots);
+					}
+				} else if (!STRESS_TEST_IS_AUTOMATED) {
+					next_mean_t_btwn_requests /= STRESS_TEST_RATE_INCREASE_FACTOR;
+				}
+				re_init_gen = true;
+			}
 
-			/* update node tslots */
-			cur_node_tslots = total_occupied_node_tslots;
+			if (re_init_gen) {
+				/* reinitialize the request generator */
+				comm_log_mean_t(next_mean_t_btwn_requests);
+				reinit_request_generator(&gen, next_mean_t_btwn_requests, now,
+						cmd->num_nodes, cmd->demand_tslots);
+				get_next_request(&gen, &next_request);
+
+				next_rate_increase_time = rte_get_timer_cycles() +
+						rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
+
+				/* update node tslots */
+				cur_node_tslots = total_occupied_node_tslots;
+			}
+			next_rate_check_time += min_rate_check_interval;
 		}
 
 		/* if time to enqueue request, do so now */
@@ -261,9 +277,11 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			admitted_tslots[admitted_index++] = total_occupied_node_tslots;
 			next_record_admitted_time += rte_get_timer_hz() *
 					STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC;
-			if (admitted_index >= 2)
-				printf("allocated %"PRIu64" tslots\n", (admitted_tslots[admitted_index - 1] -
-						admitted_tslots[admitted_index - 2]));
+			if (admitted_index >= 2) {
+				printf("allocated %"PRIu64" tslots\n",
+						(admitted_tslots[admitted_index - 1] -
+								admitted_tslots[admitted_index - 2]));
+			}
 		}
 
 		/* wait until at least loop_minimum_iteration_time has passed from

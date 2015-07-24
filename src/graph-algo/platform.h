@@ -12,6 +12,7 @@
 #include <rte_mempool.h>
 #include <rte_branch_prediction.h>
 #include <rte_errno.h>
+#include <rte_prefetch.h>
 #include "../protocol/platform/generic.h"
 #include "../arbiter/dpdk-time.h"
 #define fp_free(ptr)                            rte_free(ptr)
@@ -24,6 +25,8 @@
 #define fp_mempool_put	 		rte_mempool_put
 #define fp_mempool_get_bulk		rte_mempool_get_bulk
 #define fp_mempool_put_bulk		rte_mempool_put_bulk
+
+#define fp_prefetch0			rte_prefetch0
 
 static struct fp_mempool * fp_mempool_create(const char *name, unsigned n,
 		unsigned elt_size, unsigned cache_size, int socket_id, unsigned flags)
@@ -55,6 +58,9 @@ static const char *fp_strerror() {
 #ifndef unlikely
 #define unlikely(x)  __builtin_expect((x),0)
 #endif /* unlikely */
+
+/* do nothing for prefetch instructions */
+#define fp_prefetch0
 
 /* mempool */
 struct fp_mempool {

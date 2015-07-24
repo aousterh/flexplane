@@ -28,13 +28,15 @@ EmulationCore::EmulationCore(EndpointDriver **epg_drivers,
 	m_n_epgs = n_epgs;
 	m_n_rtrs = n_rtrs;
 
+	m_endpoint_drivers.reserve(m_n_epgs);
 	for (i = 0; i < n_epgs; i++) {
-		m_endpoint_drivers[i] = epg_drivers[i];
+		m_endpoint_drivers.push_back(epg_drivers[i]);
 		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat, core_index);
 	}
 
+	m_router_drivers.reserve(m_n_rtrs);
 	for (i = 0; i < n_rtrs; i++) {
-		m_router_drivers[i] = router_drivers[i];
+		m_router_drivers.push_back(router_drivers[i]);
 		m_router_drivers[i]->assign_to_core(dropper, &m_stat, core_index);
 	}
 
@@ -64,13 +66,13 @@ void EmulationCore::cleanup() {
 	uint32_t i;
 
 	/* free all endpoints */
-	for (i = 0; i < EMU_NUM_ENDPOINT_GROUPS; i++) {
+	for (i = 0; i < m_n_epgs; i++) {
 		m_endpoint_drivers[i]->cleanup();
 		delete m_endpoint_drivers[i];
 	}
 
 	/* free all routers */
-	for (i = 0; i < EMU_NUM_ROUTERS; i++) {
+	for (i = 0; i < m_n_rtrs; i++) {
 		m_router_drivers[i]->cleanup();
 		delete m_router_drivers[i];
 	}

@@ -13,6 +13,7 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include <inttypes.h>
+#include <vector>
 
 class EmulationOutput;
 class EndpointDriver;
@@ -44,9 +45,9 @@ public:
 	}
 private:
 	EmulationOutput	*m_out;
-	EndpointDriver	*m_endpoint_drivers[EMU_NUM_ENDPOINT_GROUPS];
+	std::vector<EndpointDriver *> m_endpoint_drivers;
 	uint16_t		m_n_epgs;
-	RouterDriver	*m_router_drivers[EMU_NUM_ROUTERS];
+	std::vector<RouterDriver *> m_router_drivers;
 	uint16_t		m_n_rtrs;
 	struct emu_admission_core_statistics m_stat;
 	uint16_t		m_core_index;

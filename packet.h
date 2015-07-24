@@ -31,7 +31,7 @@ struct emu_packet {
 	uint16_t	flow;
 	uint16_t	id;
 	uint16_t	flags;
-};
+}  __attribute__((aligned(64))) /* don't want sharing between cores */;
 
 /**
  * Initialize a packet with @src, @dst, @flow, and @id. @areq_data provides

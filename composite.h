@@ -18,6 +18,7 @@
 #include "../graph-algo/random.h"
 
 #define THROW 	throw std::runtime_error("not implemented")
+#define COMP_PREFETCH_OFFSET	3
 
 /**
  * Routing tables choose the outgoing port for a given packet
@@ -238,7 +239,20 @@ template < class RT, class CLA, class QM, class SCH >
 void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
 		uint32_t n_pkts, uint64_t cur_time)
 {
-	for (uint32_t i = 0; i < n_pkts; i++)
+	uint32_t i;
+
+	/* prefetch first group of packets */
+	for (i = 0; i < COMP_PREFETCH_OFFSET && i < n_pkts; i++)
+		fp_prefetch0(pkts[i]);
+
+	/* prefetch next and handle already prefetched */
+	for (i = 0; i + COMP_PREFETCH_OFFSET < n_pkts; i++) {
+		fp_prefetch0(pkts[i + COMP_PREFETCH_OFFSET]);
+		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time);
+	}
+
+	/* handle last group of prefetched packets */
+	for (; i < n_pkts; i++)
 		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time);
 }
 
@@ -274,9 +288,24 @@ template<class CLA, class QM, class SCH, class SINK>
 inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::new_packets(
 		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time)
 {
-	for (uint32_t i = 0; i < n_pkts; i++) {
-		uint32_t port = pkts[i]->src - m_first_endpoint_id;
-		uint32_t queue = m_cla->classify(pkts[i], port);
+	uint32_t i, port, queue;
+
+	/* prefetch first group of packets */
+	for (i = 0; i < COMP_PREFETCH_OFFSET && i < n_pkts; i++)
+		fp_prefetch0(pkts[i]);
+
+	/* prefetch next and handle already prefetched */
+	for (i = 0; i + COMP_PREFETCH_OFFSET < n_pkts; i++) {
+		fp_prefetch0(pkts[i + COMP_PREFETCH_OFFSET]);
+		port = pkts[i]->src - m_first_endpoint_id;
+		queue = m_cla->classify(pkts[i], port);
+		m_qm->enqueue(pkts[i], port, queue, cur_time);
+	}
+
+	/* handle last group of prefetched packets */
+	for (; i < n_pkts; i++) {
+		port = pkts[i]->src - m_first_endpoint_id;
+		queue = m_cla->classify(pkts[i], port);
 		m_qm->enqueue(pkts[i], port, queue, cur_time);
 	}
 }
@@ -285,9 +314,21 @@ template<class CLA, class QM, class SCH, class SINK>
 inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::push_batch(
 		struct emu_packet** pkts, uint32_t n_pkts)
 {
-	for (uint32_t i = 0; i < n_pkts; i++) {
+	uint32_t i;
+
+	/* prefetch first group of packets */
+	for (i = 0; i < COMP_PREFETCH_OFFSET && i < n_pkts; i++)
+		fp_prefetch0(pkts[i]);
+
+	/* prefetch next and handle already prefetched */
+	for (i = 0; i + COMP_PREFETCH_OFFSET < n_pkts; i++) {
+		fp_prefetch0(pkts[i + COMP_PREFETCH_OFFSET]);
 		m_sink->handle(pkts[i]);
 	}
+
+	/* handle last group of prefetched packets */
+	for (; i < n_pkts; i++)
+		m_sink->handle(pkts[i]);
 }
 
 template<class CLA, class QM, class SCH, class SINK>

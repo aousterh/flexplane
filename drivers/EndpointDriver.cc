@@ -70,6 +70,8 @@ inline void EndpointDriver::push() {
 	uint32_t n_pkts;
 	struct emu_packet *pkts[MAX_PUSH_BURST];
 
+	adm_log_emu_endpoint_driver_push_begin(m_stat);
+
 	/* dequeue packets from network, pass to endpoint group */
 	n_pkts = fp_ring_dequeue_burst(m_q_from_router,
 			(void **) &pkts[0], MAX_PUSH_BURST);
@@ -89,6 +91,8 @@ inline void EndpointDriver::push() {
 inline void EndpointDriver::pull() {
 	uint32_t n_pkts, i;
 	struct emu_packet *pkts[MAX_PULL_BURST];
+
+	adm_log_emu_endpoint_driver_pull_begin(m_stat);
 
 	/* pull a batch of packets from the epg, enqueue to router */
 	n_pkts = m_epg->pull_batch(&pkts[0], MAX_PULL_BURST, m_cur_time);
@@ -125,6 +129,8 @@ inline void EndpointDriver::process_new()
 {
 	uint32_t n_pkts;
 	struct emu_packet *pkts[MAX_NEW_PACKET_BURST];
+
+	adm_log_emu_endpoint_driver_new_begin(m_stat);
 
 	/* dequeue new packets, pass to endpoint group */
 	n_pkts = fp_ring_dequeue_burst(m_q_new_packets,

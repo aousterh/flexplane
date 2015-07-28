@@ -24,36 +24,38 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 			&emu_saved_admission_core_statistics[core_index];
 
 	printf("\nadmission core %d", core_index);
-/*#define D(X) (st->X - sv->X)
-	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
+#define D(X) (st->X - sv->X)
+/*	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
 	printf("\n  packets: %lu admitted, %lu dropped, %lu marked",
-			D(admitted_packet), D(dropped_packet), D(marked_packet));
+			D(admitted_packet), D(dropped_packet), D(marked_packet));*/
 	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu",
 			D(endpoint_driver_pushed), D(endpoint_driver_pulled),
 			D(endpoint_driver_processed_new));
 	printf("\n  router driver pushed %lu, pulled %lu", D(router_driver_pushed),
 			D(router_driver_pulled));
 	printf("\n");
-#undef D*/
 
-	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
+/*	printf("\n  admitted waits: %lu, admitted alloc fails: %lu",
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
 	printf("\n  packets: %lu admitted, %lu dropped, %lu marked",
-			st->admitted_packet, st->dropped_packet, st->marked_packet);
-	int64_t diff = st->endpoint_driver_processed_new -
-			st->endpoint_driver_pulled;
-	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu, diff %ld",
+			st->admitted_packet, st->dropped_packet, st->marked_packet);*/
+
+	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu, push begin %lu, pull begin %lu, new begin %lu",
 			st->endpoint_driver_pushed, st->endpoint_driver_pulled,
-			st->endpoint_driver_processed_new, diff);
-	diff = st->router_driver_pushed - st->router_driver_pulled;
-	printf("\n  router driver pushed %lu, pulled %lu, diff %ld",
-			st->router_driver_pushed, st->router_driver_pulled, diff);
+			st->endpoint_driver_processed_new, st->endpoint_driver_push_begin, st->endpoint_driver_pull_begin, st->endpoint_driver_new_begin);
+	printf("\n  router driver pushed %lu, pulled %lu, steps begun %lu, steps ended %lu",
+			st->router_driver_pushed, st->router_driver_pulled, st->router_driver_step_begin, st->router_driver_step_end);
 
 	printf("\n warnings:");
 	if (st->send_packet_failed)
 		printf("\n  %lu send packet failed", st->send_packet_failed);
+	if (D(wait_for_admitted_enqueue))
+		printf("\n  %lu admitted waits", D(wait_for_admitted_enqueue));
+	if (D(admitted_alloc_failed))
+		printf("\n  %lu admitted alloc fails", D(admitted_alloc_failed));
 	printf("\n");
+#undef D
 }
 
 void print_global_admission_log_emulation() {

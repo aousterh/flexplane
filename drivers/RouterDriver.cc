@@ -67,6 +67,8 @@ void RouterDriver::step() {
 	struct emu_packet *pkt_ptrs[ROUTER_MAX_BURST];
 	assert(ROUTER_MAX_BURST >= EMU_ENDPOINTS_PER_RACK);
 
+	adm_log_emu_router_driver_step_begin(m_stat);
+
 	/* fetch packets to send from router to endpoints */
 	for (j = 0; j < m_neighbors; j++) {
 		n_pkts = m_router->pull_batch(pkt_ptrs, ROUTER_MAX_BURST,

@@ -51,9 +51,9 @@ void print_comm_log(uint16_t lcore_id)
 #if IS_STRESS_TEST
 	double mean_t_btwn_requests_sec, gbps, dropped_gbps, best_gbps;
 	mean_t_btwn_requests_sec = cl->mean_t_btwn_requests / rte_get_timer_hz();
-	gbps = D(occupied_node_tslots) * 1500 * 8 / (0.1 * 1000 * 1000 * 1000);
+	gbps = D(occupied_node_tslots) * 1500 * 8 / (LOG_GAP_SECS * 1000 * 1000 * 1000);
 	dropped_gbps = D(dropped_node_tslots) * 1500 * 8 /
-			(0.1 * 1000 * 1000 * 1000);
+			(LOG_GAP_SECS * 1000 * 1000 * 1000);
 	best_gbps = cl->stress_test_max_node_tslots * 1500 * 8 /
 			(STRESS_TEST_RATE_INCREASE_GAP_SEC * 1000 * 1000 * 1000.0);
 	printf("\ncurrent stress test mean t btwn requests: %f, current gbps: %f (dropped: %f), best gbps: %f",

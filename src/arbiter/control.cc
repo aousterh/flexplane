@@ -227,8 +227,11 @@ void launch_cores(void)
 		admission_cmd[i].start_time = start_time;
 		admission_cmd[i].end_time = end_time;
 		admission_cmd[i].admission_core_index = i;
+#ifdef EMULATION_ALGO
+		admission_cmd[i].start_timeslot = first_time_slot;
+#else
 		admission_cmd[i].start_timeslot = first_time_slot + i * BATCH_SIZE;
-
+#endif
 		/* launch admission core */
 		rte_eal_remote_launch(exec_admission_core, &admission_cmd[i], lcore_id);
 	}

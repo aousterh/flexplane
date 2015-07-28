@@ -65,7 +65,7 @@ static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
 	if (unlikely(rc < 0)) {
 		/* error in dequeuing.. should never happen?? */
 		comm_log_dequeue_admitted_failed(rc);
-		return;
+		return 0;
 	}
 
 	for (i = 0; i < rc; i++) {

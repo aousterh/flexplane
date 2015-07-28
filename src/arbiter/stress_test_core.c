@@ -18,6 +18,7 @@
 #include "../protocol/stat_print.h"
 #include "../protocol/topology.h"
 #include "comm_log.h"
+#include "admission_log.h"
 
 #define STRESS_TEST_MIN_LOOP_TIME_SEC		1e-6
 #define STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC	1
@@ -25,7 +26,7 @@
 #define STRESS_TEST_RATE_INCREASE               1
 #define STRESS_TEST_RATE_MAINTAIN               2
 #define STRESS_TEST_RATE_DECREASE               3
-#define STRESS_TEST_MIN_RATE_CHECK_TIME_SEC		1e-4
+#define STRESS_TEST_MIN_RATE_CHECK_TIME_SEC		1e-2
 
 /* logs */
 struct stress_test_log {
@@ -131,6 +132,8 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	uint32_t admitted_index = 0;
 	uint64_t total_demand, total_occupied_node_tslots = 0;
 	uint64_t prev_demand, prev_occupied_node_tslots = 0;
+	uint16_t lcore;
+	uint64_t core_ahead_prev[RTE_MAX_LCORE];
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = first_time_slot - 1;
@@ -175,10 +178,21 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			 * timeslot allocator is able to approximately match the demand. when the
 			 * allocator fails, it increases the mean_t to the last successful value,
 			 * decreases the constant factor, and repeats */
-			if (STRESS_TEST_IS_AUTOMATED
-					&& ((total_occupied_node_tslots - prev_occupied_node_tslots) *
-							STRESS_TEST_BACKLOG_TOLERANCE) < (total_demand - prev_demand)) {
 
+			bool fell_behind = false;
+#if defined(EMULATION_ALGO)
+			for (i = 0; i < N_ADMISSION_CORES; i++) {
+				lcore = enabled_lcore[FIRST_ADMISSION_CORE + i];
+				struct admission_log *al = &admission_core_logs[lcore];
+				fell_behind |= (al->core_ahead == core_ahead_prev[lcore]);
+				core_ahead_prev[lcore] = al->core_ahead;
+			}
+#else
+			fell_behind = (((total_occupied_node_tslots - prev_occupied_node_tslots) *
+					STRESS_TEST_BACKLOG_TOLERANCE) < (total_demand - prev_demand));
+#endif
+
+			if (STRESS_TEST_IS_AUTOMATED && fell_behind) {
 				if (next_mean_t_btwn_requests < last_successful_mean_t) {
 					/* go back to last successful mean time */
 					re_init_gen = true;

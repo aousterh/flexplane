@@ -34,7 +34,8 @@ struct admission_log {
 	uint64_t core_ahead;
 	uint64_t core_behind;
 	uint64_t tslots_skipped;
-};
+	uint64_t current_timeslot;
+} __attribute__((aligned(64))) /* don't want sharing between cores */;
 
 extern struct admission_log admission_core_logs[RTE_MAX_LCORE];
 

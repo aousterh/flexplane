@@ -59,9 +59,10 @@ struct emu_packet *HULLScheduler::schedule(uint32_t output_port,
  * All ports of a HULLRouter run HULL. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-HULLSchedRouter::HULLSchedRouter(uint16_t id, struct hull_args *hull_params)
+HULLSchedRouter::HULLSchedRouter(struct hull_args *hull_params,
+		uint32_t rack_index)
     : m_bank(EMU_ENDPOINTS_PER_RACK, 1, HULL_QUEUE_CAPACITY),
-      m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
+      m_rt(16, rack_index, EMU_ENDPOINTS_PER_RACK, 0),
 	  m_cla(),
       m_qm(&m_bank, hull_params->q_capacity),
       m_sch(&m_bank, EMU_ENDPOINTS_PER_RACK, hull_params),

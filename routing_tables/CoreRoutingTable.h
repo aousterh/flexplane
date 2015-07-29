@@ -22,10 +22,12 @@ public:
 	 * @param tor_mask: mask for number of links per tor. we assume this is the
 	 * 	negation of the mask to get the rack id
 	 *
+	 * @param n_racks: number of racks connected to this core
+	 *
 	 * @assumes tors are connected to ports tor*links_per_tor...
 	 * 	(tor+1)*links_per_tor-1
 	 */
-	CoreRoutingTable(uint32_t tor_mask);
+	CoreRoutingTable(uint32_t tor_mask, uint16_t n_tors);
 
 	/**
 	 * d'tor
@@ -37,10 +39,13 @@ public:
 private:
 	/** mask for links to tor */
 	uint32_t m_tor_mask;
+
+	/** number of adjacent ToRs */
+	uint16_t m_n_tors;
 };
 
-inline CoreRoutingTable::CoreRoutingTable(uint32_t tor_mask)
-	: m_tor_mask(tor_mask)
+inline CoreRoutingTable::CoreRoutingTable(uint32_t tor_mask, uint16_t n_tors)
+	: m_tor_mask(tor_mask), m_n_tors(n_tors)
 {}
 
 inline CoreRoutingTable::~CoreRoutingTable() {}
@@ -49,12 +54,13 @@ inline uint32_t CoreRoutingTable::route(struct emu_packet *pkt)
 {
 	/* use a hash to choose between the links to the correct tor */
 	uint32_t hash =  7 * pkt->src + 9 * pkt->dst + pkt->flow;
-#if defined(TWO_RACK_TOPOLOGY)
-	return (hash & m_tor_mask) + (pkt->dst & ~m_tor_mask);
-#else
-	/* must be 3 rack topology */
-	return (hash & 0xF) + ((pkt->dst & ~m_tor_mask) >> 1);
-#endif
+
+	if (m_n_tors == 2)
+		return (hash & m_tor_mask) + (pkt->dst & ~m_tor_mask);
+	else if (m_n_tors == 3)
+		return (hash & 0xF) + ((pkt->dst & ~m_tor_mask) >> 1);
+	else
+		throw std::runtime_error("core router does not support this many racks");
 }
 
 #endif /* ROUTINGTABLES_CORE_H_ */

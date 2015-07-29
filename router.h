@@ -21,12 +21,6 @@ enum RouterFunction {
 	CORE_ROUTER
 };
 
-struct topology_args {
-	enum RouterFunction func;
-    uint32_t rack_index;	/* tor router only */
-    uint32_t links_per_tor; /* core router only */
-};
-
 #ifdef __cplusplus
 class Dropper;
 /**
@@ -55,12 +49,14 @@ public:
 
 /**
  * A class for constructing routers of different types.
- * @NewRouter: constructs a router with id @id of the specified type
+ * @NewRouter: constructs a router of the specified type. func specifies
+ * 	whether it is a Core or ToR. router_index is the router number, and
+ * 	also the rack_index for ToRs.
  */
 class RouterFactory {
 public:
     static Router *NewRouter(enum RouterType type, void *args,
-    		struct topology_args *topo_args, uint16_t id);
+    		enum RouterFunction func, uint32_t router_index);
 };
 #endif
 

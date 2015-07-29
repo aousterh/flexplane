@@ -89,7 +89,7 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager,
  */
 class REDRouter : public REDRouterBase {
 public:
-    REDRouter(uint16_t id, struct red_args *red_params);
+    REDRouter(struct red_args *red_params, uint32_t rack_index);
     virtual void assign_to_core(Dropper *dropper,
     			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

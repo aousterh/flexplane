@@ -75,7 +75,7 @@ inline uint32_t TorRoutingTable::route(struct emu_packet *pkt)
 	uint16_t rack_id = (pkt->dst >> m_rack_shift);
 
 	/* route within the rack? */
-	if (rack_id == m_rack_index)
+	if ((m_uplink_mask == 0) || (rack_id == m_rack_index))
 		return (pkt->dst & m_endpoint_mask);
 
 	/* go to core switch - assume full bisection bandwidth, with multiple links

@@ -15,7 +15,7 @@
 #include "output.h"
 
 Router *RouterFactory::NewRouter(enum RouterType type, void *args,
-		struct topology_args *topo_args, uint16_t id)
+		enum RouterFunction func, uint32_t router_index)
 {
 	struct drop_tail_args *dt_args;
 	struct prio_by_src_args *prio_args;
@@ -24,41 +24,40 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 	case (R_DropTail):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		if (topo_args->func == TOR_ROUTER)
-			return new DropTailRouter(dt_args->q_capacity,
-					topo_args->rack_index);
+		if (func == TOR_ROUTER)
+			return new DropTailRouter(dt_args->q_capacity, router_index);
 		else
 			return new DropTailCoreRouter(dt_args->q_capacity);
 	case (R_RED):
 		assert(args != NULL);
-		return new REDRouter(id, (struct red_args *)args);
+		return new REDRouter((struct red_args *)args, router_index);
 
 	case (R_DCTCP):
 		assert(args != NULL);
-		return new DCTCPRouter(id, (struct dctcp_args *)args);
+		return new DCTCPRouter((struct dctcp_args *)args, router_index);
 
 	case (R_Prio):
 		assert(args != NULL);
 		prio_args = (struct prio_by_src_args *) args;
-		return new PriorityBySourceRouter(prio_args, topo_args->rack_index);
+		return new PriorityBySourceRouter(prio_args, router_index);
 
 	case (R_Prio_by_flow):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		return new PriorityByFlowRouter(dt_args->q_capacity, topo_args->rack_index);
+		return new PriorityByFlowRouter(dt_args->q_capacity, router_index);
 
 	case (R_RR):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		return new RRRouter(dt_args->q_capacity, topo_args->rack_index);
+		return new RRRouter(dt_args->q_capacity, router_index);
 
 	case (R_HULL):
 		assert(args != NULL);
-		return new HULLRouter(id, (struct hull_args *)args);
+		return new HULLRouter((struct hull_args *)args, router_index);
 
 	case (R_HULL_sched):
 		assert(args != NULL);
-		return new HULLSchedRouter(id, (struct hull_args *) args);
+		return new HULLSchedRouter((struct hull_args *) args, router_index);
 	}
 
 	throw std::runtime_error("invalid router type\n");

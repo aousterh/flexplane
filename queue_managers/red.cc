@@ -132,9 +132,9 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
  * All ports of a REDRouter run RED. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-REDRouter::REDRouter(uint16_t id, struct red_args *red_params) :
+REDRouter::REDRouter(struct red_args *red_params, uint32_t rack_index) :
 		m_bank(EMU_ENDPOINTS_PER_RACK, 1, RED_QUEUE_CAPACITY),
-		m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
+		m_rt(16, rack_index, EMU_ENDPOINTS_PER_RACK, 0),
 		m_cla(),
 		m_qm(&m_bank, EMU_ENDPOINTS_PER_RACK, red_params),
 		m_sch(&m_bank),

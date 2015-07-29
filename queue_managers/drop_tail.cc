@@ -40,7 +40,7 @@ struct queue_bank_stats *DropTailRouter::get_queue_bank_stats() {
 
 DropTailCoreRouter::DropTailCoreRouter(uint16_t q_capacity)
 	: m_bank(EMU_CORE_ROUTER_PORTS, 1, DROP_TAIL_QUEUE_CAPACITY),
-	  m_rt((1 << EMU_RACK_SHIFT) - 1),
+	  m_rt((1 << EMU_RACK_SHIFT) - 1, EMU_NUM_TORS),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity),
 	  m_sch(&m_bank),

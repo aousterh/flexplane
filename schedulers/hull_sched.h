@@ -48,7 +48,7 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier,
  */
 class HULLSchedRouter : public HULLSchedRouterBase {
 public:
-    HULLSchedRouter(uint16_t id, struct hull_args *hull_params);
+    HULLSchedRouter(struct hull_args *hull_params, uint32_t rack_index);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

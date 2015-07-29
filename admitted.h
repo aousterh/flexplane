@@ -69,8 +69,6 @@ void admitted_insert_edge(struct emu_admitted_traffic *admitted,
 		struct emu_packet *packet, uint16_t flags,
 		struct emu_admission_core_statistics *stat) {
 	assert(admitted != NULL);
-	assert(packet->src < EMU_NUM_ENDPOINTS);
-	assert(packet->dst < EMU_NUM_ENDPOINTS);
 	assert(admitted->size < EMU_ADMITS_PER_ADMITTED);
 
 	struct emu_admitted_edge *edge = &admitted->edges[admitted->size++];
@@ -90,8 +88,6 @@ static inline __attribute__((always_inline))
 void admitted_insert_admitted_edge(struct emu_admitted_traffic *admitted,
 		struct emu_packet *packet,
 		struct emu_admission_core_statistics *stat) {
-//	assert(admitted->admitted < EMU_NUM_ENDPOINTS);
-
 	/* pass flags to admitted struct */
 	admitted_insert_edge(admitted, packet, packet->flags, stat);
 	admitted->admitted++;

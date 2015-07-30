@@ -57,11 +57,6 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		dt_args = (struct drop_tail_args *) args;
 		return new RRRouter(dt_args->q_capacity, router_index, topo_config);
 
-	case (R_HULL):
-		assert(args != NULL);
-		return new HULLRouter((struct hull_args *)args, router_index,
-				topo_config);
-
 	case (R_HULL_sched):
 		assert(args != NULL);
 		return new HULLSchedRouter((struct hull_args *) args, router_index,

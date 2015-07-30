@@ -49,7 +49,7 @@ EmulationContainer *create_container(enum RouterType rtype,
     	printf("router type DCTCP with param: %d\n", dctcp_args.K_threshold);
     	break;
 
-    case R_HULL:
+    case R_HULL_sched:
     	struct hull_args hull_args;
     	hull_args.q_capacity = 512;
     	hull_args.mark_threshold = 3000;

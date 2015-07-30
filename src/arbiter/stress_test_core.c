@@ -27,6 +27,7 @@
 #define STRESS_TEST_RATE_MAINTAIN               2
 #define STRESS_TEST_RATE_DECREASE               3
 #define STRESS_TEST_MIN_RATE_CHECK_TIME_SEC		1e-2
+#define STRESS_TEST_RATE_DECREASE_GAP_SEC		1
 
 /* logs */
 struct stress_test_log {
@@ -131,9 +132,10 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			STRESS_TEST_MIN_RATE_CHECK_TIME_SEC;
 	uint32_t admitted_index = 0;
 	uint64_t total_demand, total_occupied_node_tslots = 0;
-	uint64_t prev_demand, prev_occupied_node_tslots = 0;
 	uint16_t lcore;
 	uint64_t core_ahead_prev[RTE_MAX_LCORE];
+	bool persistently_behind = false;
+	uint64_t next_rate_decrease_time;
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = first_time_slot - 1;
@@ -174,10 +176,6 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		/* check rate periodically but not every iteration of main loop (to
 		 * smooth out variation in when requests arrive, etc.) */
 		if (now > next_rate_check_time) {
-			/* the automated test decreases the mean_t by a constant factor as long as the
-			 * timeslot allocator is able to approximately match the demand. when the
-			 * allocator fails, it increases the mean_t to the last successful value,
-			 * decreases the constant factor, and repeats */
 
 			bool fell_behind = false;
 #if defined(EMULATION_ALGO)
@@ -193,29 +191,42 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 #endif
 
 			if (STRESS_TEST_IS_AUTOMATED && fell_behind) {
+				if (comm_log_get_stress_test_mode() ==
+						STRESS_TEST_RATE_INCREASE) {
+					/* rate increase was unsuccessful, decrease the rate change
+					 * factor */
+					cur_increase_factor = (cur_increase_factor + 1) / 2;
+					comm_log_stress_test_increase_factor(cur_increase_factor);
+				}
+
+				/* When the emulator falls behind, quickly return to the last
+				 * rate for which it could keep up (don't wait for the next
+				 * rate increase time). If we are already at that last rate
+				 * and it remains behind for one second, further decrease the
+				 * rate. */
 				if (next_mean_t_btwn_requests < last_successful_mean_t) {
 					/* go back to last successful mean time */
 					re_init_gen = true;
 					next_mean_t_btwn_requests = last_successful_mean_t;
-				} else if ((next_mean_t_btwn_requests == last_successful_mean_t) &&
-						(next_mean_t_btwn_requests < cmd->mean_t_btwn_requests)) {
-					/* decrease rate below last successful mean time to allow
-					 * queues to drain */
-					re_init_gen = true;
-					next_mean_t_btwn_requests *= cur_increase_factor;
+					comm_log_stress_test_mode(STRESS_TEST_RATE_MAINTAIN);
+				} else if (next_mean_t_btwn_requests <
+						cmd->mean_t_btwn_requests) {
+					if (persistently_behind &&
+							(now >= next_rate_decrease_time)) {
+						/* persistently behind, decrease rate by the current
+						 * increase factor */
+						re_init_gen = true;
+						next_mean_t_btwn_requests *= cur_increase_factor;
+						comm_log_stress_test_mode(STRESS_TEST_RATE_DECREASE);
+					} else if (!persistently_behind) {
+						persistently_behind = true;
+						next_rate_decrease_time = now + rte_get_timer_hz() *
+								STRESS_TEST_RATE_DECREASE_GAP_SEC;
+					}
 				}
-
-				if (comm_log_get_stress_test_mode() == STRESS_TEST_RATE_INCREASE) {
-					cur_increase_factor = (cur_increase_factor + 1) / 2;
-					comm_log_stress_test_increase_factor(cur_increase_factor);
-				}
-				comm_log_stress_test_mode(STRESS_TEST_RATE_DECREASE);
-
-				prev_occupied_node_tslots = total_occupied_node_tslots;
-				prev_demand = total_demand;
 			}
 
-			/* if need to change rate, do it */
+			/* completed an interval. time to adjust the rate. */
 			if (now >= next_rate_increase_time && !re_init_gen) {
 				prev_node_tslots = cur_node_tslots;
 				cur_node_tslots = total_occupied_node_tslots;
@@ -250,6 +261,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 
 				/* update node tslots */
 				cur_node_tslots = total_occupied_node_tslots;
+				persistently_behind = false;
 			}
 			next_rate_check_time += min_rate_check_interval;
 		}

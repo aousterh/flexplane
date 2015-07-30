@@ -33,6 +33,7 @@
 #define TIMESLOTS_PER_TIME_SYNC	64
 
 Emulation *g_emulation;
+struct emu_topo_config topo_config;
 
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 
@@ -63,6 +64,10 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 	/* init log */
 	for (i = 0; i < RTE_MAX_LCORE; i++)
 		admission_log_init(&admission_core_logs[i]);
+
+	/* choose topology */
+	topo_config.num_racks = 1;
+	topo_config.rack_shift = 5;
 
 	/* init emu_state */
 	enum RouterType rtype;
@@ -157,7 +162,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 
 	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
 			(fp_ring *) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
-			rtr_args, E_Simple, NULL);
+			rtr_args, E_Simple, NULL, &topo_config);
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

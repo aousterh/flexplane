@@ -8,10 +8,14 @@
 #ifndef EMU_ADMISSION_CORE_H
 #define EMU_ADMISSION_CORE_H
 
+#include "../emulation/emu_topology.h"
+
 #include <rte_ring.h>
 
 #define		ADMITTED_TRAFFIC_MEMPOOL_SIZE		(16*1024)
 #define		ADMITTED_TRAFFIC_CACHE_SIZE			512
+
+extern struct emu_topo_config topo_config;
 
 /* emu state */
 struct Emulation;

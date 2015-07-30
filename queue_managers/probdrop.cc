@@ -37,19 +37,20 @@ void ProbDropQueueManager::enqueue(struct emu_packet *pkt,
         m_bank->enqueue(port, queue, pkt);
     }
 }
-    
+
 /**
  * All ports of a ProbDropRouter run ProbDrop. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-ProbDropRouter::ProbDropRouter(uint16_t id,
-		struct probdrop_args *probdrop_params)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, PROBDROP_QUEUE_CAPACITY),
-      m_rt(16, 0, EMU_ENDPOINTS_PER_RACK, 0),
+ProbDropRouter::ProbDropRouter(struct probdrop_args *probdrop_params,
+		uint32_t rack_index, struct emu_topo_config *topo_config)
+    : m_bank(tor_ports(topo_config), 1, PROBDROP_QUEUE_CAPACITY),
+      m_rt(topo_config->rack_shift, rack_index,
+			  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
       m_qm(&m_bank, probdrop_params),
       m_sch(&m_bank),
-      ProbDropRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
+      ProbDropRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
 
 void ProbDropRouter::assign_to_core(Dropper *dropper,

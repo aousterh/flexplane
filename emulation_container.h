@@ -10,6 +10,7 @@
 
 #include "admitted.h"
 #include "emulation.h"
+#include "emu_topology.h"
 #include "endpoint.h"
 #include "router.h"
 #include "../graph-algo/fp_ring.h"
@@ -25,7 +26,8 @@ public:
 	EmulationContainer(uint32_t admitted_mempool_size,
 			uint32_t admitted_ring_size, uint32_t packet_mempool_size,
 			uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
-			enum EndpointType e_type, void *e_args);
+			enum EndpointType e_type, void *e_args,
+			struct emu_topo_config *topo_config);
 	~EmulationContainer();
 
 	inline void add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
@@ -42,7 +44,8 @@ private:
 EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
 		uint32_t admitted_ring_size, uint32_t packet_mempool_size,
 		uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
-		enum EndpointType e_type, void *e_args) {
+		enum EndpointType e_type, void *e_args,
+		struct emu_topo_config *topo_config) {
 	m_admitted_mempool = fp_mempool_create("admitted_mempool",
 			admitted_mempool_size, sizeof(struct emu_admitted_traffic), 0, 0,
 			0);
@@ -60,7 +63,7 @@ EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
 		throw std::runtime_error("couldn't allocate packet_mempool");
 
 	m_emulation = new Emulation(m_admitted_mempool, m_q_admitted_out,
-			packet_ring_size, r_type, r_args, e_type, e_args);
+			packet_ring_size, r_type, r_args, e_type, e_args, topo_config);
 }
 
 EmulationContainer::~EmulationContainer() {

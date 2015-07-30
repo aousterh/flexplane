@@ -20,7 +20,8 @@ class RouterDriver {
 public:
 	RouterDriver(Router *router, struct fp_ring *q_to_router,
 			struct fp_ring **q_from_router, uint64_t *masks,
-			uint16_t n_neighbors, struct fp_mempool *packet_mempool);
+			uint16_t n_neighbors, struct fp_mempool *packet_mempool,
+			uint32_t burst_size);
 	/**
 	 * Prepares this driver to run on a specific core.
 	 */
@@ -43,6 +44,7 @@ private:
 	uint16_t m_core_index;
 	uint64_t m_cur_time;
 	struct fp_mempool *m_packet_mempool;
+	uint32_t m_burst_size;
 };
 
 #endif /* DRIVERS_ROUTERDRIVER_H_ */

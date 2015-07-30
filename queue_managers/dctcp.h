@@ -9,6 +9,7 @@
 #define DCTCP_H_
 
 #include "config.h"
+#include "emu_topology.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -63,7 +64,8 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, DCTCPQueueManage
  */
 class DCTCPRouter : public DCTCPRouterBase {
 public:
-    DCTCPRouter(struct dctcp_args *dctcp_params, uint32_t rack_index);
+    DCTCPRouter(struct dctcp_args *dctcp_params, uint32_t rack_index,
+    		struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

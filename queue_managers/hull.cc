@@ -56,13 +56,15 @@ void HULLQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
  * All ports of a HULLRouter run HULL. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-HULLRouter::HULLRouter(struct hull_args *hull_params, uint32_t rack_index)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, HULL_QUEUE_CAPACITY),
-      m_rt(16, rack_index, EMU_ENDPOINTS_PER_RACK, 0),
+HULLRouter::HULLRouter(struct hull_args *hull_params, uint32_t rack_index,
+		struct emu_topo_config *topo_config)
+    : m_bank(tor_ports(topo_config), 1, HULL_QUEUE_CAPACITY),
+      m_rt(topo_config->rack_shift, rack_index,
+			  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
       m_qm(&m_bank, hull_params),
       m_sch(&m_bank),
-      HULLRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
+      HULLRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
 
 HULLRouter::~HULLRouter() {}

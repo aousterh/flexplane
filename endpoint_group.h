@@ -9,6 +9,7 @@
 #define ENDPOINT_GROUP_H_
 
 #include "config.h"
+#include "emu_topology.h"
 #include "endpoint.h"
 #include <assert.h>
 #include <time.h> /* for seeding the random number generator */
@@ -42,7 +43,8 @@ public:
 class EndpointGroupFactory {
 public:
 	static EndpointGroup *NewEndpointGroup(enum EndpointType type,
-			uint16_t num_endpoints, uint16_t start_id, void *args);
+			uint16_t start_id, void *args,
+			struct emu_topo_config *topo_config);
 };
 
 #endif /* ENDPOINT_GROUP_H_ */

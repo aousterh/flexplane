@@ -60,13 +60,14 @@ struct emu_packet *HULLScheduler::schedule(uint32_t output_port,
  * different ports running different QMs or schedulers.
  */
 HULLSchedRouter::HULLSchedRouter(struct hull_args *hull_params,
-		uint32_t rack_index)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, HULL_QUEUE_CAPACITY),
-      m_rt(16, rack_index, EMU_ENDPOINTS_PER_RACK, 0),
+		uint32_t rack_index, struct emu_topo_config *topo_config)
+    : m_bank(tor_ports(topo_config), 1, HULL_QUEUE_CAPACITY),
+      m_rt(topo_config->rack_shift, rack_index,
+			  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
       m_qm(&m_bank, hull_params->q_capacity),
-      m_sch(&m_bank, EMU_ENDPOINTS_PER_RACK, hull_params),
-      HULLSchedRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
+      m_sch(&m_bank, tor_ports(topo_config) * 1, hull_params),
+      HULLSchedRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
 
 HULLSchedRouter::~HULLSchedRouter() {}

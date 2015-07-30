@@ -9,6 +9,7 @@
 #define PROBDROP_H_
 
 #include "config.h"
+#include "emu_topology.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -66,7 +67,8 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, ProbDropQueueMan
  */
 class ProbDropRouter : public ProbDropRouterBase {
 public:
-    ProbDropRouter(uint16_t id, struct probdrop_args *probdrop_params);
+    ProbDropRouter(struct probdrop_args *probdrop_params,
+    		uint32_t rack_index, struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

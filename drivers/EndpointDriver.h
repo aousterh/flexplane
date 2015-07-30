@@ -19,7 +19,8 @@ class EndpointDriver {
 public:
 	EndpointDriver(struct fp_ring *q_new_packets, struct fp_ring *q_to_router,
 			struct fp_ring *q_from_router, struct fp_ring *q_resets,
-			EndpointGroup *epg, struct fp_mempool *packet_mempool);
+			EndpointGroup *epg, struct fp_mempool *packet_mempool,
+			uint32_t burst_size);
 
 	/**
 	 * Prepares this driver to run on a specific core.
@@ -51,6 +52,7 @@ private:
 	uint16_t m_core_index;
 	uint64_t m_cur_time;
 	struct fp_mempool *m_packet_mempool;
+	uint32_t m_burst_size;
 };
 
 #endif /* DRIVERS_ENDPOINTDRIVER_H_ */

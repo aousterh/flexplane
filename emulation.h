@@ -26,7 +26,6 @@
 #define PACKET_MEMPOOL_SIZE		(1024 * 1024)
 #define	PACKET_MEMPOOL_CACHE_SIZE		256
 #define PACKET_Q_LOG_SIZE		16
-#define EMU_NUM_PACKET_QS		(3 * EMU_NUM_ENDPOINT_GROUPS + EMU_NUM_ROUTERS)
 #define MIN(X, Y)				(X <= Y ? X : Y)
 #define EMU_ADD_BACKLOG_BATCH_SIZE	64
 
@@ -43,8 +42,8 @@ class RouterDriver;
  * @q_resets: a queue of pending resets, for each endpoint group
  */
 struct emu_comm_state {
-	struct fp_ring	*q_epg_new_pkts[EPGS_PER_COMM];
-	struct fp_ring	*q_resets[EPGS_PER_COMM];
+	struct fp_ring	*q_epg_new_pkts[EMU_MAX_EPGS_PER_COMM];
+	struct fp_ring	*q_resets[EMU_MAX_EPGS_PER_COMM];
 };
 
 /**
@@ -55,7 +54,7 @@ public:
 	Emulation(struct fp_mempool *admitted_traffic_mempool,
 			struct fp_ring *q_admitted_out, uint32_t packet_ring_size,
 			enum RouterType r_type, void *r_args, enum EndpointType e_type,
-			void *e_args);
+			void *e_args, struct emu_topo_config *topo_config);
 
 	/**
 	 * Run the emulation for one step.
@@ -111,14 +110,15 @@ public:
 	struct emu_admission_statistics			m_stat;
 	struct emu_admission_core_statistics	*m_core_stats[ALGO_N_CORES];
 	EmulationCore							*m_cores[ALGO_N_CORES];
-	struct queue_bank_stats					*m_queue_bank_stats[EMU_NUM_ROUTERS];
-	struct port_drop_stats					*m_port_drop_stats[EMU_NUM_ROUTERS];
+	struct queue_bank_stats					*m_queue_bank_stats[EMU_MAX_ROUTERS];
+	struct port_drop_stats					*m_port_drop_stats[EMU_MAX_ROUTERS];
 
 private:
 	struct fp_mempool						*m_packet_mempool;
 	struct fp_mempool						*m_admitted_traffic_mempool;
 	struct fp_ring							*m_q_admitted_out;
 	struct emu_comm_state					m_comm_state;
+	struct emu_topo_config					*m_topo_config;
 };
 
 
@@ -126,11 +126,12 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 		uint32_t amount, uint16_t start_id, u8* areq_data) {
 	uint32_t i, n_pkts;
 	struct fp_ring *q_epg_new_pkts;
-	assert(src < EMU_NUM_ENDPOINTS);
-	assert(dst < EMU_NUM_ENDPOINTS);
+	assert(src < num_endpoints(m_topo_config));
+	assert(dst < num_endpoints(m_topo_config));
 	assert(flow < FLOWS_PER_NODE);
 
-	q_epg_new_pkts = m_comm_state.q_epg_new_pkts[src / EMU_ENDPOINTS_PER_EPG];
+	q_epg_new_pkts =
+			m_comm_state.q_epg_new_pkts[src / endpoints_per_epg(m_topo_config)];
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 	printf("adding backlog from %d to %d, amount %d\n", src, dst, amount);
@@ -171,7 +172,8 @@ inline void Emulation::reset_sender(uint16_t src) {
 	struct fp_ring *q_resets;
 	uint64_t endpoint_id = src;
 
-	q_resets = m_comm_state.q_resets[src / EMU_ENDPOINTS_PER_EPG];
+	q_resets =
+			m_comm_state.q_resets[src / endpoints_per_epg(m_topo_config)];
 
 	/* enqueue a notification to the endpoint driver's reset queue */
 	/* cast src id to a pointer */

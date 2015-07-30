@@ -8,6 +8,8 @@
 #ifndef ROUTER_H_
 #define ROUTER_H_
 
+#include "emu_topology.h"
+
 #include <inttypes.h>
 
 struct emu_packet;
@@ -56,7 +58,8 @@ public:
 class RouterFactory {
 public:
     static Router *NewRouter(enum RouterType type, void *args,
-    		enum RouterFunction func, uint32_t router_index);
+    		enum RouterFunction func, uint32_t router_index,
+    		struct emu_topo_config *topo_config);
 };
 #endif
 

@@ -9,6 +9,7 @@
 #define DROP_TAIL_H_
 
 #include "config.h"
+#include "emu_topology.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -81,7 +82,8 @@ typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager,
  */
 class DropTailRouter : public DropTailRouterBase {
 public:
-    DropTailRouter(uint16_t q_capacity, uint32_t rack_index);
+    DropTailRouter(uint16_t q_capacity, uint32_t rack_index,
+    		struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
@@ -104,7 +106,8 @@ typedef CompositeRouter<CoreRoutingTable, FlowIDClassifier, DropTailQueueManager
  */
 class DropTailCoreRouter : public DropTailCoreRouterBase {
 public:
-    DropTailCoreRouter(uint16_t q_capacity);
+    DropTailCoreRouter(uint16_t q_capacity,
+    		struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
@@ -123,7 +126,8 @@ typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager,
 
 class PriorityByFlowRouter : public PriorityByFlowRouterBase {
 public:
-    PriorityByFlowRouter(uint16_t q_capacity, uint32_t rack_index);
+    PriorityByFlowRouter(uint16_t q_capacity, uint32_t rack_index,
+    		struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
@@ -142,7 +146,8 @@ typedef CompositeRouter<TorRoutingTable, BySourceClassifier, DropTailQueueManage
 
 class PriorityBySourceRouter : public PriorityBySourceRouterBase {
 public:
-    PriorityBySourceRouter(struct prio_by_src_args *args, uint32_t rack_index);
+    PriorityBySourceRouter(struct prio_by_src_args *args, uint32_t rack_index,
+    		struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
@@ -161,7 +166,8 @@ typedef CompositeRouter<TorRoutingTable, SourceIDClassifier, DropTailQueueManage
 
 class RRRouter : public RRRouterBase {
 public:
-	RRRouter(uint16_t q_capacity, uint32_t rack_index);
+	RRRouter(uint16_t q_capacity, uint32_t rack_index,
+			struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

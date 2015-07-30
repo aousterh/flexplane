@@ -9,6 +9,7 @@
 #define HULL_SCHED_H_
 
 #include "config.h"
+#include "emu_topology.h"
 #include "router.h"
 #include "composite.h"
 #include "queue_bank.h"
@@ -48,7 +49,8 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier,
  */
 class HULLSchedRouter : public HULLSchedRouterBase {
 public:
-    HULLSchedRouter(struct hull_args *hull_params, uint32_t rack_index);
+    HULLSchedRouter(struct hull_args *hull_params, uint32_t rack_index,
+    		struct emu_topo_config *topo_config);
 	virtual void assign_to_core(Dropper *dropper,
 			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();

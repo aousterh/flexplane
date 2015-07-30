@@ -132,14 +132,16 @@ uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
  * All ports of a REDRouter run RED. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-REDRouter::REDRouter(struct red_args *red_params, uint32_t rack_index) :
-		m_bank(EMU_ENDPOINTS_PER_RACK, 1, RED_QUEUE_CAPACITY),
-		m_rt(16, rack_index, EMU_ENDPOINTS_PER_RACK, 0),
+REDRouter::REDRouter(struct red_args *red_params, uint32_t rack_index,
+		struct emu_topo_config *topo_config)
+	:	m_bank(tor_ports(topo_config), 1, RED_QUEUE_CAPACITY),
+		m_rt(topo_config->rack_shift, rack_index,
+				endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 		m_cla(),
-		m_qm(&m_bank, EMU_ENDPOINTS_PER_RACK, red_params),
+		m_qm(&m_bank, tor_ports(topo_config) * 1, red_params),
 		m_sch(&m_bank),
-		REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK) {
-}
+		REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
+{}
 
 void REDRouter::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat) {

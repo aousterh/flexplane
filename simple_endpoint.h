@@ -30,15 +30,17 @@ struct simple_ep_args {
  */
 class SimpleSink : public Sink {
 public:
-	inline SimpleSink(uint16_t rack_id) : m_rack_id(rack_id) {}
+	inline SimpleSink(uint16_t rack_id, uint16_t rack_shift)
+		: m_rack_id(rack_id), m_rack_shift(rack_shift) {}
 	inline void assign_to_core(EmulationOutput *out) { m_output = out; }
 	inline void handle(struct emu_packet *pkt) {
-		assert((pkt->dst >> EMU_RACK_SHIFT) == m_rack_id);
+		assert((pkt->dst >> m_rack_shift) == m_rack_id);
 		m_output->admit(pkt);
 	}
 private:
 	EmulationOutput *m_output;
 	uint16_t m_rack_id;
+	uint16_t m_rack_shift;
 };
 
 typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager,
@@ -50,8 +52,8 @@ typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager,
  */
 class SimpleEndpointGroup : public SimpleEndpointGroupBase {
 public:
-	SimpleEndpointGroup(uint16_t num_endpoints, uint16_t start_id,
-			uint16_t q_capacity);
+	SimpleEndpointGroup(uint16_t start_id, uint16_t q_capacity,
+			struct emu_topo_config *topo_config);
 	virtual void assign_to_core(EmulationOutput *out,
 			struct emu_admission_core_statistics *stat);
 
@@ -80,8 +82,8 @@ typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailQueueManager,
  */
 class RateLimitingEndpointGroup : public RateLimitingEndpointGroupBase {
 public:
-	RateLimitingEndpointGroup(uint16_t num_endpoints, uint16_t start_id,
-			uint16_t q_capacity, uint16_t t_btwn_pkts);
+	RateLimitingEndpointGroup(uint16_t start_id, uint16_t q_capacity,
+			uint16_t t_btwn_pkts, struct emu_topo_config *topo_config);
 	virtual void assign_to_core(EmulationOutput *out,
 			struct emu_admission_core_statistics *stat);
 

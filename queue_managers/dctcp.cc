@@ -39,13 +39,15 @@ void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
  * All ports of a DCTCPRouter run DCTCP. We don't currently support routers with 
  * different ports running different QMs or schedulers.
  */
-DCTCPRouter::DCTCPRouter(struct dctcp_args *dctcp_params, uint32_t rack_index)
-    : m_bank(EMU_ENDPOINTS_PER_RACK, 1, DCTCP_QUEUE_CAPACITY),
-      m_rt(16, rack_index, EMU_ENDPOINTS_PER_RACK, 0),
+DCTCPRouter::DCTCPRouter(struct dctcp_args *dctcp_params, uint32_t rack_index,
+		struct emu_topo_config *topo_config)
+    : m_bank(tor_ports(topo_config), 1, DCTCP_QUEUE_CAPACITY),
+      m_rt(topo_config->rack_shift, rack_index,
+    		  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
       m_qm(&m_bank, dctcp_params),
       m_sch(&m_bank),
-      DCTCPRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, EMU_ENDPOINTS_PER_RACK)
+      DCTCPRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
 
 DCTCPRouter::~DCTCPRouter() {}

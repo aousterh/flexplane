@@ -316,52 +316,37 @@ void Emulation::assign_components_to_cores(EndpointDriver **epg_drivers,
 			m_cores[core_index] = new EmulationCore(&epg_drivers[i], NULL, 1,
 					0, core_index, m_q_admitted_out,
 					m_admitted_traffic_mempool, m_packet_mempool);
-			m_core_stats[core_index] = m_cores[core_index]->stats();
 			core_index++;
 		}
 		for (i = 0; i < num_routers(m_topo_config); i++) {
 			m_cores[core_index] = new EmulationCore(NULL, &router_drivers[i],
 					0, 1, core_index, m_q_admitted_out,
 					m_admitted_traffic_mempool, m_packet_mempool);
-			m_core_stats[core_index] = m_cores[core_index]->stats();
 			core_index++;
 		}
-	} else if ((ALGO_N_CORES == 3) && m_topo_config->num_racks == 2) {
-		/* 1 epg + 1 rtr on first two cores, core router on last core */
-		for (i = 0; i < 2; i++) {
+	} else if (ALGO_N_CORES == m_topo_config->num_racks + 1) {
+		/* 1 epg + 1 rtr on first num_racks cores, core router on last core */
+		for (i = 0; i < m_topo_config->num_racks; i++) {
 			m_cores[core_index] = new EmulationCore(&epg_drivers[i],
 					&router_drivers[i], 1, 1, core_index, m_q_admitted_out,
 					m_admitted_traffic_mempool, m_packet_mempool);
-			m_core_stats[core_index] = m_cores[core_index]->stats();
 			core_index++;
 		}
-		m_cores[core_index] = new EmulationCore(NULL, &router_drivers[2], 0, 1,
-				core_index, m_q_admitted_out, m_admitted_traffic_mempool,
+		m_cores[core_index] = new EmulationCore(NULL,
+				&router_drivers[core_index], 0, 1, core_index,
+				m_q_admitted_out, m_admitted_traffic_mempool,
 				m_packet_mempool);
-		m_core_stats[core_index] = m_cores[core_index]->stats();
-		core_index++;
-	} else if ((ALGO_N_CORES == 4) && m_topo_config->num_racks == 3) {
-		/* 1 epg + 1 rtr on first three cores, core router on last core */
-		for (i = 0; i < 3; i++) {
-			m_cores[core_index] = new EmulationCore(&epg_drivers[i],
-					&router_drivers[i], 1, 1, core_index, m_q_admitted_out,
-					m_admitted_traffic_mempool, m_packet_mempool);
-			m_core_stats[core_index] = m_cores[core_index]->stats();
-			core_index++;
-		}
-		m_cores[core_index] = new EmulationCore(NULL, &router_drivers[3], 0, 1,
-				core_index, m_q_admitted_out, m_admitted_traffic_mempool,
-				m_packet_mempool);
-		m_core_stats[core_index] = m_cores[core_index]->stats();
-		core_index++;
 	} else if (ALGO_N_CORES == 1) {
 		/* assign everything to one core */
 		m_cores[core_index] = new EmulationCore(epg_drivers, router_drivers,
 				num_endpoint_groups(m_topo_config), num_routers(m_topo_config),
 				core_index, m_q_admitted_out, m_admitted_traffic_mempool,
 				m_packet_mempool);
-		m_core_stats[core_index] = m_cores[core_index]->stats();
 	} else {
 		throw std::runtime_error("no specified way to assign this topology to cores");
 	}
+
+	/* Set stats pointers */
+	for (i = 0; i < ALGO_N_CORES; i++)
+		m_core_stats[i] = m_cores[i]->stats();
 }

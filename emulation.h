@@ -87,24 +87,19 @@ private:
 	inline struct emu_packet *create_packet(uint16_t src, uint16_t dst,
 			uint16_t flow, uint16_t id, uint8_t *areq_data);
 
-	void construct_topology(struct fp_ring **packet_queues,
-			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
+	/**
+	 * Creates all of the routers and endpoint groups in the network.
+	 */
+	void construct_topology(EndpointGroup **epgs, Router **rtrs,
 			RouterType r_type, void *r_args, EndpointType e_type,
 			void *e_args);
-	void construct_single_rack_topology(struct fp_ring **packet_queues,
-			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
-			RouterType r_type, void *r_args, EndpointType e_type,
-			void *e_args);
-	void construct_two_rack_topology(struct fp_ring **packet_queues,
-			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
-			RouterType r_type, void *r_args, EndpointType e_type,
-			void *e_args);
-	void construct_three_rack_topology(struct fp_ring **packet_queues,
-			EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
-			RouterType r_type, void *r_args, EndpointType e_type,
-			void *e_args);
-	void assign_components_to_cores(EndpointDriver **epg_drivers,
-			RouterDriver **router_drivers);
+
+	/**
+	 * Assign the emulated components to the hardware cores.
+	 */
+	void assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
+			struct fp_ring **packet_queues);
+
 	void set_tor_port_masks(uint64_t *rtr_masks);
 	void set_core_port_masks(uint64_t *rtr_masks);
 

@@ -18,6 +18,7 @@
 #include "../emulation/admitted.h"
 #include "../emulation/emulation.h"
 #include "../emulation/emulation_core.h"
+#include "../emulation/emu_topology.h"
 #include "../emulation/endpoint.h"
 #include "../emulation/classifiers/BySourceClassifier.h"
 #include "../emulation/queue_managers/drop_tail.h"
@@ -54,6 +55,11 @@ struct queue_bank_stats *emu_get_queueing_stats(uint8_t router_index)
 struct port_drop_stats *emu_get_port_stats(uint8_t router_index)
 {
 	return g_emulation->m_port_drop_stats[router_index];
+}
+
+uint16_t emu_get_num_routers()
+{
+	return num_routers(&topo_config);
 }
 
 void emu_admission_init_global(struct rte_ring *q_admitted_out,

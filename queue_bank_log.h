@@ -17,18 +17,20 @@
  * Queue bank stats at one time - enqueues, dequeues, and drops
  * @ port_enqueues: number of enqueues that have occurred at each port
  * @ port_dequeues: number of dequeues that have occurred at each port
- * @ port_drops: number of drops that have occurred at each port
  */
 struct queue_bank_stats {
 	u64		port_enqueues[QUEUE_BANK_MAX_PORTS];
 	u64		port_dequeues[QUEUE_BANK_MAX_PORTS];
 };
 
+/**
+ * Port drop stats at one time - drops and marks
+ * @ port_drops: number of drops that have occurred at each port
+ * @ port_marks: number of marks that have occurred at each port
+ */
 struct port_drop_stats {
 	u64		port_drops[QUEUE_BANK_MAX_PORTS];
 	u64		port_marks[QUEUE_BANK_MAX_PORTS];
-	u64		total_drops;
-	u64		total_marks;
 };
 
 static inline __attribute__((always_inline))
@@ -47,16 +49,12 @@ static inline __attribute__((always_inline))
 void queue_bank_log_drop(struct port_drop_stats *st, uint32_t port) {
 	if (MAINTAIN_QUEUE_BANK_LOG_COUNTERS)
 		st->port_drops[port]++;
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->total_drops++;
 }
 
 static inline __attribute__((always_inline))
 void queue_bank_log_mark(struct port_drop_stats *st, uint32_t port) {
 	if (MAINTAIN_QUEUE_BANK_LOG_COUNTERS)
 		st->port_marks[port]++;
-	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
-		st->total_marks++;
 }
 
 /**

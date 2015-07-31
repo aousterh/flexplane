@@ -104,6 +104,8 @@ private:
 			void *e_args);
 	void assign_components_to_cores(EndpointDriver **epg_drivers,
 			RouterDriver **router_drivers);
+	void set_tor_port_masks(uint64_t *rtr_masks);
+	void set_core_port_masks(uint64_t *rtr_masks);
 
 	/* Public variables for easy access from the log and emulation cores. */
 public:

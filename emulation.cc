@@ -111,86 +111,18 @@ void Emulation::cleanup() {
 void Emulation::construct_topology(struct fp_ring **packet_queues,
 		EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
 		RouterType r_type, void *r_args, EndpointType e_type, void *e_args) {
-
-	switch (m_topo_config->num_racks) {
-	case 1:
-		/* construct topology: 1 router with 1 rack of endpoints */
-		construct_single_rack_topology(packet_queues, endpoint_drivers,
-				router_drivers, r_type, r_args, e_type, e_args);
-		break;
-	case 2:
-		/* construct topology: 3 routers with 2 racks of endpoints */
-		construct_two_rack_topology(packet_queues, endpoint_drivers,
-				router_drivers, r_type, r_args, e_type, e_args);
-		break;
-	case 3:
-		/* construct topology: 3 routers with 2 racks of endpoints */
-		construct_three_rack_topology(packet_queues, endpoint_drivers,
-				router_drivers, r_type, r_args, e_type, e_args);
-		break;
-	default:
-		throw std::runtime_error("unrecognized topology");
-	}
-}
-
-void Emulation::construct_single_rack_topology(struct fp_ring **packet_queues,
-		EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
-		RouterType r_type, void *r_args, EndpointType e_type, void *e_args)
-{
-	uint32_t pq, i;
-	struct fp_ring	*q_epg_ingress[EMU_MAX_ENDPOINT_GROUPS];
-	uint64_t rtr_masks[EMU_MAX_OUTPUTS_PER_RTR];
-	struct fp_ring *q_router_ingress[EMU_MAX_ROUTERS];
-	EndpointGroup *epg;
-	Router *rtr;
-
-	printf("SINGLE RACK topology with %d routers and %d endpoints\n",
-			num_routers(m_topo_config), num_endpoints(m_topo_config));
-
-	/* initialize rings for routers and endpoints */
-	pq = 0;
-	for (i = 0; i < num_endpoint_groups(m_topo_config); i++)
-		q_epg_ingress[i] = packet_queues[pq++];
-	for (i = 0; i < num_routers(m_topo_config); i++)
-		q_router_ingress[i] = packet_queues[pq++];
-
-	/* initialize the routers */
-	rtr = RouterFactory::NewRouter(r_type, r_args, TOR_ROUTER, 0,
-			m_topo_config);
-	assert(rtr != NULL);
-	set_tor_port_masks(&rtr_masks[0]);
-	router_drivers[0] = new RouterDriver(rtr, q_router_ingress[0],
-			&q_epg_ingress[0], &rtr_masks[0], 1, m_packet_mempool,
-			endpoints_per_rack(m_topo_config));
-
-	/* initialize all the endpoints in one endpoint group */
-	for (i = 0; i < num_endpoint_groups(m_topo_config); i++) {
-		epg = EndpointGroupFactory::NewEndpointGroup(e_type,
-				i * endpoints_per_rack(m_topo_config), e_args, m_topo_config);
-		assert(epg != NULL);
-		endpoint_drivers[0] =
-				new EndpointDriver(m_comm_state.q_epg_new_pkts[i],
-						q_router_ingress[i], q_epg_ingress[i],
-						m_comm_state.q_resets[i], epg, m_packet_mempool,
-						endpoints_per_rack(m_topo_config));
-	}
-}
-
-/* construct a topology with 2 racks and one core router connecting the tors */
-void Emulation::construct_two_rack_topology(struct fp_ring **packet_queues,
-		EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
-		RouterType r_type, void *r_args, EndpointType e_type, void *e_args)
-{
-	uint32_t pq, i;
+	uint32_t pq, i, rtr_index;
 	struct fp_ring *q_epg_ingress[EMU_MAX_ENDPOINT_GROUPS];
 	struct fp_ring *q_router_ingress[EMU_MAX_ROUTERS];
 	EndpointGroup *epg;
 	Router *rtr;
+	struct fp_ring *q_router_egress[EMU_MAX_OUTPUTS_PER_RTR];
+	uint64_t rtr_masks[EMU_MAX_OUTPUTS_PER_RTR];
 
-	printf("TWO RACK topology with %d routers and %d endpoints\n",
+	printf("constructing topology with %d routers and %d endpoints\n",
 			num_routers(m_topo_config), num_endpoints(m_topo_config));
 
-	/* initialize rings for routers and endpoints */
+	/* setup rings for routers and endpoints */
 	pq = 0;
 	for (i = 0; i < num_endpoint_groups(m_topo_config); i++)
 		q_epg_ingress[i] = packet_queues[pq++];
@@ -209,97 +141,34 @@ void Emulation::construct_two_rack_topology(struct fp_ring **packet_queues,
 						endpoints_per_rack(m_topo_config));
 	}
 
-	/* initialize the ToRs. both have 32 ports facing down and 32 ports facing
-	 * up to the core. */
-	uint64_t rtr_masks[EMU_MAX_OUTPUTS_PER_RTR];
-	struct fp_ring *q_router_egress[EMU_MAX_OUTPUTS_PER_RTR];
+	/* initialize the ToRs */
 	set_tor_port_masks(&rtr_masks[0]);
-	q_router_egress[1] = q_router_ingress[2];
-	for (i = 0; i < num_tors(m_topo_config); i++) {
-		q_router_egress[0] = q_epg_ingress[i];
+	if (tor_neighbors(m_topo_config) == 2)
+		q_router_egress[1] = q_router_ingress[num_tors(m_topo_config)];
 
-		rtr = RouterFactory::NewRouter(r_type, r_args, TOR_ROUTER, i,
+	for (rtr_index = 0; rtr_index < num_tors(m_topo_config); rtr_index++) {
+		rtr = RouterFactory::NewRouter(r_type, r_args, TOR_ROUTER, rtr_index,
 				m_topo_config);
 		assert(rtr != NULL);
-		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
-				&q_router_egress[0], &rtr_masks[0], 2, m_packet_mempool,
+
+		q_router_egress[0] = q_epg_ingress[rtr_index];
+		router_drivers[rtr_index] = new RouterDriver(rtr,
+				q_router_ingress[rtr_index], &q_router_egress[0],
+				&rtr_masks[0], tor_neighbors(m_topo_config), m_packet_mempool,
 				endpoints_per_rack(m_topo_config));
 	}
 
-	/* initialize the Core. first 32 ports are for first ToR, next 32 are for
-	 * second ToR. */
-	set_core_port_masks(&rtr_masks[0]);
-	q_router_egress[0] = q_router_ingress[0];
-	q_router_egress[1] = q_router_ingress[1];
-	rtr = RouterFactory::NewRouter(r_type, r_args, CORE_ROUTER,
-			num_tors(m_topo_config), m_topo_config);
-	assert(rtr != NULL);
-	router_drivers[2] = new RouterDriver(rtr, q_router_ingress[2],
-			&q_router_egress[0], &rtr_masks[0], 2, m_packet_mempool,
-			endpoints_per_rack(m_topo_config));
-}
-
-/* construct a topology with 3 racks and one core router connecting the tors */
-void Emulation::construct_three_rack_topology(struct fp_ring **packet_queues,
-		EndpointDriver **endpoint_drivers, RouterDriver **router_drivers,
-		RouterType r_type, void *r_args, EndpointType e_type, void *e_args)
-{
-	uint32_t pq, i;
-	struct fp_ring *q_epg_ingress[EMU_MAX_ENDPOINT_GROUPS];
-	struct fp_ring *q_router_ingress[EMU_MAX_ROUTERS];
-	EndpointGroup *epg;
-	Router *rtr;
-
-	printf("THREE RACK topology with %d routers and %d endpoints\n",
-			num_routers(m_topo_config), num_endpoints(m_topo_config));
-
-	/* initialize rings for routers and endpoints */
-	pq = 0;
-	for (i = 0; i < num_endpoint_groups(m_topo_config); i++)
-		q_epg_ingress[i] = packet_queues[pq++];
-	for (i = 0; i < num_routers(m_topo_config); i++)
-		q_router_ingress[i] = packet_queues[pq++];
-
-	/* initialize all the endpoints */
-	for (i = 0; i < num_endpoint_groups(m_topo_config); i++) {
-		epg = EndpointGroupFactory::NewEndpointGroup(e_type,
-				i * endpoints_per_rack(m_topo_config), e_args, m_topo_config);
-		assert(epg != NULL);
-		endpoint_drivers[i] =
-				new EndpointDriver(m_comm_state.q_epg_new_pkts[i],
-						q_router_ingress[i], q_epg_ingress[i],
-						m_comm_state.q_resets[i], epg, m_packet_mempool,
-						endpoints_per_rack(m_topo_config));
-	}
-
-	/* initialize the ToRs. all three have 32 ports facing down and 32 ports
-	 * facing up to the core. */
-	uint64_t rtr_masks[EMU_MAX_OUTPUTS_PER_RTR];
-	struct fp_ring *q_router_egress[EMU_MAX_OUTPUTS_PER_RTR];
-	set_tor_port_masks(&rtr_masks[0]);
-	q_router_egress[1] = q_router_ingress[3];
-	for (i = 0; i < num_tors(m_topo_config); i++) {
-		q_router_egress[0] = q_epg_ingress[i];
-
-		rtr = RouterFactory::NewRouter(r_type, r_args, TOR_ROUTER, i,
-				m_topo_config);
+	/* initialize the Core */
+	if (num_core_routers(m_topo_config) > 0) {
+		set_core_port_masks(&rtr_masks[0]);
+		rtr = RouterFactory::NewRouter(r_type, r_args, CORE_ROUTER,
+				num_tors(m_topo_config), m_topo_config);
 		assert(rtr != NULL);
-		router_drivers[i] = new RouterDriver(rtr, q_router_ingress[i],
-				&q_router_egress[0], &rtr_masks[0], 2, m_packet_mempool,
+		router_drivers[rtr_index] = new RouterDriver(rtr,
+				q_router_ingress[rtr_index], &q_router_ingress[0],
+				&rtr_masks[0], core_neighbors(m_topo_config), m_packet_mempool,
 				endpoints_per_rack(m_topo_config));
 	}
-
-	/* initialize the Core with 16 ports per ToR. */
-	set_core_port_masks(&rtr_masks[0]);
-	q_router_egress[0] = q_router_ingress[0];
-	q_router_egress[1] = q_router_ingress[1];
-	q_router_egress[2] = q_router_ingress[2];
-	rtr = RouterFactory::NewRouter(r_type, r_args, CORE_ROUTER,
-			num_tors(m_topo_config), m_topo_config);
-	assert(rtr != NULL);
-	router_drivers[3] = new RouterDriver(rtr, q_router_ingress[3],
-			&q_router_egress[0], &rtr_masks[0], 3, m_packet_mempool,
-			endpoints_per_rack(m_topo_config));
 }
 
 /* Populate rtr_masks with a mask for each set of ports that faces a different

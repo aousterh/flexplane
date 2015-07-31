@@ -9,6 +9,7 @@
 #define EMU_TOPOLOGY_H_
 
 #include <inttypes.h>
+#include <stdexcept>
 
 /**
  * Configuration of emulated topology.
@@ -83,6 +84,27 @@ static inline uint16_t core_router_ports(struct emu_topo_config *topo_config) {
 		return 16 * 3;
 	else
 		return 0;
+}
+
+/* The number of neighbors for each ToR. */
+static inline uint16_t tor_neighbors(struct emu_topo_config *topo_config) {
+	if (num_core_routers(topo_config) > 1)
+		throw std::runtime_error("this number of cores is not yet supported");
+
+	if (topo_config->num_racks == 1)
+		return 1; /* just the endpoint group */
+	else
+		return 2; /* endpoint group and core router */
+}
+
+/* The number of neighbors for each core. */
+static inline uint16_t core_neighbors(struct emu_topo_config *topo_config) {
+	if (num_core_routers(topo_config) > 1)
+		throw std::runtime_error("this number of cores is not yet supported");
+	else if (num_core_routers(topo_config) == 0)
+		throw std::runtime_error("no core routers in this topology");
+
+	return num_tors(topo_config);
 }
 
 /* Endpoint groups per comm core. */

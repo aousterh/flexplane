@@ -11,6 +11,7 @@
 #include "admissible_log.h"
 #include "config.h"
 #include "endpoint.h"
+#include "emu_topology.h"
 #include "packet.h"
 #include "packet_impl.h"
 #include "router.h"

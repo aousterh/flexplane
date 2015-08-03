@@ -58,19 +58,17 @@ void queue_bank_log_mark(struct port_drop_stats *st, uint32_t port) {
 }
 
 /**
- * Print the current contents of the queue bank log to a specific file.
+ * Print the current contents of the queue bank stats to a specific file.
  */
 static inline
-void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
-		struct port_drop_stats *pdst, u64 time_ns)
+void print_queue_bank_stats_to_file(FILE *fp, struct queue_bank_stats *st,
+		u64 time_ns)
 {
 	uint32_t port;
 
 	/* Take snapshot so we can print without values changing underneath us */
 	struct queue_bank_stats lst;
-	struct port_drop_stats lpdst;
 	memcpy(&lst, st, sizeof(lst));
-	memcpy(&lpdst, pdst, sizeof(lst));
 
 	fprintf(fp, "%llu,enqueues", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
@@ -84,7 +82,23 @@ void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
 		fprintf(fp, ",%lld", lst.port_enqueues[port] - lst.port_dequeues[port]);
 	}
-	fprintf(fp, "\n%llu,drops", time_ns);
+	fprintf(fp, "\n");
+}
+
+/**
+ * Print the current contents of the port drop stats to a specific file.
+ */
+static inline
+void print_port_drop_stats_to_file(FILE *fp, struct port_drop_stats *pdst,
+		u64 time_ns)
+{
+	uint32_t port;
+
+	/* Take snapshot so we can print without values changing underneath us */
+	struct port_drop_stats lpdst;
+	memcpy(&lpdst, pdst, sizeof(lpdst));
+
+	fprintf(fp, "%llu,drops", time_ns);
 	for (port = 0; port < QUEUE_BANK_MAX_PORTS; port++) {
 		fprintf(fp, ",%llu", lpdst.port_drops[port]);
 	}
@@ -93,16 +107,6 @@ void print_queue_bank_log_to_file(FILE *fp, struct queue_bank_stats *st,
 		fprintf(fp, ",%llu", lpdst.port_marks[port]);
 	}
 	fprintf(fp, "\n");
-}
-
-/**
- * Print the current contents of the queue bank log to standard out.
- */
-static inline
-void print_queue_bank_log(struct queue_bank_stats *st,
-		struct port_drop_stats *pdst, uint64_t time_ns)
-{
-  print_queue_bank_log_to_file(stdout, st, pdst, time_ns);
 }
 
 #endif /* QUEUE_BANK_LOG_H_ */

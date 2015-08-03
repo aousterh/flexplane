@@ -121,10 +121,6 @@ public:
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
     		uint64_t *port_masks, uint64_t cur_time);
 
-	struct port_drop_stats *get_port_drop_stats() {
-		return m_qm->get_port_drop_stats();
-	}
-
 private:
     RT *m_rt;
 	CLA *m_cla;

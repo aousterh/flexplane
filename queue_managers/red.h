@@ -47,7 +47,6 @@ public:
     		uint32_t queue, uint64_t cur_time);
     uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port,
     		uint32_t queue);
-	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
     /** the QueueBank where packets are stored */
@@ -75,10 +74,6 @@ inline void REDQueueManager::assign_to_core(Dropper *dropper,
 {
 	m_dropper = dropper;
 	m_stat = stat;
-}
-
-inline struct port_drop_stats *REDQueueManager::get_port_drop_stats() {
-	return m_dropper->get_port_drop_stats();
 }
 
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>

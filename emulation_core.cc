@@ -8,7 +8,6 @@
 #include "emulation_core.h"
 #include "drivers/EndpointDriver.h"
 #include "drivers/RouterDriver.h"
-#include "output.h"
 
 EmulationCore::EmulationCore(EndpointDriver **epg_drivers,
 		RouterDriver **router_drivers, uint16_t n_epgs, uint16_t n_rtrs,
@@ -17,13 +16,12 @@ EmulationCore::EmulationCore(EndpointDriver **epg_drivers,
 		struct fp_mempool *packet_mempool)
 	: m_core_index(core_index)
 {
-	Dropper *dropper;
 	uint32_t i;
 
 	/* initialize the output and dropper for this core */
 	m_out = new EmulationOutput(q_admitted_out, admitted_traffic_mempool,
 			packet_mempool, &m_stat);
-	dropper = new Dropper(*m_out, &m_stat);
+	m_dropper = new Dropper(*m_out, &m_stat);
 
 	m_n_epgs = n_epgs;
 	m_n_rtrs = n_rtrs;
@@ -37,7 +35,7 @@ EmulationCore::EmulationCore(EndpointDriver **epg_drivers,
 	m_router_drivers.reserve(m_n_rtrs);
 	for (i = 0; i < n_rtrs; i++) {
 		m_router_drivers.push_back(router_drivers[i]);
-		m_router_drivers[i]->assign_to_core(dropper, &m_stat, core_index);
+		m_router_drivers[i]->assign_to_core(m_dropper, &m_stat, core_index);
 	}
 
 	/* initialize log to zeroes */

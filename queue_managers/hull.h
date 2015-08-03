@@ -34,7 +34,6 @@ public:
     inline void assign_to_core(Dropper *dropper,
                                struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue, uint64_t time);
-	inline struct port_drop_stats *get_port_drop_stats();
 
 private:
     /** the QueueBank where packets are stored */
@@ -54,10 +53,6 @@ inline void HULLQueueManager::assign_to_core(Dropper *dropper,
 {
 	m_dropper = dropper;
 	m_stat = stat;
-}
-
-inline struct port_drop_stats *HULLQueueManager::get_port_drop_stats() {
-	return m_dropper->get_port_drop_stats();
 }
 
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, HULLQueueManager, SingleQueueScheduler>

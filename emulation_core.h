@@ -10,6 +10,7 @@
 
 #include "admissible_log.h"
 #include "config.h"
+#include "output.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 #include <inttypes.h>
@@ -43,6 +44,9 @@ public:
 	inline struct emu_admission_core_statistics *stats() {
 		return &m_stat;
 	}
+	inline struct port_drop_stats *get_port_drop_stats() {
+		return m_dropper->get_port_drop_stats();
+	}
 private:
 	EmulationOutput	*m_out;
 	std::vector<EndpointDriver *> m_endpoint_drivers;
@@ -51,6 +55,7 @@ private:
 	uint16_t		m_n_rtrs;
 	struct emu_admission_core_statistics m_stat;
 	uint16_t		m_core_index;
+	Dropper*		m_dropper;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 
 #endif /* EMULATION_CORE_H_ */

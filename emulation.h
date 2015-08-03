@@ -21,6 +21,7 @@
 #include "../protocol/topology.h"
 #include <assert.h>
 #include <inttypes.h>
+#include <vector>
 
 #define ADMITTED_MEMPOOL_SIZE	128
 #define ADMITTED_Q_LOG_SIZE		4
@@ -108,8 +109,8 @@ public:
 	struct emu_admission_statistics			m_stat;
 	struct emu_admission_core_statistics	*m_core_stats[ALGO_N_CORES];
 	EmulationCore							*m_cores[ALGO_N_CORES];
-	struct queue_bank_stats					*m_queue_bank_stats[EMU_MAX_ROUTERS];
-	struct port_drop_stats					*m_port_drop_stats[EMU_MAX_ROUTERS];
+	std::vector<struct queue_bank_stats*>	m_queue_bank_stats;
+	std::vector<struct port_drop_stats*>	m_port_drop_stats;
 
 private:
 	struct fp_mempool						*m_packet_mempool;

@@ -65,11 +65,14 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	/* assign endpoints and routers to cores */
 	assign_components_to_cores(&epgs[0], &rtrs[0], &packet_queues[pq]);
 
-	/* get queue bank stat pointers - must be done after components are
-	 * assigned to cores */
+	/* get queue bank stat pointers from routers */
 	for (i = 0; i < num_routers(m_topo_config); i++) {
-		m_queue_bank_stats[i] = rtrs[i]->get_queue_bank_stats();
-		m_port_drop_stats[i] = rtrs[i]->get_port_drop_stats();
+		m_queue_bank_stats.push_back(rtrs[i]->get_queue_bank_stats());
+	}
+
+	/* get port drop stat pointers from cores */
+	for (i = 0; i < ALGO_N_CORES; i++) {
+		m_port_drop_stats.push_back(m_cores[i]->get_port_drop_stats());
 	}
 }
 

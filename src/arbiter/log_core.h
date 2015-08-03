@@ -22,8 +22,8 @@ public:
 	/* instruct log core to log these objects */
 	void add_comm_lcore(uint8_t lcore);
 	void add_admission_lcore(uint8_t lcore);
-	void add_queueing_stats(struct queue_bank_stats* queue_stats,
-			struct port_drop_stats *port_stats);
+	void add_queueing_stats(struct queue_bank_stats* queue_stats);
+	void add_drop_stats(struct port_drop_stats *port_stats);
 
 	/**
 	 * Runs on the current lcore

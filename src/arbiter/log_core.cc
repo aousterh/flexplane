@@ -315,10 +315,13 @@ void LogCore::add_admission_lcore(uint8_t lcore)
 	m_admission_lcores.push_back(lcore);
 }
 
-void LogCore::add_queueing_stats(struct queue_bank_stats* queue_stats,
-		struct port_drop_stats *port_stats)
+void LogCore::add_queueing_stats(struct queue_bank_stats* queue_stats)
 {
 	m_queue_stats.push_back(queue_stats);
+}
+
+void LogCore::add_drop_stats(struct port_drop_stats *port_stats)
+{
 	m_port_stats.push_back(port_stats);
 }
 
@@ -376,8 +379,13 @@ int LogCore::exec()
 
 			for (i = 0; i < m_queue_stats.size(); i++) {
 				fprintf(fp_queues, "router number %d\n", i);
-				print_queue_bank_log_to_file(fp_queues, m_queue_stats[i],
-						m_port_stats[i], time);
+				print_queue_bank_stats_to_file(fp_queues, m_queue_stats[i],
+						time);
+			}
+			for (i = 0; i < m_port_stats.size(); i++) {
+				fprintf(fp_queues, "core number %d\n", i);
+				print_port_drop_stats_to_file(fp_queues, m_port_stats[i],
+						time);
 			}
 			q_next_ticks += m_q_log_gap_ticks;
 #else

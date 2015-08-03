@@ -12,7 +12,7 @@
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
 #include "queue_managers/dctcp.h"
-#include "queue_managers/hull.h"
+#include "schedulers/hull_sched.h"
 #include "../graph-algo/generate_requests.h"
 
 EmulationContainer *create_container(enum RouterType rtype,

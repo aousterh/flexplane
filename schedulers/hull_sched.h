@@ -18,7 +18,15 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/dctcp.h"
-#include "queue_managers/hull.h"
+
+#define HULL_QUEUE_CAPACITY	DCTCP_QUEUE_CAPACITY
+#define HULL_MTU_SIZE      1500
+
+struct hull_args {
+    uint16_t q_capacity;
+    uint32_t mark_threshold;
+    float    GAMMA;
+};
 
 class HULLScheduler : public SingleQueueScheduler {
 public:

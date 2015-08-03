@@ -24,7 +24,6 @@
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"
 #include "../emulation/queue_managers/red.h"
-#include "../emulation/queue_managers/hull.h"
 #include "../emulation/packet.h"
 #include "../emulation/router.h"
 #include "../emulation/util/make_ring.h"

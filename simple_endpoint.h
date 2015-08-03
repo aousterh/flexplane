@@ -54,8 +54,7 @@ class SimpleEndpointGroup : public SimpleEndpointGroupBase {
 public:
 	SimpleEndpointGroup(uint16_t start_id, uint16_t q_capacity,
 			struct emu_topo_config *topo_config);
-	virtual void assign_to_core(EmulationOutput *out,
-			struct emu_admission_core_statistics *stat);
+	virtual void assign_to_core(EmulationOutput *out);
 
 	virtual void reset(uint16_t endpoint_id);
 private:
@@ -84,8 +83,7 @@ class RateLimitingEndpointGroup : public RateLimitingEndpointGroupBase {
 public:
 	RateLimitingEndpointGroup(uint16_t start_id, uint16_t q_capacity,
 			uint16_t t_btwn_pkts, struct emu_topo_config *topo_config);
-	virtual void assign_to_core(EmulationOutput *out,
-			struct emu_admission_core_statistics *stat);
+	virtual void assign_to_core(EmulationOutput *out);
 
 	virtual void reset(uint16_t endpoint_id);
 private:

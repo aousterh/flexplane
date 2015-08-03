@@ -29,12 +29,12 @@ HULLScheduler::HULLScheduler(PacketQueueBank *bank, uint32_t n_ports,
 }
 
 struct emu_packet *HULLScheduler::schedule(uint32_t output_port,
-		uint64_t cur_time)
+		uint64_t cur_time, Dropper *dropper)
 {
 	struct emu_packet *pkt;
 
 	/* call parent to dequeue packet from single queue */
-	pkt = SingleQueueScheduler::schedule(output_port, cur_time);
+	pkt = SingleQueueScheduler::schedule(output_port, cur_time, dropper);
 
     /* drain phantom length for this port */
 	m_phantom_len[output_port] -=  m_hull_params.GAMMA * HULL_MTU_SIZE *
@@ -49,7 +49,7 @@ struct emu_packet *HULLScheduler::schedule(uint32_t output_port,
 
     if (m_phantom_len[output_port] > m_hull_params.mark_threshold) {
     	/* Set ECN mark on packet, then enqueue */
-        m_dropper->mark_ecn(pkt, output_port);
+        dropper->mark_ecn(pkt, output_port);
     }
 
     return pkt;
@@ -71,12 +71,6 @@ HULLSchedRouter::HULLSchedRouter(struct hull_args *hull_params,
 {}
 
 HULLSchedRouter::~HULLSchedRouter() {}
-
-void HULLSchedRouter::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-    m_qm.assign_to_core(dropper, stat);
-    m_sch.assign_to_core(dropper);
-}
 
 struct queue_bank_stats *HULLSchedRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();

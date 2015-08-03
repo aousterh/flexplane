@@ -25,14 +25,10 @@ public:
     HULLScheduler(PacketQueueBank *bank, uint32_t n_ports,
     		struct hull_args *hull_params);
 
-	struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time);
-
-	inline void assign_to_core(Dropper *dropper) { m_dropper = dropper; };
+	struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time,
+			Dropper *dropper);
 
 private:
-    /** the means to mark packets */
-    Dropper *m_dropper;
-
     struct hull_args m_hull_params;
 
     /* state for each port */
@@ -51,8 +47,6 @@ class HULLSchedRouter : public HULLSchedRouterBase {
 public:
     HULLSchedRouter(struct hull_args *hull_params, uint32_t rack_index,
     		struct emu_topo_config *topo_config);
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~HULLSchedRouter();
 

@@ -29,7 +29,8 @@ EmulationCore::EmulationCore(EndpointDriver **epg_drivers,
 	m_endpoint_drivers.reserve(m_n_epgs);
 	for (i = 0; i < n_epgs; i++) {
 		m_endpoint_drivers.push_back(epg_drivers[i]);
-		m_endpoint_drivers[i]->assign_to_core(m_out, &m_stat, core_index);
+		m_endpoint_drivers[i]->assign_to_core(m_out, m_dropper, &m_stat,
+				core_index);
 	}
 
 	m_router_drivers.reserve(m_n_rtrs);

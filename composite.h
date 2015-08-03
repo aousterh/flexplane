@@ -20,6 +20,8 @@
 #define THROW 	throw std::runtime_error("not implemented")
 #define COMP_PREFETCH_OFFSET	3
 
+class Dropper;
+
 /**
  * Routing tables choose the outgoing port for a given packet
  */
@@ -57,15 +59,11 @@ public:
 	 * @param pkt: packet to enqueue
 	 * @param port: port to enqueue packet
 	 * @param queue: index of per-port queue where packet should be enqueued
+	 * @param cur_time: current logical timeslot
+	 * @param dropper: the means to drop/mark packets
 	 */
 	void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
-			uint64_t cur_time) {THROW;}
-
-	/**
-	 * Prepare this queue manager to run on a specific core.
-	 */
-	void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat) {THROW;}
+			uint64_t cur_time, Dropper *dropper) {THROW;}
 
 	/**
 	 * Return a pointer to the port drop statistics.
@@ -81,8 +79,8 @@ public:
 	/**
 	 * @return the packet to transmit, or NULL if no packets should be transmitted
 	 */
-	struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time) {
-		THROW;}
+	struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time,
+			Dropper *dropper) {THROW;}
 
 	/**
 	 * @return a pointer to a bit mask with 1 for ports with packets, 0 o/w.
@@ -113,13 +111,15 @@ public:
     CompositeRouter(RT *rt, CLA *cla, QM *qm, SCH *sch, uint32_t n_ports);
     virtual ~CompositeRouter();
 
-    virtual void push(struct emu_packet *packet, uint64_t cur_time);
-    virtual struct emu_packet *pull(uint16_t port, uint64_t cur_time);
+    virtual void push(struct emu_packet *packet, uint64_t cur_time,
+    		Dropper *dropper);
+    virtual struct emu_packet *pull(uint16_t port, uint64_t cur_time,
+    		Dropper *dropper);
 
     virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts,
-    		uint64_t cur_time);
+    		uint64_t cur_time, Dropper *dropper);
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
-    		uint64_t *port_masks, uint64_t cur_time);
+    		uint64_t *port_masks, uint64_t cur_time, Dropper *dropper);
 
 private:
     RT *m_rt;
@@ -141,10 +141,10 @@ public:
 	virtual ~CompositeEndpointGroup();
 
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts,
-			uint64_t cur_time);
+			uint64_t cur_time, Dropper *dropper);
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts);
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
-			uint64_t cur_time);
+			uint64_t cur_time, Dropper *dropper);
 
 private:
 	CLA *m_cla;
@@ -160,7 +160,7 @@ template < class SCH >
 inline  __attribute__((always_inline))
 uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 		struct emu_packet **pkts, uint32_t n_pkts, uint64_t *port_masks,
-		uint64_t cur_time)
+		uint64_t cur_time, Dropper *dropper)
 {
 	uint64_t *non_empty_port_mask = sch->non_empty_port_mask();
 	uint32_t res = 0;
@@ -179,7 +179,7 @@ uint32_t composite_pull_batch(SCH *sch, uint32_t n_elems,
 			mask &= (mask - 1);
 			port += 64 * i;
 
-			pkts[res] = sch->schedule(port, cur_time);
+			pkts[res] = sch->schedule(port, cur_time, dropper);
 			if (pkts[res] != NULL)
 				res++;
 		}
@@ -212,28 +212,30 @@ CompositeRouter<RT,CLA,QM,SCH>::~CompositeRouter() {}
 template <class RT, class CLA, class QM>
 inline  __attribute__((always_inline))
 void composite_push(RT *rt, CLA *cla, QM *qm, struct emu_packet *packet,
-		uint64_t cur_time)
+		uint64_t cur_time, Dropper *dropper)
 {
 	uint32_t port = rt->route(packet);
 	uint32_t queue = cla->classify(packet, port);
-	qm->enqueue(packet, port, queue, cur_time);
+	qm->enqueue(packet, port, queue, cur_time, dropper);
 }
 
 template < class RT, class CLA, class QM, class SCH >
 void CompositeRouter<RT,CLA,QM,SCH>::push(struct emu_packet *packet,
-		uint64_t cur_time)
-	{ composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, packet, cur_time); }
+		uint64_t cur_time, Dropper *dropper)
+{
+	composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, packet, cur_time, dropper);
+}
 
 template < class RT, class CLA, class QM, class SCH >
 struct emu_packet *CompositeRouter<RT,CLA,QM,SCH>::pull(uint16_t port,
-		uint64_t cur_time)
+		uint64_t cur_time, Dropper *dropper)
 {
-	return m_sch->schedule(port, cur_time);
+	return m_sch->schedule(port, cur_time, dropper);
 }
 
 template < class RT, class CLA, class QM, class SCH >
 void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
-		uint32_t n_pkts, uint64_t cur_time)
+		uint32_t n_pkts, uint64_t cur_time, Dropper *dropper)
 {
 	uint32_t i;
 
@@ -244,19 +246,24 @@ void CompositeRouter<RT,CLA,QM,SCH>::push_batch(struct emu_packet **pkts,
 	/* prefetch next and handle already prefetched */
 	for (i = 0; i + COMP_PREFETCH_OFFSET < n_pkts; i++) {
 		fp_prefetch0(pkts[i + COMP_PREFETCH_OFFSET]);
-		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time);
+		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time,
+				dropper);
 	}
 
 	/* handle last group of prefetched packets */
 	for (; i < n_pkts; i++)
-		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time);
+		composite_push<RT,CLA,QM>(m_rt, m_cla, m_qm, pkts[i], cur_time,
+				dropper);
 }
 
 template < class RT, class CLA, class QM, class SCH >
 uint32_t CompositeRouter<RT,CLA,QM,SCH>::pull_batch(struct emu_packet **pkts,
-		uint32_t n_pkts, uint64_t *port_masks, uint64_t cur_time)
-{ return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts, port_masks,
-		cur_time); }
+		uint32_t n_pkts, uint64_t *port_masks, uint64_t cur_time,
+		Dropper *dropper)
+{
+	return composite_pull_batch<SCH>(m_sch, m_n_ports, pkts, n_pkts,
+			port_masks, cur_time, dropper);
+}
 
 
 /***
@@ -282,7 +289,8 @@ inline CompositeEndpointGroup<CLA, QM, SCH, SINK>::~CompositeEndpointGroup() {}
 
 template<class CLA, class QM, class SCH, class SINK>
 inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::new_packets(
-		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time)
+		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time,
+		Dropper *dropper)
 {
 	uint32_t i, port, queue;
 
@@ -295,14 +303,14 @@ inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::new_packets(
 		fp_prefetch0(pkts[i + COMP_PREFETCH_OFFSET]);
 		port = pkts[i]->src - m_first_endpoint_id;
 		queue = m_cla->classify(pkts[i], port);
-		m_qm->enqueue(pkts[i], port, queue, cur_time);
+		m_qm->enqueue(pkts[i], port, queue, cur_time, dropper);
 	}
 
 	/* handle last group of prefetched packets */
 	for (; i < n_pkts; i++) {
 		port = pkts[i]->src - m_first_endpoint_id;
 		queue = m_cla->classify(pkts[i], port);
-		m_qm->enqueue(pkts[i], port, queue, cur_time);
+		m_qm->enqueue(pkts[i], port, queue, cur_time, dropper);
 	}
 }
 
@@ -329,11 +337,12 @@ inline void CompositeEndpointGroup<CLA, QM, SCH, SINK>::push_batch(
 
 template<class CLA, class QM, class SCH, class SINK>
 inline uint32_t CompositeEndpointGroup<CLA, QM, SCH, SINK>::pull_batch(
-		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time)
+		struct emu_packet** pkts, uint32_t n_pkts, uint64_t cur_time,
+		Dropper *dropper)
 {
 	uint64_t mask = 0xFFFFFFFFFFFFFFFF;
 	return composite_pull_batch<SCH>(m_sch, m_n_endpoints, pkts, n_pkts, &mask,
-			cur_time);
+			cur_time, dropper);
 }
 
 #endif /* COMPOSITE_H_ */

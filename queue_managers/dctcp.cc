@@ -16,20 +16,20 @@ DCTCPQueueManager::DCTCPQueueManager(PacketQueueBank *bank,
     /* initialize other state */
 }
 
-void DCTCPQueueManager::enqueue(struct emu_packet *pkt,
-                                uint32_t port, uint32_t queue, uint64_t cur_time)
+void DCTCPQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
+		uint32_t queue, uint64_t cur_time, Dropper *dropper)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_dctcp_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-        m_dropper->drop(pkt, port);
+        dropper->drop(pkt, port);
         return;
     }
 
     /* mark if queue occupancy is greater than K */
     if (qlen > m_dctcp_params.K_threshold) {
       /* Set ECN mark on packet, then drop into enqueue */
-        m_dropper->mark_ecn(pkt, port);
+        dropper->mark_ecn(pkt, port);
     }
 
     m_bank->enqueue(port, queue, pkt);
@@ -51,11 +51,6 @@ DCTCPRouter::DCTCPRouter(struct dctcp_args *dctcp_params, uint32_t rack_index,
 {}
 
 DCTCPRouter::~DCTCPRouter() {}
-
-void DCTCPRouter::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
 
 struct queue_bank_stats *DCTCPRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();

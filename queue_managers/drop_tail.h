@@ -32,10 +32,8 @@ struct drop_tail_args {
 class DropTailQueueManager : public QueueManager {
 public:
 	DropTailQueueManager(PacketQueueBank *bank, uint32_t queue_capacity);
-	inline void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	inline void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
-			uint64_t cur_time);
+			uint64_t cur_time, Dropper *dropper);
 
 private:
 	/** the QueueBank where packets are stored */
@@ -43,26 +41,14 @@ private:
 
 	/** the maximum capacity of each single queue */
 	uint32_t m_q_capacity;
-
-	/** the means to drop packets */
-	Dropper *m_dropper;
-
-	/** stats */
-	struct emu_admission_core_statistics *m_stat;
 };
 
-inline void DropTailQueueManager::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-	m_dropper = dropper;
-	m_stat = stat;
-}
-
 inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
-		uint32_t port, uint32_t queue, uint64_t cur_time)
+		uint32_t port, uint32_t queue, uint64_t cur_time, Dropper *dropper)
 {
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */
-		m_dropper->drop(pkt, port);
+		dropper->drop(pkt, port);
 	} else {
 		m_bank->enqueue(port, queue, pkt);
 	}
@@ -79,8 +65,6 @@ class DropTailRouter : public DropTailRouterBase {
 public:
     DropTailRouter(uint16_t q_capacity, uint32_t rack_index,
     		struct emu_topo_config *topo_config);
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~DropTailRouter();
 
@@ -103,8 +87,6 @@ class DropTailCoreRouter : public DropTailCoreRouterBase {
 public:
     DropTailCoreRouter(uint16_t q_capacity,
     		struct emu_topo_config *topo_config);
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~DropTailCoreRouter();
 
@@ -123,8 +105,6 @@ class PriorityByFlowRouter : public PriorityByFlowRouterBase {
 public:
     PriorityByFlowRouter(uint16_t q_capacity, uint32_t rack_index,
     		struct emu_topo_config *topo_config);
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~PriorityByFlowRouter();
 
@@ -143,8 +123,6 @@ class PriorityBySourceRouter : public PriorityBySourceRouterBase {
 public:
     PriorityBySourceRouter(struct prio_by_src_args *args, uint32_t rack_index,
     		struct emu_topo_config *topo_config);
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~PriorityBySourceRouter();
 
@@ -163,8 +141,6 @@ class RRRouter : public RRRouterBase {
 public:
 	RRRouter(uint16_t q_capacity, uint32_t rack_index,
 			struct emu_topo_config *topo_config);
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~RRRouter();
 

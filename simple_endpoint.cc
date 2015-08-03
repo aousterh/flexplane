@@ -19,14 +19,10 @@ SimpleEndpointGroup::SimpleEndpointGroup(uint16_t start_id,
 		  endpoints_per_epg(topo_config))
 {}
 
-void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output,
-		struct emu_admission_core_statistics *stat)
+void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output)
 {
-	Dropper *dropper = new Dropper(*emu_output, stat);
-
 	m_emu_output = emu_output;
 	m_sink.assign_to_core(emu_output);
-	m_qm.assign_to_core(dropper, stat);
 }
 
 void SimpleEndpointGroup::reset(uint16_t endpoint_id)
@@ -53,14 +49,10 @@ RateLimitingEndpointGroup::RateLimitingEndpointGroup(uint16_t start_id,
 		  endpoints_per_epg(topo_config))
 {}
 
-void RateLimitingEndpointGroup::assign_to_core(EmulationOutput *emu_output,
-		struct emu_admission_core_statistics *stat)
+void RateLimitingEndpointGroup::assign_to_core(EmulationOutput *emu_output)
 {
-	Dropper *dropper = new Dropper(*emu_output, stat);
-
 	m_emu_output = emu_output;
 	m_sink.assign_to_core(emu_output);
-	m_qm.assign_to_core(dropper, stat);
 }
 
 void RateLimitingEndpointGroup::reset(uint16_t endpoint_id)

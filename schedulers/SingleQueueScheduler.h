@@ -21,7 +21,8 @@ class SingleQueueScheduler : public Scheduler {
 public:
 	SingleQueueScheduler(PacketQueueBank *bank) : m_bank(bank) {}
 
-	inline struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time)
+	inline struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time,
+			Dropper *dropper)
 	{
 		if (unlikely(m_bank->empty(output_port, 0)))
 			throw std::runtime_error("called schedule on an empty port");

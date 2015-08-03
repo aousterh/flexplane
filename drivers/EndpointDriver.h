@@ -13,6 +13,7 @@
 
 class EndpointGroup;
 class EmulationOutput;
+class Dropper;
 struct emu_admission_statistics;
 
 class EndpointDriver {
@@ -25,7 +26,7 @@ public:
 	/**
 	 * Prepares this driver to run on a specific core.
 	 */
-	void assign_to_core(EmulationOutput *out,
+	void assign_to_core(EmulationOutput *out, Dropper *dropper,
 			struct emu_admission_core_statistics *stat, uint16_t core_index);
 
 	/**
@@ -43,16 +44,17 @@ private:
 	void pull();
 	void process_new();
 
-	struct fp_ring *m_q_new_packets;
-	struct fp_ring *m_q_to_router;
-	struct fp_ring *m_q_from_router; /* must free incoming ring from network */
-	struct fp_ring *m_q_resets;
-	EndpointGroup *m_epg;
+	struct fp_ring		*m_q_new_packets;
+	struct fp_ring		*m_q_to_router;
+	struct fp_ring		*m_q_from_router; /* must free incoming ring from network */
+	struct fp_ring		*m_q_resets;
+	EndpointGroup		*m_epg;
+	Dropper				*m_dropper;
 	struct emu_admission_core_statistics	*m_stat;
-	uint16_t m_core_index;
-	uint64_t m_cur_time;
-	struct fp_mempool *m_packet_mempool;
-	uint32_t m_burst_size;
+	uint16_t			m_core_index;
+	uint64_t			m_cur_time;
+	struct fp_mempool	*m_packet_mempool;
+	uint32_t			m_burst_size;
 };
 
 #endif /* DRIVERS_ENDPOINTDRIVER_H_ */

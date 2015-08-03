@@ -32,10 +32,11 @@ EndpointDriver::EndpointDriver(struct fp_ring* q_new_packets,
 	  m_burst_size(burst_size)
 {}
 
-void EndpointDriver::assign_to_core(EmulationOutput *out,
+void EndpointDriver::assign_to_core(EmulationOutput *out, Dropper *dropper,
 		struct emu_admission_core_statistics *stat, uint16_t core_index) {
+	m_epg->assign_to_core(out);
+	m_dropper = dropper;
 	m_stat = stat;
-	m_epg->assign_to_core(out, stat);
 	m_core_index = core_index;
 }
 
@@ -94,7 +95,7 @@ inline void EndpointDriver::pull() {
 	adm_log_emu_endpoint_driver_pull_begin(m_stat);
 
 	/* pull a batch of packets from the epg, enqueue to router */
-	n_pkts = m_epg->pull_batch(&pkts[0], m_burst_size, m_cur_time);
+	n_pkts = m_epg->pull_batch(&pkts[0], m_burst_size, m_cur_time, m_dropper);
 	assert(n_pkts <= m_burst_size);
 #ifdef DROP_ON_FAILED_ENQUEUE
 	if (n_pkts > 0 && fp_ring_enqueue_bulk(m_q_to_router,
@@ -134,7 +135,7 @@ inline void EndpointDriver::process_new()
 	/* dequeue new packets, pass to endpoint group */
 	n_pkts = fp_ring_dequeue_burst(m_q_new_packets, (void **) &pkts,
 			m_burst_size);
-	m_epg->new_packets(&pkts[0], n_pkts, m_cur_time);
+	m_epg->new_packets(&pkts[0], n_pkts, m_cur_time, m_dropper);
 	adm_log_emu_endpoint_driver_processed_new(m_stat, n_pkts);
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG

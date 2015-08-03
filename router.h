@@ -35,16 +35,15 @@ class Router {
 public:
     Router() {};
     virtual ~Router() {};
-	virtual void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat) = 0;
 	virtual struct queue_bank_stats *get_queue_bank_stats() = 0;
     virtual void push(struct emu_packet *packet,
-    		uint64_t cur_time) = 0;
-    virtual struct emu_packet *pull(uint16_t output, uint64_t cur_time) = 0;
+    		uint64_t cur_time, Dropper *dropper) = 0;
+    virtual struct emu_packet *pull(uint16_t output, uint64_t cur_time,
+    		Dropper *dropper) = 0;
     virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts,
-    		uint64_t cur_time) = 0;
+    		uint64_t cur_time, Dropper *dropper) = 0;
     virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
-    		uint64_t *port_masks, uint64_t cur_time) = 0;
+    		uint64_t *port_masks, uint64_t cur_time, Dropper *dropper) = 0;
 };
 
 /**

@@ -39,20 +39,17 @@ class REDQueueManager : public QueueManager {
 public:
     REDQueueManager(PacketQueueBank *bank, uint32_t n_queues_total,
     		struct red_args *red_params);
-	inline void assign_to_core(Dropper *dropper,
-			struct emu_admission_core_statistics *stat);
     void enqueue(struct emu_packet *pkt, uint32_t port, uint32_t queue,
-    		uint64_t cur_time);
-    uint8_t red_rules(struct emu_packet *pkt, uint32_t qlen, uint32_t port,
-    		uint32_t queue, uint64_t cur_time);
-    uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port,
-    		uint32_t queue);
+    		uint64_t cur_time, Dropper *dropper);
 
 private:
+    uint8_t red_rules(struct emu_packet *pkt, uint32_t qlen, uint32_t port,
+    		uint32_t queue, uint64_t cur_time, Dropper *dropper);
+    uint8_t mark_or_drop(struct emu_packet *pkt, bool force, uint32_t port,
+    		uint32_t queue, Dropper *dropper);
+
     /** the QueueBank where packets are stored */
     PacketQueueBank *m_bank;
-    /** the means to drop packets */
-    Dropper *m_dropper;
 
     /* min_th, max_th, and q_avg are maintained as their values * 2^wq_shift
      * so that we can maintain better precision while operating on integers.
@@ -66,15 +63,7 @@ private:
 
     /** Other state **/
     uint32_t random_state; // for random drop/mark generation
-    struct emu_admission_core_statistics *m_stat;
 };
-
-inline void REDQueueManager::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat)
-{
-	m_dropper = dropper;
-	m_stat = stat;
-}
 
 typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier, REDQueueManager, SingleQueueScheduler>
 	REDRouterBase;
@@ -87,8 +76,6 @@ class REDRouter : public REDRouterBase {
 public:
     REDRouter(struct red_args *red_params, uint32_t rack_index,
     		struct emu_topo_config *topo_config);
-    virtual void assign_to_core(Dropper *dropper,
-    			struct emu_admission_core_statistics *stat);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~REDRouter();
 

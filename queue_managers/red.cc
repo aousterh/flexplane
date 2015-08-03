@@ -37,23 +37,24 @@ REDQueueManager::REDQueueManager(PacketQueueBank *bank,
 }
 
 void REDQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
-		uint32_t queue, uint64_t cur_time) {
+		uint32_t queue, uint64_t cur_time, Dropper *dropper) {
 	uint32_t qlen = m_bank->occupancy(port, queue);
 	//    printf("RED qlen %d q_avg %d count_since_last %d\n", qlen, q_avg, count_since_last);
 	if (qlen >= m_red_params.q_capacity) {
 		/* no space to enqueue, drop this packet */
 		//        printf("REDenq: force drop qlen %d capacity%d\n", qlen, m_red_params.q_capacity);
-		mark_or_drop(pkt, RED_FORCEDROP, port, queue);
+		mark_or_drop(pkt, RED_FORCEDROP, port, queue, dropper);
 		return;
 	} else {
-		if (red_rules(pkt, qlen, port, queue, cur_time) != RED_DROPPKT) {
+		if (red_rules(pkt, qlen, port, queue, cur_time, dropper) !=
+				RED_DROPPKT) {
 			m_bank->enqueue(port, queue, pkt);
 		}
 	}
 }
 
 uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
-		uint32_t port, uint32_t queue, uint64_t cur_time) {
+		uint32_t port, uint32_t queue, uint64_t cur_time, Dropper *dropper) {
 	uint32_t q_index;
 	uint32_t qlen_shifted;
 
@@ -89,7 +90,7 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
 	bool accept = true;
 
 	if (m_q_avg[q_index] > m_red_params.max_th) {
-		accept = mark_or_drop(pkt, 0, port, queue);
+		accept = mark_or_drop(pkt, 0, port, queue, dropper);
 	} else if (m_q_avg[q_index] > m_red_params.min_th) { // in (q_min, q_max]: probabilistic drop/mark
 		p_b = m_red_params.max_p *
 				(float) (m_q_avg[q_index] - m_red_params.min_th) /
@@ -103,7 +104,7 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
 		//	printf("p_b %.6f p_a %.6f p_a*RANDRANGE_16 %d randint %d\n", p_b, p_a, (uint16_t) (p_a*RANDRANGE_16), randint);
 		// mark_or_drop with probability p_a
 		if (randint <= (uint16_t) (p_a * RANDRANGE_16)) {
-			accept = mark_or_drop(pkt, false, port, queue);
+			accept = mark_or_drop(pkt, false, port, queue, dropper);
 		}
 	}
 	m_count_since_last[q_index]++;
@@ -112,18 +113,18 @@ uint8_t REDQueueManager::red_rules(struct emu_packet *pkt, uint32_t qlen,
 }
 
 uint8_t REDQueueManager::mark_or_drop(struct emu_packet *pkt, bool force_drop,
-		uint32_t port, uint32_t queue) {
+		uint32_t port, uint32_t queue, Dropper *dropper) {
 	uint32_t q_index = m_bank->flat_index(port, queue);
 
 	m_count_since_last[q_index] = -1;
 	if (force_drop || !(m_red_params.ecn)) {
 		//        printf("RED dropping pkt\n");
-		m_dropper->drop(pkt, port);
+		dropper->drop(pkt, port);
 		return RED_DROPPKT;
 	} else {
 		/* mark the ECN bit */
 		//        printf("RED marking pkt\n");
-		m_dropper->mark_ecn(pkt, port);
+		dropper->mark_ecn(pkt, port);
 		return RED_ACCEPTMARKED;
 	}
 }
@@ -142,11 +143,6 @@ REDRouter::REDRouter(struct red_args *red_params, uint32_t rack_index,
 		m_sch(&m_bank),
 		REDRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
-
-void REDRouter::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
 
 struct queue_bank_stats *REDRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();

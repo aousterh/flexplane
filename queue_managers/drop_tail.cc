@@ -30,11 +30,6 @@ DropTailRouter::DropTailRouter(uint16_t q_capacity, uint32_t rack_index,
 
 DropTailRouter::~DropTailRouter() {}
 
-void DropTailRouter::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
-
 struct queue_bank_stats *DropTailRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
 }
@@ -52,11 +47,6 @@ DropTailCoreRouter::DropTailCoreRouter(uint16_t q_capacity,
 
 DropTailCoreRouter::~DropTailCoreRouter() {}
 
-void DropTailCoreRouter::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
-
 struct queue_bank_stats *DropTailCoreRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
 }
@@ -72,11 +62,6 @@ PriorityByFlowRouter::PriorityByFlowRouter(uint16_t q_capacity,
 	  PriorityByFlowRouterBase(&m_rt, &m_cla, &m_qm, &m_sch,
 			  tor_ports(topo_config))
 {}
-
-void PriorityByFlowRouter::assign_to_core(Dropper* dropper,
-		struct emu_admission_core_statistics* stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
 
 struct queue_bank_stats *PriorityByFlowRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
@@ -96,11 +81,6 @@ PriorityBySourceRouter::PriorityBySourceRouter(struct prio_by_src_args *args,
 			  tor_ports(topo_config))
 {}
 
-void PriorityBySourceRouter::assign_to_core(Dropper* dropper,
-		struct emu_admission_core_statistics* stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
-
 struct queue_bank_stats *PriorityBySourceRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();
 }
@@ -117,11 +97,6 @@ RRRouter::RRRouter(uint16_t q_capacity, uint32_t rack_index,
 	  m_sch(&m_bank),
 	  RRRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
-
-void RRRouter::assign_to_core(Dropper* dropper,
-		struct emu_admission_core_statistics* stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
 
 struct queue_bank_stats *RRRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();

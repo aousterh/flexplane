@@ -16,7 +16,8 @@
 class RRScheduler : public Scheduler {
 public:
 	RRScheduler(PacketQueueBank *bank);
-	inline struct emu_packet *schedule(uint32_t port, uint64_t cur_time);
+	inline struct emu_packet *schedule(uint32_t port, uint64_t cur_time,
+			Dropper *dropper);
 	inline uint64_t *non_empty_port_mask();
 private:
 	PacketQueueBank *m_bank;
@@ -32,7 +33,7 @@ inline RRScheduler::RRScheduler(PacketQueueBank* bank)
 }
 
 inline struct emu_packet* __attribute__((always_inline))
-RRScheduler::schedule(uint32_t port, uint64_t cur_time)
+RRScheduler::schedule(uint32_t port, uint64_t cur_time, Dropper *dropper)
 {
 	/* get the non empty queue mask for the port */
 	uint64_t q_mask = m_bank->non_empty_queue_mask(port);

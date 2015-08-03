@@ -41,8 +41,8 @@ RouterDriver::RouterDriver(Router *router, struct fp_ring *q_to_router,
 
 void RouterDriver::assign_to_core(Dropper *dropper,
 		struct emu_admission_core_statistics *stat, uint16_t core_index) {
+	m_dropper = dropper;
 	m_stat = stat;
-	m_router->assign_to_core(dropper, stat);
 	m_core_index = core_index;
 }
 
@@ -65,7 +65,7 @@ void RouterDriver::step() {
 	/* fetch packets to send from router to other routers */
 	for (j = 0; j < m_neighbors; j++) {
 		n_pkts = m_router->pull_batch(pkt_ptrs, m_burst_size, &m_port_masks[j],
-				m_cur_time);
+				m_cur_time, m_dropper);
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG
 		for (i = 0; i < n_pkts; i++) {
@@ -119,7 +119,7 @@ void RouterDriver::step() {
 	}
 
 	/* pass all incoming packets to the router */
-	m_router->push_batch(&pkt_ptrs[0], n_pkts, m_cur_time);
+	m_router->push_batch(&pkt_ptrs[0], n_pkts, m_cur_time, m_dropper);
 	adm_log_emu_router_driver_pushed(m_stat, n_pkts);
 
 #ifdef CONFIG_IP_FASTPASS_DEBUG

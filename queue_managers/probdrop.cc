@@ -20,19 +20,19 @@ ProbDropQueueManager::ProbDropQueueManager(PacketQueueBank *bank,
     seed_random(&random_state, time(NULL));
 }
 
-void ProbDropQueueManager::enqueue(struct emu_packet *pkt,
-							 uint32_t port, uint32_t queue, uint64_t cur_time)
+void ProbDropQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
+		uint32_t queue, uint64_t cur_time, Dropper *dropper)
 {
     uint32_t qlen = m_bank->occupancy(port, queue);
     if (qlen >= m_probdrop_params.q_capacity) {
         /* no space to enqueue, drop this packet */
-        m_dropper->drop(pkt, port);
+        dropper->drop(pkt, port);
 	return;
     }
 
     if (random_int(&random_state, RANDRANGE_16) <=  (uint16_t)(m_probdrop_params.p_drop*RANDRANGE_16)) {
         // drop this packet
-        m_dropper->drop(pkt, port);
+        dropper->drop(pkt, port);
     } else {
         m_bank->enqueue(port, queue, pkt);
     }
@@ -52,11 +52,6 @@ ProbDropRouter::ProbDropRouter(struct probdrop_args *probdrop_params,
       m_sch(&m_bank),
       ProbDropRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
-
-void ProbDropRouter::assign_to_core(Dropper *dropper,
-		struct emu_admission_core_statistics *stat) {
-	m_qm.assign_to_core(dropper, stat);
-}
 
 struct queue_bank_stats *ProbDropRouter::get_queue_bank_stats() {
 	return m_bank.get_queue_bank_stats();

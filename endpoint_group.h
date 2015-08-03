@@ -15,6 +15,8 @@
 #include <time.h> /* for seeding the random number generator */
 #include "output.h"
 
+class Dropper;
+
 /**
  * A representation of a group of endpoints (servers) with a shared router
  * @reset: reset state of an endpoint (e.g. when it loses sync with the arbiter)
@@ -26,14 +28,13 @@ class EndpointGroup {
 public:
 	EndpointGroup();
 	virtual ~EndpointGroup();
-	virtual void assign_to_core(EmulationOutput *out,
-			struct emu_admission_core_statistics *stat) = 0;
+	virtual void assign_to_core(EmulationOutput *out) = 0;
 	virtual void reset(uint16_t id) = 0;
 	virtual void new_packets(struct emu_packet **pkts, uint32_t n_pkts,
-			uint64_t cur_time) = 0;
+			uint64_t cur_time, Dropper *dropper) = 0;
 	virtual void push_batch(struct emu_packet **pkts, uint32_t n_pkts) = 0;
 	virtual uint32_t pull_batch(struct emu_packet **pkts, uint32_t n_pkts,
-			uint64_t cur_time) = 0;
+			uint64_t cur_time, Dropper *dropper) = 0;
 };
 
 /**

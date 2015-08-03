@@ -35,7 +35,7 @@ public:
 	}
 
 	inline struct emu_packet *schedule(uint32_t output_port,
-			uint64_t cur_time);
+			uint64_t cur_time, Dropper *dropper);
 
 protected:
 	/** the QueueBank where packets are stored */
@@ -49,7 +49,7 @@ protected:
 };
 
 inline struct emu_packet *RateLimitingScheduler::schedule(uint32_t output_port,
-		uint64_t cur_time)
+		uint64_t cur_time, Dropper *dropper)
 {
 	struct emu_packet *pkt;
 
@@ -57,7 +57,7 @@ inline struct emu_packet *RateLimitingScheduler::schedule(uint32_t output_port,
 		return NULL; /* can't send yet */
 
 	/* call parent to dequeue packet from single queue */
-	pkt = SingleQueueScheduler::schedule(output_port, cur_time);
+	pkt = SingleQueueScheduler::schedule(output_port, cur_time, dropper);
 	m_last_send_times[output_port] = cur_time;
 
 	return pkt;

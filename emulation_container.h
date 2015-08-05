@@ -92,6 +92,7 @@ inline void EmulationContainer::print_admitted() {
 	struct emu_admitted_traffic *admitted;
 
 	/* print the admitted traffic */
+	printf("finished traffic:\n");
 	while (fp_ring_dequeue(m_q_admitted_out, (void **) &admitted) == 0) {
 		admitted_print(admitted);
 		fp_mempool_put(m_admitted_mempool, admitted);

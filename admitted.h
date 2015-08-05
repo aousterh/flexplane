@@ -133,7 +133,6 @@ static inline
 void admitted_print(struct emu_admitted_traffic *admitted) {
 	uint16_t i;
 
-	printf("finished traffic:\n");
 	for (i = 0; i < admitted->size; i++)
 		admitted_edge_print(&admitted->edges[i]);
 }

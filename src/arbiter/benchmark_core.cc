@@ -6,6 +6,7 @@
  */
 
 #include "benchmark_core.h"
+#include "benchmark_log.h"
 
 EnqueueCore::EnqueueCore(struct fp_ring *input_ring,
 		struct fp_ring *output_ring)
@@ -17,12 +18,14 @@ void EnqueueCore::exec() {
 	uint32_t counter;
 
 	while (1) {
-		while (fp_ring_dequeue(m_input_ring, (void **) &packet) == -ENOENT) {}
+		while (fp_ring_dequeue(m_input_ring, (void **) &packet) == -ENOENT)
+			bench_log_packet_dequeue_wait(&m_stats);
 
 		/* read the packet so the core has to pull it into its cache */
 		counter += packet->flow;
 
-		while (fp_ring_enqueue(m_output_ring, packet) == -ENOBUFS) {}
+		while (fp_ring_enqueue(m_output_ring, packet) == -ENOBUFS)
+			bench_log_packet_enqueue_wait(&m_stats);
 	}
 }
 
@@ -34,14 +37,16 @@ DequeueCore::DequeueCore(struct fp_ring *input_ring,
 	  m_q_admitted_out(q_admitted_out),
 	  m_admitted_mempool(admitted_mempool)
 {
-	while (fp_mempool_get(admitted_mempool, (void **) &m_admitted) == -ENOENT) {}
+	while (fp_mempool_get(admitted_mempool, (void **) &m_admitted) == -ENOENT)
+		bench_log_mempool_get_wait(&m_stats);
 }
 
 void DequeueCore::exec() {
 	struct emu_packet *packet;
 
 	while (1) {
-		while (fp_ring_dequeue(m_input_ring, (void **) &packet) == -ENOENT) {}
+		while (fp_ring_dequeue(m_input_ring, (void **) &packet) == -ENOENT)
+			bench_log_packet_dequeue_wait(&m_stats);
 
 		/* add packet's data to admitted struct */
 		admitted_insert_admitted_edge(m_admitted, packet, NULL);
@@ -56,11 +61,13 @@ void DequeueCore::exec() {
 void DequeueCore::flush()
 {
 	/* send out the admitted traffic */
-	while (fp_ring_enqueue(m_q_admitted_out, m_admitted) != 0) {}
+	while (fp_ring_enqueue(m_q_admitted_out, m_admitted) != 0)
+		bench_log_admitted_enqueue_wait(&m_stats);
 
 	/* get a batch of new admitted traffic, init it */
 	while (fp_mempool_get(m_admitted_mempool, (void **) &m_admitted) ==
-			-ENOENT) {}
+			-ENOENT)
+		bench_log_mempool_get_wait(&m_stats);
 
 	admitted_init(m_admitted);
 }

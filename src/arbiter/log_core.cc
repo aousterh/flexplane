@@ -16,6 +16,8 @@
 #include "admission_core.h"
 #include "admission_core_common.h"
 #include "admission_log.h"
+#include "benchmark_log.h"
+#include "benchmark_log_impl.h"
 #include "../emulation/admissible_log.h"
 #include "../emulation/admissible_log_impl.h"
 #include "../emulation/queue_bank_log.h"
@@ -190,6 +192,8 @@ void print_global_algo_log() {
 	print_global_admission_log_parallel_or_pipelined();
 #elif defined(EMULATION_ALGO)
 	print_global_admission_log_emulation();
+#elif defined(BENCHMARK_ALGO)
+	print_and_save_global_benchmark_log();
 #else
 	printf("\nadmission core (UNKNOWN ALGO)");
 #endif
@@ -295,8 +299,10 @@ void print_core_log(uint16_t lcore, uint16_t adm_core_index) {
 
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	print_admission_core_log_parallel_or_pipelined(lcore, adm_core_index);
-#else
+#elif (defined(EMULATION_ALGO))
 	print_admission_core_log_emulation(lcore, adm_core_index);
+#else
+	print_and_save_benchmark_core_log(adm_core_index);
 #endif
 
 }

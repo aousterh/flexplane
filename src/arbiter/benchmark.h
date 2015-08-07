@@ -8,6 +8,7 @@
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
+#include "benchmark_log.h"
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
@@ -51,10 +52,26 @@ public:
 	 */
 	int exec_core(uint32_t core_index);
 
+	/**
+	 * Get a pointer to the stats for a specific core.
+	 */
+	struct benchmark_core_stats *get_core_stats(uint32_t core_index) {
+		return m_core_stats[core_index];
+	}
+
+	/**
+	 * Get a pointer to the global stats.
+	 */
+	struct benchmark_core_stats *get_global_stats() {
+		return &m_stats;
+	}
+
 private:
 	uint32_t						m_n_enqueue_cores;
 	struct fp_mempool				*m_packet_mempool;
 	std::vector<struct fp_ring *>	m_enqueue_rings; /* rings to enqueue cores */
+	std::vector<struct benchmark_core_stats *>	m_core_stats; /* stats of enq/deq cores */
+	struct benchmark_core_stats		m_stats; /* stats for stress test core */
 
 	std::vector<EnqueueCore *>		m_enqueue_cores;
 	DequeueCore						*m_dequeue_core;

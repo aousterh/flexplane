@@ -60,9 +60,11 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 	for (i = 0; i < n_enqueue_cores; i++) {
 		EnqueueCore *core = new EnqueueCore(m_enqueue_rings[i], dequeue_ring);
 		m_enqueue_cores.push_back(core);
+		m_core_stats.push_back(core->get_stats());
 	}
 	m_dequeue_core = new DequeueCore(dequeue_ring, m_packet_mempool,
 			q_admitted_out, admitted_traffic_mempool);
+	m_core_stats.push_back(m_dequeue_core->get_stats());
 
 	/* set global benchmark */
 	g_benchmark = this;
@@ -75,13 +77,14 @@ inline void Benchmark::add_backlog(uint16_t src, uint16_t dst, uint32_t amount)
 
 	for (i = 0; i < amount; i++) {
 		while (fp_mempool_get(m_packet_mempool, (void **) &packet) == -ENOENT)
-		{}
+			bench_log_mempool_get_wait(&m_stats);
 
 		/* fill flow with random field */
 		packet_init(packet, src, dst, rand(), 0, NULL);
 
 		while (fp_ring_enqueue(m_enqueue_rings[src], (void *) packet) ==
-				-ENOBUFS) {}
+				-ENOBUFS)
+			bench_log_packet_enqueue_wait(&m_stats);
 	}
 }
 

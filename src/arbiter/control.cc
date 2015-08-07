@@ -241,18 +241,6 @@ void launch_cores(void)
 		rte_eal_remote_launch(exec_admission_core, &admission_cmd[i], lcore_id);
 	}
 
-	/** Benchmark set-up, if we're running a benchmark */
-#ifdef BENCHMARK_ALGO
-	benchmark = new Benchmark(q_admitted, admitted_traffic_mempool, 1);
-
-	for (i = 0; i < N_BENCHMARK_CORES; i++) {
-		uint16_t lcore_id = enabled_lcore[FIRST_BENCHMARK_CORE + i];
-		bench_cmd[i].core_index = i;
-		bench_cmd[i].benchmark = benchmark;
-		benchmark->remote_launch_core(&bench_cmd[i], lcore_id);
-	}
-#endif
-
 	/*** LOG CORE ***/
 	log_core = new LogCore((uint64_t)(LOG_GAP_SECS * rte_get_timer_hz()),
 						   (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz()));
@@ -266,6 +254,23 @@ void launch_cores(void)
 		log_core->add_queueing_stats(emu_get_queueing_stats(i));
 	for (i = 0; i < ALGO_N_CORES; i++)
 		log_core->add_drop_stats(emu_get_port_stats(i));
+#endif
+
+	/** Benchmark set-up, if we're running a benchmark. Must create benchmark
+	 * before we launch the log core. */
+#ifdef BENCHMARK_ALGO
+	benchmark = new Benchmark(q_admitted, admitted_traffic_mempool, 1);
+
+	for (i = 0; i < N_BENCHMARK_CORES; i++) {
+		uint16_t lcore_id = enabled_lcore[FIRST_BENCHMARK_CORE + i];
+
+		/* add to log core */
+		log_core->add_logged_lcore(enabled_lcore[FIRST_BENCHMARK_CORE + i]);
+
+		bench_cmd[i].core_index = i;
+		bench_cmd[i].benchmark = benchmark;
+		benchmark->remote_launch_core(&bench_cmd[i], lcore_id);
+	}
 #endif
 
 	/* launch log core */

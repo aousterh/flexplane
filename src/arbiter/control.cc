@@ -260,7 +260,7 @@ void launch_cores(void)
 
 	/* add all admission cores */
 	for (i = 0; i < N_ADMISSION_CORES; i++)
-		log_core->add_admission_lcore(enabled_lcore[FIRST_ADMISSION_CORE + i]);
+		log_core->add_logged_lcore(enabled_lcore[FIRST_ADMISSION_CORE + i]);
 #ifdef EMULATION_ALGO
 	for (i = 0; i < emu_get_num_routers(); i++)
 		log_core->add_queueing_stats(emu_get_queueing_stats(i));

@@ -184,7 +184,7 @@ void save_admission_stats () {
 #endif
 }
 
-void print_global_admission_log() {
+void print_global_algo_log() {
 
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	print_global_admission_log_parallel_or_pipelined();
@@ -291,7 +291,7 @@ void save_admission_core_stats(int i) {
 #endif
 }
 
-void print_admission_core_log(uint16_t lcore, uint16_t adm_core_index) {
+void print_core_log(uint16_t lcore, uint16_t adm_core_index) {
 
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	print_admission_core_log_parallel_or_pipelined(lcore, adm_core_index);
@@ -310,9 +310,9 @@ void LogCore::add_comm_lcore(uint8_t lcore)
 	m_comm_lcores.push_back(lcore);
 }
 
-void LogCore::add_admission_lcore(uint8_t lcore)
+void LogCore::add_logged_lcore(uint8_t lcore)
 {
-	m_admission_lcores.push_back(lcore);
+	m_logged_lcores.push_back(lcore);
 }
 
 void LogCore::add_queueing_stats(struct queue_bank_stats* queue_stats)
@@ -394,10 +394,10 @@ int LogCore::exec()
 		}
 
 		print_comm_log(m_comm_lcores[0]);
-		print_global_admission_log();
+		print_global_algo_log();
 
-		for (i = 0; i < m_admission_lcores.size(); i++)
-			print_admission_core_log(m_admission_lcores[i], i);
+		for (i = 0; i < m_logged_lcores.size(); i++)
+			print_core_log(m_logged_lcores[i], i);
 		fflush(stdout);
 
 		/* save admission core stats */

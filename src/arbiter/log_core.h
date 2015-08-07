@@ -21,7 +21,7 @@ public:
 
 	/* instruct log core to log these objects */
 	void add_comm_lcore(uint8_t lcore);
-	void add_admission_lcore(uint8_t lcore);
+	void add_logged_lcore(uint8_t lcore);
 	void add_queueing_stats(struct queue_bank_stats* queue_stats);
 	void add_drop_stats(struct port_drop_stats *port_stats);
 
@@ -39,7 +39,7 @@ private:
 	uint64_t m_log_gap_ticks;
 	uint64_t m_q_log_gap_ticks;
 	std::vector<uint8_t> m_comm_lcores;
-	std::vector<uint8_t> m_admission_lcores;
+	std::vector<uint8_t> m_logged_lcores; /* lcores with logged stats */
 	std::vector<struct queue_bank_stats *> m_queue_stats;
 	std::vector<struct port_drop_stats *> m_port_stats;
 };

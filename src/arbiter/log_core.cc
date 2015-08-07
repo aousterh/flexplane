@@ -179,7 +179,7 @@ void save_admission_stats () {
 #if (defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO))
 	memcpy(&saved_admission_statistics, g_admission_stats(),
 			sizeof(saved_admission_statistics));
-#else
+#elif defined(EMULATION_ALGO)
 	emu_save_admission_stats();
 #endif
 }

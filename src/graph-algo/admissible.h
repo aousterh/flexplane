@@ -276,4 +276,83 @@ create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 
 #endif
 
+/* benchmarks */
+#ifdef BENCHMARK_ALGO
+
+#include "benchmark.h"
+#include "../emulation/admitted.h"
+#include "../emulation/packet.h"
+
+#define SMALL_BIN_SIZE				0
+#define BATCH_SIZE					1
+#define BATCH_SHIFT					0
+#define ADMITTED_PER_BATCH			4
+#define NUM_BIN_RINGS				EMU_NUM_PACKET_QS
+#define BIN_RING_SHIFT				PACKET_Q_LOG_SIZE
+#define MAX_ADMITTED_PER_TIMESLOT	(EMU_ADMITS_PER_ADMITTED)
+
+static inline
+void add_backlog(struct admissible_state *state, uint16_t src, uint16_t dst,
+		uint32_t amount, uint16_t start_id, u8 *areq_data) {
+	benchmark_add_backlog(state, src, dst, amount);
+}
+
+static inline
+void reset_sender(struct admissible_state *state, uint16_t src)
+{
+	/* do nothing */
+}
+
+static inline
+void flush_backlog(struct admissible_state *state) {
+	/* unused */
+};
+
+static inline
+void handle_spent_demands(struct admissible_state *state)
+{
+	/* unused */
+}
+
+static inline
+uint16_t get_admitted_partition(struct admitted_traffic *admitted)
+{
+	return 0; /* benchmark does not use partitions */
+}
+
+/* get the number of edges admitted */
+static inline
+uint16_t get_num_admitted(struct admitted_traffic *admitted)
+{
+	struct emu_admitted_traffic *emu_admitted;
+	emu_admitted = (struct emu_admitted_traffic *) admitted;
+	return emu_admitted->admitted;
+}
+
+/* get the total size (edges admitted and dropped) */
+static inline
+uint16_t get_size(struct admitted_traffic *admitted)
+{
+	struct emu_admitted_traffic *emu_admitted;
+	emu_admitted = (struct emu_admitted_traffic *) admitted;
+	return emu_admitted->size;
+}
+
+static inline
+struct emu_admitted_edge *get_admitted_edge(struct admitted_traffic *admitted,
+					    uint16_t i)
+{
+	struct emu_admitted_traffic *emu_admitted;
+	emu_admitted = (struct emu_admitted_traffic *) admitted;
+	return &emu_admitted->edges[i];
+}
+
+static inline
+uint32_t bin_num_bytes(uint32_t param)
+{
+	/* bin mempool used for packets instead */
+    return sizeof(struct emu_packet);
+}
+#endif
+
 #endif /* ADMISSIBLE_H_ */

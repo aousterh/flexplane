@@ -757,7 +757,7 @@ static inline
 void get_admitted_fields(struct admitted_traffic *admitted, uint16_t index,
 		uint16_t *src, uint16_t *dst, uint8_t *flags) {
 
-#if defined(EMULATION_ALGO)
+#if (defined(EMULATION_ALGO) || defined (BENCHMARK_ALGO))
 	struct emu_admitted_edge *edge;
 	edge = get_admitted_edge(admitted, index);
 	*src = edge->src;

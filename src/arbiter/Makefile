@@ -17,6 +17,8 @@ SRCS-y := main.c \
           ../graph-algo/admissible_traffic.c \
           ../graph-algo/path_selection.c \
           ../graph-algo/euler_split.c \
+          benchmark.cc \
+          benchmark_core.cc \
           emu_admission_core.cc \
           $(EMU_DIR)/queue_managers/drop_tail.cc \
           $(EMU_DIR)/queue_managers/red.cc \
@@ -53,6 +55,7 @@ CFLAGS += -march=core2
 #CFLAGS += -DPARALLEL_ALGO
 #CFLAGS += -DPIPELINED_ALGO
 CFLAGS += -DEMULATION_ALGO
+#CFLAGS += -DBENCHMARK_ALGO
 #CCFLAGS += -DEMU_NO_BATCH_CALLS
 CFLAGS += $(CMD_LINE_CFLAGS)
 

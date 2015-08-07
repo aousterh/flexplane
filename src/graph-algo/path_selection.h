@@ -22,7 +22,7 @@ extern "C" {
 #define PATH_SHIFT 14
 #endif
 
-#ifdef EMULATION_ALGO
+#if (defined(EMULATION_ALGO) || defined(BENCHMARK_ALGO))
 /* TODO: add support for path selection with emulation */
 #define NUM_PATHS 1
 #define DST_MASK 0xFFFF

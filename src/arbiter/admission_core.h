@@ -162,5 +162,42 @@ struct admission_statistics *g_admission_stats(void) {
 
 #endif
 
+#ifdef BENCHMARK_ALGO
+#include "benchmark.h"
+
+static inline
+void admission_init_global(struct rte_ring *q_admitted_out,
+		struct rte_mempool *admitted_traffic_mempool)
+{
+	/* do nothing */
+}
+
+static inline
+void admission_init_core(uint16_t lcore_id) {
+	/* do nothing */
+}
+
+static inline
+int exec_admission_core(void *void_cmd_p) {
+	/* do nothing */
+}
+
+static inline
+struct admissible_state *g_admissible_status(void) {
+	return (struct admissible_state *) benchmark_get_instance();
+}
+
+static inline
+struct admission_core_statistics *g_admission_core_stats(uint16_t i) {
+	return NULL; /* unused */
+}
+
+static inline
+struct admission_statistics *g_admission_stats(void) {
+	return NULL; /* unused */
+}
+
+#endif
+
 
 #endif /* ADMISSION_CORE_H */

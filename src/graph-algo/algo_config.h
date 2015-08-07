@@ -10,7 +10,7 @@
      (defined(EMULATION_ALGO) && defined(PIPELINED_ALGO)))
 #error "Multiple ALGOs are defined"
 #endif
-#if !(defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO) || defined(EMULATION_ALGO))
+#if !(defined(PARALLEL_ALGO) || defined(PIPELINED_ALGO) || defined(EMULATION_ALGO) || defined(BENCHMARK_ALGO))
 #error "No ALGO is defined"
 #endif
 
@@ -29,6 +29,15 @@
 
 #ifndef ALGO_N_CORES
 #define ALGO_N_CORES				4
+#endif
+
+#endif
+
+#ifdef BENCHMARK_ALGO
+/* benchmark algo, unused, but needs to compile */
+
+#ifndef ALGO_N_CORES
+#define ALGO_N_CORES				1
 #endif
 
 #endif

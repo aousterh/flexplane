@@ -8,6 +8,7 @@
 #include "comm_core.h"
 #include "admission_core.h"
 #include "admission_core_common.h"
+#include "benchmark_core.h"
 #include "path_sel_core.h"
 #include "log_core.h"
 #include "stress_test_core.h"
@@ -21,10 +22,12 @@ int control_do_queue_allocation(void)
 		return 0;
 	}
 
-	if(n_enabled_lcore < N_ADMISSION_CORES + N_COMM_CORES + N_LOG_CORES + N_PATH_SEL_CORES) {
-		rte_exit(EXIT_FAILURE, "Need #alloc + #comm + #log + #path_sel cores (need %d, got %d)\n",
-				N_ADMISSION_CORES + N_COMM_CORES + N_LOG_CORES + N_PATH_SEL_CORES,
-				n_enabled_lcore);
+	if(n_enabled_lcore < N_ADMISSION_CORES + N_COMM_CORES + N_LOG_CORES +
+			N_PATH_SEL_CORES + N_BENCHMARK_CORES) {
+		rte_exit(EXIT_FAILURE,
+				"Need #alloc + #comm + #log + #path_sel cores (need %d, got %d)\n",
+				N_ADMISSION_CORES + N_COMM_CORES + N_LOG_CORES +
+				N_PATH_SEL_CORES + N_BENCHMARK_CORES, n_enabled_lcore);
 	}
 
 	if(n_enabled_port < N_CONTROLLER_PORTS) {
@@ -117,7 +120,7 @@ struct rte_mempool *allocate_admitted_traffic_mempool(int socketid)
 	struct rte_mempool *pool;
 	int elem_size;
 
-#ifdef EMULATION_ALGO
+#if (defined(EMULATION_ALGO) || defined(BENCHMARK_ALGO))
 	elem_size = sizeof(struct emu_admitted_traffic);
 #else
 	elem_size = sizeof(struct admitted_traffic);
@@ -156,12 +159,14 @@ void launch_cores(void)
 	int i; (void)i;
 	struct admission_core_cmd admission_cmd[N_ADMISSION_CORES];
 	struct path_sel_core_cmd path_sel_cmd;
+	struct benchmark_core_cmd bench_cmd[N_BENCHMARK_CORES];
 	uint64_t first_time_slot;
 	uint64_t now;
 	struct rte_ring *q_admitted;
 	struct rte_ring *q_path_selected;
 	struct rte_mempool *admitted_traffic_mempool;
 	LogCore *log_core;
+	Benchmark *benchmark;
 
 	benchmark_cost_of_get_time();
 
@@ -235,6 +240,18 @@ void launch_cores(void)
 		/* launch admission core */
 		rte_eal_remote_launch(exec_admission_core, &admission_cmd[i], lcore_id);
 	}
+
+	/** Benchmark set-up, if we're running a benchmark */
+#ifdef BENCHMARK_ALGO
+	benchmark = new Benchmark(q_admitted, admitted_traffic_mempool, 1);
+
+	for (i = 0; i < N_BENCHMARK_CORES; i++) {
+		uint16_t lcore_id = enabled_lcore[FIRST_BENCHMARK_CORE + i];
+		bench_cmd[i].core_index = i;
+		bench_cmd[i].benchmark = benchmark;
+		benchmark->remote_launch_core(&bench_cmd[i], lcore_id);
+	}
+#endif
 
 	/*** LOG CORE ***/
 	log_core = new LogCore((uint64_t)(LOG_GAP_SECS * rte_get_timer_hz()),

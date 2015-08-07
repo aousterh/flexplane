@@ -22,7 +22,7 @@
 
 #define STRESS_TEST_MIN_LOOP_TIME_SEC		1e-6
 #define STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC	1
-#define STRESS_TEST_BACKLOG_TOLERANCE			1.01
+#define STRESS_TEST_BACKLOG_TOLERANCE			1.1
 #define STRESS_TEST_RATE_INCREASE               1
 #define STRESS_TEST_RATE_MAINTAIN               2
 #define STRESS_TEST_RATE_DECREASE               3
@@ -132,6 +132,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			STRESS_TEST_MIN_RATE_CHECK_TIME_SEC;
 	uint32_t admitted_index = 0;
 	uint64_t total_demand, total_occupied_node_tslots = 0;
+	uint64_t prev_demand, prev_occupied_node_tslots = 0;
 	uint16_t lcore;
 	uint64_t core_ahead_prev[RTE_MAX_LCORE];
 	bool persistently_behind = false;
@@ -188,6 +189,8 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 #else
 			fell_behind = (((total_occupied_node_tslots - prev_occupied_node_tslots) *
 					STRESS_TEST_BACKLOG_TOLERANCE) < (total_demand - prev_demand));
+			prev_occupied_node_tslots = total_occupied_node_tslots;
+			prev_demand = total_demand;
 #endif
 
 			if (STRESS_TEST_IS_AUTOMATED && fell_behind) {

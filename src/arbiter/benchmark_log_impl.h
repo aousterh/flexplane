@@ -21,16 +21,20 @@ struct benchmark_core_stats bench_saved_stat;
 void print_benchmark_core_log(struct benchmark_core_stats *st,
 		struct benchmark_core_stats *sv) {
 #define D(X) (st->X - sv->X)
-	printf("\n  waits: %lu packet deq, %lu packet enq, ", D(packet_dequeue_wait),
-			D(packet_enqueue_wait));
+	printf("\n  waits: %lu packet deq, %lu packet enq, ",
+			D(packet_dequeue_wait), D(packet_enqueue_wait));
 	printf("%lu mempool get, %lu admitted enqueue", D(mempool_get_wait),
 			D(admitted_enqueue_wait));
+	printf("\n  drops: %lu on failed enqueue",
+			D(packet_drop_on_failed_enqueue));
 #undef D
 
 	printf("\n  waits: %lu packet deq, %lu packet enq, ",
 			st->packet_dequeue_wait, st->packet_enqueue_wait);
 	printf("%lu mempool get, %lu admitted enqueue", st->mempool_get_wait,
 			st->admitted_enqueue_wait);
+	printf("\n  drops: %lu on failed enqueue",
+			st->packet_drop_on_failed_enqueue);
 	printf("\n");
 }
 

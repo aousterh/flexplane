@@ -85,9 +85,12 @@ inline void Benchmark::add_backlog(uint16_t src, uint16_t dst, uint32_t amount)
 		/* fill flow with random field */
 		packet_init(packet, src, dst, rand(), 0, NULL);
 
-		while (fp_ring_enqueue(m_enqueue_rings[src], (void *) packet) ==
-				-ENOBUFS)
-			bench_log_packet_enqueue_wait(&m_stats);
+		if (fp_ring_enqueue(m_enqueue_rings[src], (void *) packet) ==
+				-ENOBUFS) {
+			/* drop the packet instead of retrying, to avoid deadlock */
+			free_packet(packet, m_packet_mempool);
+			bench_log_packet_drop_on_failed_enqueue(&m_stats);
+		}
 	}
 }
 

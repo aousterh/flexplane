@@ -20,6 +20,7 @@ struct benchmark_core_stats {
 	uint64_t packet_enqueue_wait;
 	uint64_t mempool_get_wait;
 	uint64_t admitted_enqueue_wait;
+	uint64_t packet_drop_on_failed_enqueue;
 };
 
 static inline __attribute__((always_inline))
@@ -44,6 +45,12 @@ static inline __attribute__((always_inline))
 void bench_log_admitted_enqueue_wait(struct benchmark_core_stats *st) {
 	if (MAINTAIN_BENCHMARK_COUNTERS)
 		st->admitted_enqueue_wait++;
+}
+
+static inline __attribute__((always_inline))
+void bench_log_packet_drop_on_failed_enqueue(struct benchmark_core_stats *st) {
+	if (MAINTAIN_BENCHMARK_COUNTERS)
+		st->packet_drop_on_failed_enqueue++;
 }
 
 #endif /* BENCHMARK_LOG_H */

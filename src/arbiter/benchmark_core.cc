@@ -10,8 +10,11 @@
 
 EnqueueCore::EnqueueCore(struct fp_ring *input_ring,
 		struct fp_ring *output_ring)
-	: m_input_ring(input_ring), m_output_ring(output_ring)
-{}
+	: m_input_ring(input_ring), m_output_ring(output_ring) {
+
+	/* initialize log to zeroes */
+	memset(&m_stats, 0, sizeof(struct benchmark_core_stats));
+}
 
 void EnqueueCore::exec() {
 	struct emu_packet *packet;
@@ -37,6 +40,10 @@ DequeueCore::DequeueCore(struct fp_ring *input_ring,
 	  m_q_admitted_out(q_admitted_out),
 	  m_admitted_mempool(admitted_mempool)
 {
+	/* initialize log to zeroes */
+	memset(&m_stats, 0, sizeof(struct benchmark_core_stats));
+
+	/* get the first admitted traffic */
 	while (fp_mempool_get(admitted_mempool, (void **) &m_admitted) == -ENOENT)
 		bench_log_mempool_get_wait(&m_stats);
 }

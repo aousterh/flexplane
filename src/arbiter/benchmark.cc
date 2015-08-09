@@ -66,6 +66,9 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 			q_admitted_out, admitted_traffic_mempool);
 	m_core_stats.push_back(m_dequeue_core->get_stats());
 
+	/* initialize log to zeroes */
+	memset(&m_stats, 0, sizeof(struct benchmark_core_stats));
+
 	/* set global benchmark */
 	g_benchmark = this;
 }

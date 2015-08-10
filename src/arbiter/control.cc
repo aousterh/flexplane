@@ -259,7 +259,9 @@ void launch_cores(void)
 	/** Benchmark set-up, if we're running a benchmark. Must create benchmark
 	 * before we launch the log core. */
 #ifdef BENCHMARK_ALGO
-	benchmark = new Benchmark(q_admitted, admitted_traffic_mempool, 1);
+	benchmark = new Benchmark(q_admitted, admitted_traffic_mempool,
+			N_BENCHMARK_CORES - 1, BENCH_MODE_Q_PER_ENQ_CORE);
+//			N_BENCHMARK_CORES - 1, BENCH_MODE_Q_PER_DEQ_CORE);
 
 	for (i = 0; i < N_BENCHMARK_CORES; i++) {
 		uint16_t lcore_id = enabled_lcore[FIRST_BENCHMARK_CORE + i];

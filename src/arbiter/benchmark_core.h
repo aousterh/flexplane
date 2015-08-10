@@ -12,6 +12,7 @@
 #include "../emulation/admitted.h"
 #include "../emulation/packet.h"
 #include "../graph-algo/fp_ring.h"
+#include <vector>
 
 class Benchmark;
 
@@ -41,8 +42,8 @@ private:
 
 class DequeueCore {
 public:
-	DequeueCore(struct fp_ring *input_ring, struct fp_mempool *packet_mempool,
-			struct fp_ring *q_admitted_out,
+	DequeueCore(struct fp_ring **input_rings, uint32_t n_input_rings,
+			struct fp_mempool *packet_mempool, struct fp_ring *q_admitted_out,
 			struct fp_mempool *admitted_mempool);
 
 	/* run this enqueue core */
@@ -57,13 +58,13 @@ private:
 	/* send out m_admitted and get a new one */
 	void flush();
 
-	struct emu_admitted_traffic *m_admitted;
+	struct emu_admitted_traffic 	*m_admitted;
 
-	struct fp_ring		*m_input_ring;
-	struct fp_mempool	*m_packet_mempool;
-	struct fp_ring		*m_q_admitted_out;
-	struct fp_mempool	*m_admitted_mempool;
-	struct benchmark_core_stats	m_stats;
+	std::vector<struct fp_ring *>	m_input_rings;
+	struct fp_mempool				*m_packet_mempool;
+	struct fp_ring					*m_q_admitted_out;
+	struct fp_mempool				*m_admitted_mempool;
+	struct benchmark_core_stats		m_stats;
 };
 
 #endif /* BENCHMARK_CORE_H */

@@ -15,6 +15,9 @@
 #define	ADMITTED_TRAFFIC_MEMPOOL_SIZE		(16*1024)
 #define	ADMITTED_TRAFFIC_CACHE_SIZE			512
 
+#define BENCH_MODE_Q_PER_ENQ_CORE	0
+#define BENCH_MODE_Q_PER_DEQ_CORE	1
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -38,7 +41,7 @@ class Benchmark {
 public:
 	Benchmark(struct fp_ring *q_admitted_out,
 			struct fp_mempool *admitted_traffic_mempool,
-			uint32_t n_enqueue_cores);
+			uint32_t n_enqueue_cores, uint32_t mode);
 
 	inline void add_backlog(uint16_t src, uint16_t dst, uint32_t amount);
 

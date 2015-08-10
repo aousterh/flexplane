@@ -30,7 +30,8 @@ void benchmark_add_backlog(void *state, uint16_t src, uint16_t dst,
 }
 
 Benchmark::Benchmark(struct rte_ring *q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool, uint32_t n_enqueue_cores)
+		struct rte_mempool *admitted_traffic_mempool, uint32_t n_enqueue_cores,
+		uint32_t mode)
 	: m_n_enqueue_cores(n_enqueue_cores)
 {
 	uint32_t i;
@@ -38,13 +39,14 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 	fp_ring *ring;
 	uint32_t packet_ring_size;
 	struct fp_ring *dequeue_ring;
+	struct fp_ring *dequeue_rings[10];
 
 	/* create packet mempool */
 	m_packet_mempool = make_mempool("packet_mempool",
 			BENCH_PACKET_MEMPOOL_SIZE, EMU_ALIGN(sizeof(struct emu_packet)),
 			BENCH_PACKET_MEMPOOL_CACHE_SIZE, 0, 0);
 
-	/* initialize all packet rings */
+	/* initialize all input rings for enqueue cores */
 	packet_ring_size = (1 << BENCH_QUEUE_LOG_SIZE);
 	for (i = 0; i < n_enqueue_cores; i++) {
 		snprintf(s, sizeof(s), "enqueue_q_%d", i);
@@ -52,18 +54,44 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 				RING_F_SP_ENQ | RING_F_SC_DEQ);
 		m_enqueue_rings.push_back(ring);
 	}
-	snprintf(s, sizeof(s), "dequeue_q_%d", i);
-	dequeue_ring = make_ring(s, packet_ring_size, 0,
-			RING_F_SP_ENQ | RING_F_SC_DEQ);
 
-	/* construct all cores */
-	for (i = 0; i < n_enqueue_cores; i++) {
-		EnqueueCore *core = new EnqueueCore(m_enqueue_rings[i], dequeue_ring);
-		m_enqueue_cores.push_back(core);
-		m_core_stats.push_back(core->get_stats());
+	if (mode == BENCH_MODE_Q_PER_DEQ_CORE) {
+		/* all enqueue cores enqueue to a single multi-producer ring */
+		snprintf(s, sizeof(s), "dequeue_q_%d", i);
+		dequeue_ring = make_ring(s, packet_ring_size, 0, RING_F_SC_DEQ);
+
+		/* construct all cores */
+		for (i = 0; i < n_enqueue_cores; i++) {
+			EnqueueCore *core = new EnqueueCore(m_enqueue_rings[i],
+					dequeue_ring);
+			m_enqueue_cores.push_back(core);
+		}
+		m_dequeue_core = new DequeueCore(&dequeue_ring, 1, m_packet_mempool,
+				q_admitted_out, admitted_traffic_mempool);
+	} else if (mode == BENCH_MODE_Q_PER_ENQ_CORE) {
+		for (i = 0; i < n_enqueue_cores; i++) {
+			/* make queues smaller so the total queueing capacity to dequeue
+			 * core is constant */
+			snprintf(s, sizeof(s), "dequeue_q_%d", i);
+			dequeue_rings[i] = make_ring(s, packet_ring_size, 0,
+					RING_F_SP_ENQ | RING_F_SC_DEQ);
+		}
+
+		/* construct all cores */
+		for (i = 0; i < n_enqueue_cores; i++) {
+			EnqueueCore *core = new EnqueueCore(m_enqueue_rings[i],
+					dequeue_rings[i]);
+			m_enqueue_cores.push_back(core);
+		}
+		m_dequeue_core = new DequeueCore(&dequeue_rings[0], n_enqueue_cores,
+				m_packet_mempool, q_admitted_out, admitted_traffic_mempool);
+	} else {
+		throw std::runtime_error("unrecognized benchmark mode");
 	}
-	m_dequeue_core = new DequeueCore(dequeue_ring, m_packet_mempool,
-			q_admitted_out, admitted_traffic_mempool);
+
+	/* add links to per-core stats */
+	for (i = 0; i < n_enqueue_cores; i++)
+		m_core_stats.push_back(m_enqueue_cores[i]->get_stats());
 	m_core_stats.push_back(m_dequeue_core->get_stats());
 
 	/* initialize log to zeroes */

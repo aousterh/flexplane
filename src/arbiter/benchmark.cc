@@ -15,6 +15,7 @@
 #define BENCH_QUEUE_LOG_SIZE				16
 #define BENCH_PACKET_MEMPOOL_SIZE			(512 * 1024)
 #define	BENCH_PACKET_MEMPOOL_CACHE_SIZE		256
+#define MAX_PACKET_BURST					128
 
 Benchmark *g_benchmark;
 
@@ -115,21 +116,26 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 inline void Benchmark::add_backlog(uint16_t src, uint16_t dst, uint32_t amount)
 {
 	uint32_t i;
-	struct emu_packet *packet;
+	struct emu_packet *packets[MAX_PACKET_BURST];
 
+	assert(amount < MAX_PACKET_BURST);
+
+	while (fp_mempool_get_bulk(m_packet_mempool, (void **) &packets[0], amount)
+			== -ENOENT)
+		bench_log_mempool_get_wait(&m_stats);
+
+	/* initialize all packets */
 	for (i = 0; i < amount; i++) {
-		while (fp_mempool_get(m_packet_mempool, (void **) &packet) == -ENOENT)
-			bench_log_mempool_get_wait(&m_stats);
-
 		/* fill flow with random field */
-		packet_init(packet, src, dst, rand(), 0, NULL);
+		packet_init(packets[i], src, dst, rand(), 0, NULL);
+	}
 
-		if (fp_ring_enqueue(m_enqueue_rings[src], (void *) packet) ==
-				-ENOBUFS) {
-			/* drop the packet instead of retrying, to avoid deadlock */
-			free_packet(packet, m_packet_mempool);
-			bench_log_packet_drop_on_failed_enqueue(&m_stats);
-		}
+	/* enqueue to rings to src */
+	if (fp_ring_enqueue_bulk(m_enqueue_rings[src], (void **) &packets[0],
+			amount) == -ENOBUFS) {
+		/* drop the packets instead of retrying, to avoid deadlock */
+		free_packet_bulk(&packets[0], m_packet_mempool, amount);
+		bench_log_packet_drop_on_failed_enqueue(&m_stats);
 	}
 }
 

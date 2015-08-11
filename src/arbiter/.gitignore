@@ -2,6 +2,7 @@ build/
 allocator/
 *.pdf
 out*.txt
+bench_*.txt
 results/
 kernel-mod/
 graph-algo/

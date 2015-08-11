@@ -5,6 +5,7 @@
  *      Author: aousterh
  */
 
+#include "control.h"
 #include "benchmark_core.h"
 #include "benchmark_log.h"
 
@@ -22,22 +23,34 @@ void EnqueueCore::exec() {
 	struct emu_packet *packets[MAX_PACKET_BURST];
 	uint32_t counter = 0;
 	uint32_t i, n_pkts;
+	uint64_t tslot_now, logical_tslot;
+
+	tslot_now = (fp_get_time_ns() * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+	logical_tslot = tslot_now;
 
 	while (1) {
+		/* wait until it is time to begin the next timeslot */
+		while (tslot_now < logical_tslot) {
+			tslot_now = (fp_get_time_ns() * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+			bench_log_core_ahead(&m_stats);
+		}
+
 		n_pkts = fp_ring_dequeue_burst(m_input_ring, (void **) &packets[0],
 				MAX_PACKET_BURST);
 		if (n_pkts == 0) {
 			bench_log_packet_dequeue_wait(&m_stats);
-			continue;
+		} else {
+			/* read all the packets so the core has to pull them into its cache */
+			for (i = 0; i < n_pkts; i++)
+				counter += packets[i]->flow;
+
+			while (fp_ring_enqueue_bulk(m_output_ring, (void **) &packets[0],
+					n_pkts) == -ENOBUFS)
+				bench_log_packet_enqueue_wait(&m_stats);
 		}
 
-		/* read all the packets so the core has to pull them into its cache */
-		for (i = 0; i < n_pkts; i++)
-			counter += packets[i]->flow;
-
-		while (fp_ring_enqueue_bulk(m_output_ring, (void **) &packets[0],
-				n_pkts) == -ENOBUFS)
-			bench_log_packet_enqueue_wait(&m_stats);
+		logical_tslot++;
+		bench_log_current_tslot(&m_stats, logical_tslot);
 	}
 }
 
@@ -65,8 +78,18 @@ DequeueCore::DequeueCore(struct fp_ring **input_rings, uint32_t n_input_rings,
 void DequeueCore::exec() {
 	struct emu_packet *packets[MAX_PACKET_BURST];
 	uint32_t i, j, n_pkts;
+	uint64_t tslot_now, logical_tslot;
+
+	tslot_now = (fp_get_time_ns() * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+	logical_tslot = tslot_now;
 
 	while (1) {
+		/* wait until it is time to begin the next timeslot */
+		while (tslot_now < logical_tslot) {
+			tslot_now = (fp_get_time_ns() * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+			bench_log_core_ahead(&m_stats);
+		}
+
 		/* iterate over all input rings */
 		for (i = 0; i < m_input_rings.size(); i++) {
 			n_pkts = fp_ring_dequeue_burst(m_input_rings[i],
@@ -90,6 +113,9 @@ void DequeueCore::exec() {
 			fp_mempool_put_bulk(m_packet_mempool, (void **) &packets[0],
 					n_pkts);
 		}
+
+		logical_tslot++;
+		bench_log_current_tslot(&m_stats, logical_tslot);
 	}
 }
 

@@ -25,16 +25,16 @@ void print_benchmark_core_log(struct benchmark_core_stats *st,
 			D(packet_dequeue_wait), D(packet_enqueue_wait));
 	printf("%lu mempool get, %lu admitted enqueue", D(mempool_get_wait),
 			D(admitted_enqueue_wait));
-	printf("\n  drops: %lu on failed enqueue",
-			D(packet_drop_on_failed_enqueue));
+	printf("\n  drops: %lu on failed enqueue, ahead: %lu, current: %lu",
+			D(packet_drop_on_failed_enqueue), D(ahead), D(current_tslot));
 #undef D
 
 	printf("\n  waits: %lu packet deq, %lu packet enq, ",
 			st->packet_dequeue_wait, st->packet_enqueue_wait);
 	printf("%lu mempool get, %lu admitted enqueue", st->mempool_get_wait,
 			st->admitted_enqueue_wait);
-	printf("\n  drops: %lu on failed enqueue",
-			st->packet_drop_on_failed_enqueue);
+	printf("\n  drops: %lu on failed enqueue, ahead: %lu, current: %lu",
+			st->packet_drop_on_failed_enqueue, st->ahead, st->current_tslot);
 	printf("\n");
 }
 

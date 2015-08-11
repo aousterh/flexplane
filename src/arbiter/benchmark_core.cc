@@ -8,6 +8,8 @@
 #include "benchmark_core.h"
 #include "benchmark_log.h"
 
+#define MAX_PACKET_BURST	128
+
 EnqueueCore::EnqueueCore(struct fp_ring *input_ring,
 		struct fp_ring *output_ring)
 	: m_input_ring(input_ring), m_output_ring(output_ring) {
@@ -17,17 +19,24 @@ EnqueueCore::EnqueueCore(struct fp_ring *input_ring,
 }
 
 void EnqueueCore::exec() {
-	struct emu_packet *packet;
-	uint32_t counter;
+	struct emu_packet *packets[MAX_PACKET_BURST];
+	uint32_t counter = 0;
+	uint32_t i, n_pkts;
 
 	while (1) {
-		while (fp_ring_dequeue(m_input_ring, (void **) &packet) == -ENOENT)
+		n_pkts = fp_ring_dequeue_burst(m_input_ring, (void **) &packets[0],
+				MAX_PACKET_BURST);
+		if (n_pkts == 0) {
 			bench_log_packet_dequeue_wait(&m_stats);
+			continue;
+		}
 
-		/* read the packet so the core has to pull it into its cache */
-		counter += packet->flow;
+		/* read all the packets so the core has to pull them into its cache */
+		for (i = 0; i < n_pkts; i++)
+			counter += packets[i]->flow;
 
-		while (fp_ring_enqueue(m_output_ring, packet) == -ENOBUFS)
+		while (fp_ring_enqueue_bulk(m_output_ring, (void **) &packets[0],
+				n_pkts) == -ENOBUFS)
 			bench_log_packet_enqueue_wait(&m_stats);
 	}
 }
@@ -54,27 +63,32 @@ DequeueCore::DequeueCore(struct fp_ring **input_rings, uint32_t n_input_rings,
 }
 
 void DequeueCore::exec() {
-	struct emu_packet *packet;
-	uint32_t i;
+	struct emu_packet *packets[MAX_PACKET_BURST];
+	uint32_t i, j, n_pkts;
 
 	while (1) {
 		/* iterate over all input rings */
 		for (i = 0; i < m_input_rings.size(); i++) {
-			if (fp_ring_dequeue(m_input_rings[i], (void **) &packet) ==
-					-ENOENT) {
+			n_pkts = fp_ring_dequeue_burst(m_input_rings[i],
+					(void **) &packets[0], MAX_PACKET_BURST);
+			if (n_pkts == 0) {
 				bench_log_packet_dequeue_wait(&m_stats);
 				continue; /* nothing to dequeue from this ring right now */
 			}
 
-			/* got a packet */
+			/* got a batch of packets */
 
-			/* add packet's data to admitted struct */
-			admitted_insert_admitted_edge(m_admitted, packet, NULL);
-			if (m_admitted->size == EMU_ADMITS_PER_ADMITTED)
-				flush();
+			/* add packets' data to admitted struct */
+			for (j = 0; j < n_pkts; j++) {
+				admitted_insert_admitted_edge(m_admitted, packets[j], NULL);
 
-			/* free the packet */
-			fp_mempool_put(m_packet_mempool, packet);
+				if (m_admitted->size == EMU_ADMITS_PER_ADMITTED)
+					flush();
+			}
+
+			/* free the packets */
+			fp_mempool_put_bulk(m_packet_mempool, (void **) &packets[0],
+					n_pkts);
 		}
 	}
 }

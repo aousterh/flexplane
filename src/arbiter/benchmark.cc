@@ -41,6 +41,19 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 	struct fp_ring *dequeue_ring;
 	struct fp_ring *dequeue_rings[10];
 
+	switch (mode) {
+	case BENCH_MODE_Q_PER_ENQ_CORE:
+		printf("Benchmark with 1 queue for each of %d enqueue core(s).\n",
+				n_enqueue_cores);
+		break;
+	case BENCH_MODE_Q_PER_DEQ_CORE:
+		printf("Benchmark with 1 queue for dequeue core, %d enqueue core(s).\n",
+				n_enqueue_cores);
+		break;
+	default:
+		throw std::runtime_error("unrecognized benchmark mode");
+	}
+
 	/* create packet mempool */
 	m_packet_mempool = make_mempool("packet_mempool",
 			BENCH_PACKET_MEMPOOL_SIZE, EMU_ALIGN(sizeof(struct emu_packet)),
@@ -85,8 +98,6 @@ Benchmark::Benchmark(struct rte_ring *q_admitted_out,
 		}
 		m_dequeue_core = new DequeueCore(&dequeue_rings[0], n_enqueue_cores,
 				m_packet_mempool, q_admitted_out, admitted_traffic_mempool);
-	} else {
-		throw std::runtime_error("unrecognized benchmark mode");
 	}
 
 	/* add links to per-core stats */

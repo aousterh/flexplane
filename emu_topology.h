@@ -78,12 +78,16 @@ static inline uint32_t tor_uplink_mask(struct emu_topo_config *topo_config) {
 
 /* The number of ports on each Core router. */
 static inline uint16_t core_router_ports(struct emu_topo_config *topo_config) {
-	if (topo_config->num_racks == 2)
-		return num_endpoints(topo_config);
-	else if (topo_config->num_racks == 3)
-		return 16 * 3;
-	else
+	if (topo_config->num_racks == 1)
 		return 0;
+	else if (topo_config->num_racks == 2)
+		return num_endpoints(topo_config);
+	else if (topo_config->num_racks <= 4)
+		return 16 * topo_config->num_racks;
+	else if (topo_config->num_racks <= 8)
+		return 8 * topo_config->num_racks;
+	else
+		throw std::runtime_error("this number of racks is not yet supported");
 }
 
 /* The number of neighbors for each ToR. */

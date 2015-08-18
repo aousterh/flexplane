@@ -55,10 +55,14 @@ inline uint32_t CoreRoutingTable::route(struct emu_packet *pkt)
 	/* use a hash to choose between the links to the correct tor */
 	uint32_t hash =  7 * pkt->src + 9 * pkt->dst + pkt->flow;
 
+	/* this must be kept consistent with set_core_port_masks in emulation.cc
+	 * TODO: restructure so the two are always consistent */
 	if (m_n_tors == 2)
 		return (hash & m_tor_mask) + (pkt->dst & ~m_tor_mask);
-	else if (m_n_tors == 3)
+	else if (m_n_tors <= 4)
 		return (hash & 0xF) + ((pkt->dst & ~m_tor_mask) >> 1);
+	else if (m_n_tors <= 8)
+		return (hash & 0x7) + ((pkt->dst & ~m_tor_mask) >> 2);
 	else
 		throw std::runtime_error("core router does not support this many racks");
 }

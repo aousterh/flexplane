@@ -158,6 +158,8 @@ void Emulation::set_tor_port_masks(uint64_t *rtr_masks) {
 /* Populate rtr_masks with a mask for each set of ports that faces a different
  * neighbor, for a core router. */
 void Emulation::set_core_port_masks(uint64_t *rtr_masks) {
+	uint16_t i;
+
 	if (num_core_routers(m_topo_config) == 0) {
 		throw std::runtime_error("no core router in this topology");
 	}
@@ -166,11 +168,14 @@ void Emulation::set_core_port_masks(uint64_t *rtr_masks) {
 		/* two neighbors - half of ports face each */
 		rtr_masks[0] = 0xFFFFFFFF;
 		rtr_masks[1] = 0xFFFFFFFF00000000;
-	} else if (num_tors(m_topo_config) == 3) {
-		/* three neighbors - 16 ports for each */
-		rtr_masks[0] = 0xFFFF;
-		rtr_masks[1] = 0xFFFF0000;
-		rtr_masks[2] = 0xFFFF00000000;
+	} else if (num_tors(m_topo_config) <= 4) {
+		/* three or four neighbors - 16 ports for each */
+		for (i = 0; i < num_tors(m_topo_config); i++)
+			rtr_masks[i] = 0xFFFFULL << (16 * i);
+	} else if (num_tors(m_topo_config) <= 8) {
+		/* five to eight neighbors - 8 ports each */
+		for (i = 0; i < num_tors(m_topo_config); i++)
+			rtr_masks[i] = 0xFFULL << (i * 8);
 	} else {
 		throw std::runtime_error("this number of ToRs is not yet supported");
 	}

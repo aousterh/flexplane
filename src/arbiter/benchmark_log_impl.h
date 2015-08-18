@@ -9,6 +9,7 @@
 #define BENCHMARK_LOG_IMPL_H
 
 #include "benchmark_log.h"
+#include "benchmark.h"
 #include "control.h"
 
 struct benchmark_core_stats bench_saved_core_stats[N_BENCHMARK_CORES];

@@ -125,6 +125,54 @@ void get_next_request(struct request_generator *gen, struct request *req) {
         req->dst++;  // Don't send to self
 }
 
+/*
+ * Populate a request with info about the next request, but bias destinations
+ * so that they're more likely to be in the same group. Each group has
+ * 32 members and @percenter_out_of_group / 100 of requests will go to a
+ * different group.
+ */
+static inline
+void get_next_request_biased(struct request_generator *gen,
+		struct request *req, uint32_t percent_out_of_group) {
+    assert(gen != NULL);
+    assert(req != NULL);
+    uint16_t out_of_group;
+
+    double inter_arrival_t = 0.0;
+    double new_demand = gen->fractional_demand;
+
+    do {
+    	inter_arrival_t += generate_exponential_variate(gen, gen->mean_t_btwn_requests);
+    	new_demand += generate_exponential_variate(gen, gen->mean_request_size);
+    } while ((uint16_t)new_demand < 1);
+
+    req->time = gen->last_request_t + inter_arrival_t;
+    gen->last_request_t = req->time;
+    req->backlog = (uint16_t)new_demand;
+    gen->fractional_demand = new_demand - (uint16_t)new_demand;
+
+    /* choose source */
+    req->src = ((gen->rand_state >> 16) * gen->num_nodes) >> 16;
+    gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
+
+    /* determine if in same rack */
+    out_of_group = ((gen->rand_state >> 16) * 100) >> 16;
+    gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
+    if (out_of_group < percent_out_of_group) {
+    	/* to a different group */
+    	req->dst = ((gen->rand_state >> 16) * (gen->num_nodes - 32)) >> 16;
+    	if (req->dst >= (req->src & ~0x1F))
+    		req->dst += 32; /* skip past the group of src */
+    } else {
+    	/* in the same group */
+    	req->dst = ((gen->rand_state >> 16) * 31) >> 16;
+    	if (req->dst >= req->src)
+    		req->dst++;  // Don't send to self
+    	req->dst += (req->src & ~0x1F); /* put in the same group as src */
+    }
+    gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
+}
+
 // Helper method for benchmarking schedule quality in Python
 static inline
 struct request *create_next_request(struct request_generator *gen) {

@@ -57,7 +57,7 @@ static inline void admission_log_init(struct admission_log *al)
 
 static inline
 void admission_log_allocation_begin(uint64_t current_timeslot) {
-	(void)current_timeslot;
+	AL->current_timeslot = current_timeslot;
 	uint64_t now = rte_get_tsc_cycles();
 	AL->last_started_alloc_tsc = now;
 	AL->batches_started++;

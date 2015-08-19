@@ -145,7 +145,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 
 	/* Add initial demands */
 	assert(cmd->num_initial_srcs <= cmd->num_nodes);
-	assert(cmd->num_initial_dsts_per_src < cmd->num_initial_srcs);
+//	assert(cmd->num_initial_dsts_per_src < cmd->num_initial_srcs);
 	add_initial_requests(core, cmd->num_initial_srcs,
 			cmd->num_initial_dsts_per_src, cmd->initial_flow_size);
 

@@ -19,9 +19,17 @@ extern "C" {
 #define USE_10_US_TIMESLOTS		0
 #define USE_1_US_TIMESLOTS		1
 
+#ifndef EMU_NUM_RACKS
+#define EMU_NUM_RACKS			1
+#endif
+
 #define STRESS_TEST_IS_AUTOMATED        1
 #define STRESS_TEST_MEAN_T_BETWEEN_REQUESTS_SEC		.3e-3
-#define STRESS_TEST_NUM_NODES					    64
+#ifdef EMULATION_ALGO
+#define STRESS_TEST_NUM_NODES					    (32 * EMU_NUM_RACKS)
+#else
+#define STRESS_TEST_NUM_NODES					    128
+#endif
 #define STRESS_TEST_DEMAND_TSLOTS					10
 #define STRESS_TEST_DURATION_SEC					120
 #define STRESS_TEST_RATE_INCREASE_FACTOR			2.0

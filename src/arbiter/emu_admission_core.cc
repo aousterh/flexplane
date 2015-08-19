@@ -71,8 +71,15 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 		admission_log_init(&admission_core_logs[i]);
 
 	/* choose topology */
-	topo_config.num_racks = 1;
+	topo_config.num_racks = EMU_NUM_RACKS;
 	topo_config.rack_shift = 5;
+
+	if (IS_STRESS_TEST) {
+		RTE_LOG(INFO, ADMISSION,
+				"Emulation stress test with %d nodes, %d racks, rack shift of %d\n",
+				STRESS_TEST_NUM_NODES, topo_config.num_racks,
+				topo_config.rack_shift);
+	}
 
 	/* init emu_state */
 	enum RouterType rtype;

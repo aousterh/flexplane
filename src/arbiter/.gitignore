@@ -10,3 +10,5 @@ protocol/
 grant-accept/
 log
 .RData
+*.out
+*.err

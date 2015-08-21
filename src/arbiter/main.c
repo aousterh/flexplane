@@ -62,6 +62,7 @@
 #include <rte_branch_prediction.h>
 #include <rte_interrupts.h>
 #include <rte_pci.h>
+#include <rte_power_common.h>
 #include <rte_random.h>
 #include <rte_debug.h>
 #include <rte_ether.h>

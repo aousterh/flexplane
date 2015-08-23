@@ -160,7 +160,6 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 
 	while (rte_get_timer_cycles() < cmd->start_time);
 
-	/* Generate first request */
 	now = rte_get_timer_cycles();
 	next_rate_increase_time = now;
 	next_record_admitted_time = now;
@@ -168,6 +167,9 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 
 	init_request_generator(&gen, next_mean_t_btwn_requests, now,
 			cmd->num_nodes, cmd->demand_tslots);
+
+        /* generate the first request */
+        get_next_request(&gen, &next_request);
 
 	/* MAIN LOOP */
 	while (now < cmd->end_time) {

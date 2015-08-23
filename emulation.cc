@@ -47,7 +47,14 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	pq = 0;
 	for (i = 0; i < num_packet_qs(m_topo_config); i++) {
 		snprintf(s, sizeof(s), "packet_q_%d", i);
-		packet_queues[i] = make_ring(s, packet_ring_size, 0, RING_F_SC_DEQ);
+		if (i < epgs_per_comm(m_topo_config)) {
+			/* for comm -> epgs communication, single produer */
+			packet_queues[i] = make_ring(s, packet_ring_size, 0,
+					RING_F_SP_ENQ | RING_F_SC_DEQ);
+		} else {
+			packet_queues[i] = make_ring(s, packet_ring_size, 0,
+					RING_F_SC_DEQ);
+		}
 	}
 
 	/* initialize log to zeroes */

@@ -271,7 +271,7 @@ void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index)
 	struct admission_log *sal = &saved_admission_logs[lcore];
 
 #define D(X) (al->X - sal->X)
-	printf("\nadmission lcore %d, timeslot %"PRIu64", tslot diff %"PRIu64"\n", lcore,
+	printf("\nadmission lcore %d, timeslot %lu, tslot diff %lu\n", lcore,
 			al->current_timeslot, D(current_timeslot));
 	printf("  tslots core ahead: %lu (diff), %lu (total)\n", D(core_ahead),
 			al->core_ahead);

@@ -23,13 +23,13 @@
 #include <inttypes.h>
 #include <vector>
 
-#define ADMITTED_MEMPOOL_SIZE	128
-#define ADMITTED_Q_LOG_SIZE		4
-#define PACKET_MEMPOOL_SIZE		(1024 * 1024)
+#define ADMITTED_MEMPOOL_SIZE			128
+#define ADMITTED_Q_LOG_SIZE				4
+#define PACKET_MEMPOOL_SIZE				(512 * 1024)
 #define	PACKET_MEMPOOL_CACHE_SIZE		256
-#define PACKET_Q_LOG_SIZE		16
-#define MIN(X, Y)				(X <= Y ? X : Y)
-#define EMU_ADD_BACKLOG_BATCH_SIZE	64
+#define PACKET_Q_LOG_SIZE				16
+#define MIN(X, Y)						(X <= Y ? X : Y)
+#define EMU_ADD_BACKLOG_BATCH_SIZE		64
 
 class EmulationCore;
 class EndpointGroup;
@@ -89,6 +89,13 @@ private:
 			uint16_t flow, uint16_t id, uint8_t *areq_data);
 
 	/**
+	 * Creates a batch of packets, putting pointers to them in pkt_ptrs.
+	 */
+	inline void create_packet_batch(struct emu_packet **pkt_ptrs, uint16_t src,
+			uint16_t dst, uint16_t flow, uint16_t start_id, uint32_t amount,
+			uint8_t *areq_data);
+
+	/**
 	 * Creates all of the routers and endpoint groups in the network.
 	 */
 	void construct_topology(EndpointGroup **epgs, Router **rtrs,
@@ -123,7 +130,7 @@ private:
 
 inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 		uint32_t amount, uint16_t start_id, u8* areq_data) {
-	uint32_t i, n_pkts;
+	uint32_t amount_this_iter;
 	struct fp_ring *q_epg_new_pkts;
 	assert(src < num_endpoints(m_topo_config));
 	assert(dst < num_endpoints(m_topo_config));
@@ -139,31 +146,28 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 	/* create and enqueue a packet for each MTU, do this in batches */
 	struct emu_packet *pkt_ptrs[EMU_ADD_BACKLOG_BATCH_SIZE];
 	while (amount > 0) {
-		n_pkts = 0;
-		for (i = 0; i < MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE); i++) {
-			pkt_ptrs[n_pkts] = create_packet(src, dst, flow, start_id++,
-					areq_data);
-			n_pkts++;
-			areq_data += emu_req_data_bytes();
-		}
+		amount_this_iter = MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE);
+
+		create_packet_batch(&pkt_ptrs[0], src, dst, flow, start_id,
+				amount_this_iter, areq_data);
 
 		/* enqueue the packets to the correct endpoint group packet queue */
 #ifdef DROP_ON_FAILED_ENQUEUE
 		if (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
-				n_pkts) == -ENOBUFS) {
+				amount_this_iter) == -ENOBUFS) {
 			/* no space in ring. log but don't retry. */
-			adm_log_emu_enqueue_backlog_failed(&m_stat, n_pkts);
-			free_packet_bulk(&pkt_ptrs[0], m_packet_mempool, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&m_stat, amount_this_iter);
+			free_packet_bulk(&pkt_ptrs[0], m_packet_mempool, amount_this_iter);
 		}
 #else
 		while (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
-				n_pkts) == -ENOBUFS) {
+				amount_this_iter) == -ENOBUFS) {
 			/* no space in ring. log and retry. */
-			adm_log_emu_enqueue_backlog_failed(&m_stat, n_pkts);
+			adm_log_emu_enqueue_backlog_failed(&m_stat, amount_this_iter);
 		}
 #endif
 
-		amount -= n_pkts;
+		amount -= amount_this_iter;
 	}
 }
 
@@ -194,6 +198,25 @@ inline struct emu_packet *Emulation::create_packet(uint16_t src, uint16_t dst,
 	packet_init(packet, src, dst, flow, id, areq_data);
 
 	return packet;
+}
+
+inline void Emulation::create_packet_batch(struct emu_packet **pkt_ptrs,
+		uint16_t src, uint16_t dst, uint16_t flow, uint16_t start_id,
+		uint32_t amount, uint8_t *areq_data)
+{
+	uint32_t i;
+
+	/* fetch a batch of packets */
+	while (fp_mempool_get_bulk(m_packet_mempool, (void **) pkt_ptrs, amount)
+			== -ENOENT) {
+		adm_log_emu_packet_alloc_failed(&m_stat);
+	}
+
+	/* initialize all packets */
+	for (i = 0; i < amount; i++) {
+		packet_init(pkt_ptrs[i], src, dst, flow, start_id++, areq_data);
+		areq_data += emu_req_data_bytes();
+	}
 }
 
 #endif /* EMULATION_H_ */

@@ -30,6 +30,7 @@
 #define PACKET_Q_LOG_SIZE				16
 #define MIN(X, Y)						(X <= Y ? X : Y)
 #define EMU_ADD_BACKLOG_BATCH_SIZE		64
+#define BACKLOG_PREFETCH_OFFSET			3
 
 class EmulationCore;
 class EndpointGroup;
@@ -212,8 +213,17 @@ inline void Emulation::create_packet_batch(struct emu_packet **pkt_ptrs,
 		adm_log_emu_packet_alloc_failed(&m_stat);
 	}
 
-	/* initialize all packets */
-	for (i = 0; i < amount; i++) {
+	/* initialize all packets, using prefetching */
+	for (i = 0; i < BACKLOG_PREFETCH_OFFSET && i < amount; i++)
+		fp_prefetch0(pkt_ptrs[i]);
+
+	for (i = 0; i + BACKLOG_PREFETCH_OFFSET < amount; i++) {
+		fp_prefetch0(pkt_ptrs[i + BACKLOG_PREFETCH_OFFSET]);
+		packet_init(pkt_ptrs[i], src, dst, flow, start_id++, areq_data);
+		areq_data += emu_req_data_bytes();
+	}
+
+	for (; i < amount; i++) {
 		packet_init(pkt_ptrs[i], src, dst, flow, start_id++, areq_data);
 		areq_data += emu_req_data_bytes();
 	}

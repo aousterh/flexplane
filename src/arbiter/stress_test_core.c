@@ -153,6 +153,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	uint64_t core_ahead_prev[RTE_MAX_LCORE];
 	bool persistently_behind = false;
 	uint64_t next_rate_decrease_time;
+	uint32_t percent_out_of_group; (void) percent_out_of_group;
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = first_time_slot - 1;
@@ -174,6 +175,12 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	if (STRESS_TEST_IS_AUTOMATED)
 		comm_log_stress_test_mode(STRESS_TEST_RATE_MAINTAIN);
 
+	/* determine percentage of traffic that will be out-of-group (aka out of
+	 * rack) */
+#if defined(EMULATION_ALGO)
+	percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
+#endif
+
 	while (rte_get_timer_cycles() < cmd->start_time);
 
 	now = rte_get_timer_cycles();
@@ -184,8 +191,12 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	init_request_generator(&gen, next_mean_t_btwn_requests, now,
 			cmd->num_nodes, cmd->demand_tslots);
 
-        /* generate the first request */
-        get_next_request(&gen, &next_request);
+	/* generate the first request */
+#if defined(EMULATION_ALGO)
+	get_next_request_biased(&gen, &next_request, percent_out_of_group);
+#else
+	get_next_request(&gen, &next_request);
+#endif
 
 	/* MAIN LOOP */
 	while (now < cmd->end_time) {
@@ -275,7 +286,12 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 				comm_log_mean_t(next_mean_t_btwn_requests);
 				reinit_request_generator(&gen, next_mean_t_btwn_requests, now,
 						cmd->num_nodes, cmd->demand_tslots);
+#if defined(EMULATION_ALGO)
+				get_next_request_biased(&gen, &next_request,
+						percent_out_of_group);
+#else
 				get_next_request(&gen, &next_request);
+#endif
 
 				next_rate_increase_time = rte_get_timer_cycles() +
 						rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
@@ -302,7 +318,11 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			n_processed_requests++;
 
 			/* generate the next request */
+#if defined(EMULATION_ALGO)
+			get_next_request_biased(&gen, &next_request, percent_out_of_group);
+#else
 			get_next_request(&gen, &next_request);
+#endif
 		}
 
 		comm_log_processed_batch(n_processed_requests, now);

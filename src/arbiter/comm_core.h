@@ -60,7 +60,7 @@ struct comm_core_cmd {
 	uint64_t tslot_len; /**< Length of a time slot */
 	uint32_t tslot_offset; /**< How many offsets in the future the controller allocates */
 
-	struct rte_ring *q_allocated;
+	struct rte_ring **q_allocated;
 	struct rte_mempool* admitted_traffic_mempool;
 
 	uint8_t port_id; /**< port to read/write packets from/to */

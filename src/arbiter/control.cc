@@ -56,8 +56,8 @@ int control_do_queue_allocation(void)
 }
 
 void launch_comm_cores(uint64_t start_time, uint64_t end_time,
-		uint64_t first_time_slot, struct rte_ring* q_path_selected,
-		struct rte_ring* q_admitted,
+		uint64_t first_time_slot, struct rte_ring **q_path_selected,
+		struct rte_ring **q_admitted,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	struct comm_core_cmd comm_cmd;
@@ -90,8 +90,8 @@ void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 
 void launch_stress_test_cores(uint64_t start_time,
 		uint64_t end_time, uint64_t first_time_slot,
-		struct rte_ring* q_path_selected,
-		struct rte_ring* q_admitted,
+		struct rte_ring **q_path_selected,
+		struct rte_ring **q_admitted,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	struct stress_test_core_cmd cmd;
@@ -162,11 +162,13 @@ void launch_cores(void)
 	struct benchmark_core_cmd bench_cmd[N_BENCHMARK_CORES];
 	uint64_t first_time_slot;
 	uint64_t now;
-	struct rte_ring *q_admitted;
+	struct rte_ring *q_admitted[MAX_Q_ADMITTED];
 	struct rte_ring *q_path_selected;
 	struct rte_mempool *admitted_traffic_mempool;
 	LogCore *log_core;
 	Benchmark *benchmark;
+	char s[64];
+	uint16_t n_q_admitted = 1;
 
 	benchmark_cost_of_get_time();
 
@@ -184,12 +186,21 @@ void launch_cores(void)
 	/* initialize comm core global data */
 	comm_init_global_structs(first_time_slot);
 
-	/* create q_admitted_out */
-	q_admitted = rte_ring_create("q_admitted",
-			2 * ADMITTED_TRAFFIC_MEMPOOL_SIZE, 0, 0);
-	if (q_admitted == NULL)
-		rte_exit(EXIT_FAILURE,
-				"Cannot init q_admitted: %s\n", rte_strerror(rte_errno));
+#ifdef EMULATION_ALGO
+	/* create a q_admitted_out for each algo core */
+	if (ALGO_N_CORES > MAX_Q_ADMITTED)
+		rte_exit(EXIT_FAILURE, "ALGO_N_CORES exceeds max q admitted\n");
+	n_q_admitted = ALGO_N_CORES;
+#endif
+	/* create admitted_out queues */
+	for (i = 0; i < n_q_admitted; i++) {
+		snprintf(s, sizeof(s), "q_admitted_%d", i);
+		q_admitted[i] = rte_ring_create(s, 2 * ADMITTED_TRAFFIC_MEMPOOL_SIZE,
+				0, RING_F_SP_ENQ | RING_F_SC_DEQ);
+		if (q_admitted[i] == NULL)
+			rte_exit(EXIT_FAILURE, "Cannot init q_admitted: %s\n",
+					rte_strerror(rte_errno));
+	}
 
 	/* create q_path_selected_out */
 	q_path_selected = rte_ring_create("q_path_selected",
@@ -202,7 +213,7 @@ void launch_cores(void)
 	admitted_traffic_mempool = allocate_admitted_traffic_mempool(0);
 
 	/* initialize admission core global data */
-	admission_init_global(q_admitted, admitted_traffic_mempool);
+	admission_init_global(&q_admitted[0], admitted_traffic_mempool);
 
 	// Calculate start and end times
 	start_time = rte_get_timer_cycles() + sec_to_hpet(0.2); /* start after last end */
@@ -210,7 +221,7 @@ void launch_cores(void)
 
 	/*** PATH_SELECTION CORES ***/
 	/* set commands */
-	path_sel_cmd.q_admitted = q_admitted;
+	path_sel_cmd.q_admitted = q_admitted[0];
 	path_sel_cmd.q_path_selected = q_path_selected;
 
 	/* launch admission core */
@@ -283,11 +294,11 @@ void launch_cores(void)
 	if (IS_STRESS_TEST) {
 		launch_stress_test_cores(start_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
                                          end_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
-                                         first_time_slot, q_path_selected, q_admitted,
+                                         first_time_slot, &q_path_selected, &q_admitted[0],
 										 admitted_traffic_mempool);
 	} else {
-		launch_comm_cores(start_time, end_time, first_time_slot, q_path_selected,
-				q_admitted, admitted_traffic_mempool);
+		launch_comm_cores(start_time, end_time, first_time_slot, &q_path_selected,
+				&q_admitted[0], admitted_traffic_mempool);
 	}
 
 	printf("waiting for all cores..\n");

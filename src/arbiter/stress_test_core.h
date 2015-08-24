@@ -31,7 +31,7 @@ struct stress_test_core_cmd {
 	uint32_t num_initial_dsts_per_src;
 	uint32_t initial_flow_size;
 
-	struct rte_ring *q_allocated;
+	struct rte_ring **q_allocated;
 	struct rte_mempool *admitted_traffic_mempool;
 };
 

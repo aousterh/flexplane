@@ -27,7 +27,7 @@ struct queue_bank_stats *emu_get_queueing_stats(uint8_t router_index);
 struct port_drop_stats *emu_get_port_stats(uint8_t router_index);
 uint16_t emu_get_num_routers();
 
-void emu_admission_init_global(struct rte_ring *q_admitted_out,
+void emu_admission_init_global(struct rte_ring **q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool);
 
 /**

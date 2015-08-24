@@ -50,8 +50,8 @@ static inline void stress_test_log_got_admitted_tslot(uint16_t size, uint64_t ti
 }
 
 /* process allocated traffic and return the number of MTUs admitted */
-static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
-		struct rte_ring *q_admitted,
+static inline uint64_t process_allocated_traffic_one_q(
+		struct comm_core_state *core, struct rte_ring *q_admitted,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	int rc;
@@ -86,6 +86,22 @@ static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
 	rte_mempool_put_bulk(admitted_traffic_mempool, (void **) admitted, rc);
 
 	return num_admitted;
+}
+
+static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
+		struct rte_ring **q_admitted,
+		struct rte_mempool *admitted_traffic_mempool) {
+#ifdef EMULATION_ALGO
+	uint16_t i;
+	uint64_t total = 0;
+	for (i = 0; i < ALGO_N_CORES; i++)
+		total += process_allocated_traffic_one_q(core, q_admitted[i],
+				admitted_traffic_mempool);
+	return total;
+#else
+	return process_allocated_traffic_one_q(core, q_admitted[0],
+			admitted_traffic_mempool);
+#endif
 }
 
 /**

@@ -56,15 +56,16 @@ void get_admissible_traffic(struct admissible_state *state, uint32_t a,
 static inline
 struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
-		struct fp_ring *e, struct fp_ring *q_admitted_out,
+		struct fp_ring *e, struct fp_ring **q_admitted_out,
 		struct fp_ring *q_spent, struct fp_mempool *bin_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **f,
 		struct fp_ring **q_new_demands, struct fp_ring **q_ready_partitions,
 		enum RouterType g, void *h, enum EndpointType i, void *j)
 {
 	(void) q_spent; /* unused */
-    struct pim_state *state = pim_create_state(q_new_demands, q_admitted_out,
-    		bin_mempool, admitted_traffic_mempool, q_ready_partitions);
+    struct pim_state *state = pim_create_state(q_new_demands,
+    		q_admitted_out[0], bin_mempool, admitted_traffic_mempool,
+    		q_ready_partitions);
     return (struct admissible_state *) state;
 }
 
@@ -125,7 +126,7 @@ static inline
 struct admissible_state *
 create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
 		uint16_t out_of_boundary_capacity, uint16_t num_nodes,
-		struct fp_ring *q_head, struct fp_ring *q_admitted_out,
+		struct fp_ring *q_head, struct fp_ring **q_admitted_out,
 		struct fp_ring *q_spent, struct fp_mempool *head_bin_mempool,
 		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **q_bin,
 		struct fp_ring **a, struct fp_ring **b, enum RouterType c, void *d,
@@ -133,7 +134,7 @@ create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
 {
 	struct seq_admissible_status *status;
     status = seq_create_admissible_status(oversubscribed, inter_rack_capacity,
-    		out_of_boundary_capacity, num_nodes, q_head, q_admitted_out,
+    		out_of_boundary_capacity, num_nodes, q_head, q_admitted_out[0],
     		q_spent, head_bin_mempool, admitted_traffic_mempool, q_bin);
     return (struct admissible_state *) status;
 }
@@ -261,7 +262,7 @@ void get_admissible_traffic(struct admissible_state *state, uint32_t a,
 static inline
 struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
-		struct fp_ring *e, struct fp_ring *q_admitted_out, struct fp_ring *f,
+		struct fp_ring *e, struct fp_ring **q_admitted_out, struct fp_ring *f,
 		struct fp_mempool *g, struct fp_mempool *admitted_traffic_mempool,
 		struct fp_ring **h, uint32_t packet_rings_size, struct fp_ring **i,
 		enum RouterType r_type, void *r_args, enum EndpointType e_type,

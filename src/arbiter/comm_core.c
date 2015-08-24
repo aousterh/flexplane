@@ -793,8 +793,8 @@ void fill_algo_fields_in_alloc(struct pending_alloc *alloc,
  * Record the allocations received in @q_admitted and trigger a report to each
  * source endpoint that got a new allocation.
  */
-static inline void process_allocated_traffic(struct comm_core_state *core,
-		struct rte_ring *q_admitted,
+static inline void process_allocated_traffic_one_q(
+		struct comm_core_state *core, struct rte_ring *q_admitted,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	int rc;
@@ -860,6 +860,20 @@ static inline void process_allocated_traffic(struct comm_core_state *core,
 	}
 	/* free memory */
 	rte_mempool_put_bulk(admitted_traffic_mempool, (void **) admitted, rc);
+}
+
+static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
+		struct rte_ring **q_admitted,
+		struct rte_mempool *admitted_traffic_mempool) {
+#ifdef EMULATION_ALGO
+	uint16_t i;
+	for (i = 0; i < ALGO_N_CORES; i++)
+		process_allocated_traffic_one_q(core, q_admitted[i],
+				admitted_traffic_mempool);
+#else
+	process_allocated_traffic_one_q(core, q_admitted[0],
+			admitted_traffic_mempool);
+#endif
 }
 
 /* check statically that the window is not too long, because fill_packet_alloc

@@ -106,6 +106,9 @@ extern "C" {
 #define CONTROL_DEBUG(a...) RTE_LOG(DEBUG, CONTROL, ##a)
 #define CONTROL_INFO(a...) RTE_LOG(INFO, CONTROL, ##a)
 
+/* maximum number of q admitted rings */
+#define MAX_Q_ADMITTED	64
+
 /**
  * Allocate queues to lcores
  */

@@ -61,7 +61,7 @@ uint16_t emu_get_num_routers()
 	return num_routers(&topo_config);
 }
 
-void emu_admission_init_global(struct rte_ring *q_admitted_out,
+void emu_admission_init_global(struct rte_ring **q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	int i;
@@ -162,7 +162,7 @@ void emu_admission_init_global(struct rte_ring *q_admitted_out,
 			admitted_traffic_mempool, q_admitted_out);
 
 	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
-			(fp_ring *) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
+			(fp_ring **) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
 			rtr_args, E_Simple, NULL, &topo_config);
 }
 

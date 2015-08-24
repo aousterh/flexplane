@@ -22,10 +22,10 @@ extern "C" {
 #endif /* __cplusplus */
 
 static inline
-void admission_init_global(struct rte_ring *q_admitted_out,
+void admission_init_global(struct rte_ring **q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
 {
-	pim_admission_init_global(q_admitted_out, admitted_traffic_mempool);
+	pim_admission_init_global(q_admitted_out[0], admitted_traffic_mempool);
 }
 
 static inline
@@ -74,10 +74,10 @@ extern "C" {
 #endif /* __cplusplus */
 
 static inline
-void admission_init_global(struct rte_ring *q_admitted_out,
+void admission_init_global(struct rte_ring **q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
 {
-	seq_admission_init_global(q_admitted_out, admitted_traffic_mempool);
+	seq_admission_init_global(q_admitted_out[0], admitted_traffic_mempool);
 }
 
 static inline
@@ -125,7 +125,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 static inline
-void admission_init_global(struct rte_ring *q_admitted_out,
+void admission_init_global(struct rte_ring **q_admitted_out,
 		struct rte_mempool *admitted_traffic_mempool)
 {
 	emu_admission_init_global(q_admitted_out, admitted_traffic_mempool);

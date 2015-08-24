@@ -198,7 +198,8 @@ struct admissible_state *setup_state(bool oversubscribed,
     /* init queues */
     *q_bin = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
     q_head = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
-    *q_admitted_out = fp_ring_create("", 1 << ADMITTED_OUT_RING_LOG_SIZE, 0, 0);
+    for (i = 0; i < ALGO_N_CORES; i++)
+    	q_admitted_out[i] = fp_ring_create("", 1 << ADMITTED_OUT_RING_LOG_SIZE, 0, 0);
     q_spent = fp_ring_create("", 1 << (2 * FP_NODES_SHIFT), 0, 0);
     *bin_mempool = fp_mempool_create("bin_mempool", BIN_MEMPOOL_SIZE,
     		bin_num_bytes(SMALL_BIN_SIZE), 0, 0, 0);
@@ -213,7 +214,7 @@ struct admissible_state *setup_state(bool oversubscribed,
             exit(-1);
 
     /* init global status */
-    status = create_admissible_state(false, 0, 0, 0, q_head, *q_admitted_out,
+    status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
                                      q_spent, *bin_mempool,
                                      *admitted_traffic_mempool,
                                      q_bin, (1 << BIN_RING_SHIFT),
@@ -344,10 +345,10 @@ int main(int argc, char **argv)
 
     struct fp_ring *q_bin;
     struct fp_mempool *bin_mempool;
-    struct fp_ring *q_admitted_out;
+    struct fp_ring *q_admitted_out[ALGO_N_CORES];
     struct fp_mempool *admitted_traffic_mempool;
     struct admissible_state *status = setup_state(false, 0, 0, 0, &q_bin,
-    		&bin_mempool, &q_admitted_out, &admitted_traffic_mempool);
+    		&bin_mempool, &q_admitted_out[0], &admitted_traffic_mempool);
 
     /* allocate space to record times */
     uint32_t num_batches = (duration - warm_up_duration) / BATCH_SIZE;

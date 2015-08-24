@@ -24,11 +24,10 @@
 #include <stdio.h>
 
 Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
-		struct fp_ring *q_admitted_out, uint32_t packet_ring_size,
+		struct fp_ring **q_admitted_out, uint32_t packet_ring_size,
 		RouterType r_type, void *r_args, EndpointType e_type, void *e_args,
 		struct emu_topo_config *m_topo_config)
 	: m_admitted_traffic_mempool(admitted_traffic_mempool),
-	  m_q_admitted_out(q_admitted_out),
 	  m_topo_config(m_topo_config) {
 	uint32_t i, pq;
 	EndpointGroup	*epgs[EMU_MAX_ENDPOINT_GROUPS];
@@ -42,6 +41,10 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	m_packet_mempool = make_mempool("packet_mempool", PACKET_MEMPOOL_SIZE,
 			EMU_ALIGN(sizeof(struct emu_packet)), PACKET_MEMPOOL_CACHE_SIZE, 0,
 			0);
+
+	/* copy pointers to admitted outs */
+	for (i = 0; i < ALGO_N_CORES; i++)
+		m_q_admitted_out.push_back(q_admitted_out[i]);
 
 	/* init packet_queues */
 	pq = 0;
@@ -107,10 +110,12 @@ void Emulation::cleanup() {
 		free_packet_ring(m_comm_state.q_resets[i], m_packet_mempool);
 	}
 
-	/* empty queue of admitted traffic, return structs to the mempool */
-	while (fp_ring_dequeue(m_q_admitted_out, (void **) &admitted) == 0)
-		fp_mempool_put(m_admitted_traffic_mempool, admitted);
-	fp_free(m_q_admitted_out);
+	/* empty queues of admitted traffic, return structs to the mempool */
+	for (i = 0; i < m_q_admitted_out.size(); i++) {
+		while (fp_ring_dequeue(m_q_admitted_out[i], (void **) &admitted) == 0)
+			fp_mempool_put(m_admitted_traffic_mempool, admitted);
+		fp_free(m_q_admitted_out[i]);
+	}
 
 	fp_free(m_admitted_traffic_mempool);
 	fp_free(m_packet_mempool);
@@ -249,13 +254,13 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 		/* put 1 router or endpoint group on each core */
 		for (i = 0; i < num_endpoint_groups(m_topo_config); i++) {
 			m_cores[core_index] = new EmulationCore(&epg_drivers[i], NULL, 1,
-					0, core_index, m_q_admitted_out,
+					0, core_index, m_q_admitted_out[core_index],
 					m_admitted_traffic_mempool, m_packet_mempool);
 			core_index++;
 		}
 		for (i = 0; i < num_routers(m_topo_config); i++) {
 			m_cores[core_index] = new EmulationCore(NULL, &router_drivers[i],
-					0, 1, core_index, m_q_admitted_out,
+					0, 1, core_index, m_q_admitted_out[core_index],
 					m_admitted_traffic_mempool, m_packet_mempool);
 			core_index++;
 		}
@@ -263,20 +268,21 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 		/* 1 epg + 1 rtr on first num_racks cores, core router on last core */
 		for (i = 0; i < m_topo_config->num_racks; i++) {
 			m_cores[core_index] = new EmulationCore(&epg_drivers[i],
-					&router_drivers[i], 1, 1, core_index, m_q_admitted_out,
-					m_admitted_traffic_mempool, m_packet_mempool);
+					&router_drivers[i], 1, 1, core_index,
+					m_q_admitted_out[core_index], m_admitted_traffic_mempool,
+					m_packet_mempool);
 			core_index++;
 		}
 		m_cores[core_index] = new EmulationCore(NULL,
 				&router_drivers[core_index], 0, 1, core_index,
-				m_q_admitted_out, m_admitted_traffic_mempool,
+				m_q_admitted_out[core_index], m_admitted_traffic_mempool,
 				m_packet_mempool);
 	} else if (ALGO_N_CORES == 1) {
 		/* assign everything to one core */
 		m_cores[core_index] = new EmulationCore(epg_drivers, router_drivers,
 				num_endpoint_groups(m_topo_config), num_routers(m_topo_config),
-				core_index, m_q_admitted_out, m_admitted_traffic_mempool,
-				m_packet_mempool);
+				core_index, m_q_admitted_out[core_index],
+				m_admitted_traffic_mempool, m_packet_mempool);
 	} else {
 		throw std::runtime_error("no specified way to assign this topology to cores");
 	}

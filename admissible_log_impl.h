@@ -63,26 +63,41 @@ void print_global_admission_log_emulation() {
 	Emulation *emulation = emu_get_instance();
 	struct emu_admission_statistics *st = &emulation->m_stat;
 	struct emu_admission_statistics *sv = &emu_saved_admission_statistics;
+	uint16_t core_index;
+	struct emu_admission_core_statistics *core_st, *core_sv;
+	uint64_t total_router_pulled = 0;
+	double gbps;
 
-	printf("\nemulation with %d nodes", NUM_NODES);
+	printf("\nemulation with %d nodes, ", NUM_NODES);
 
 #if defined(DCTCP)
-	printf("\nrouter type DCTCP");
+	printf("router type DCTCP");
 #elif defined(RED)
-	printf("\nrouter type RED");
+	printf("router type RED");
 #elif defined(DROP_TAIL)
-	printf("\nrouter type drop tail");
+	printf("router type drop tail");
 #elif defined(PRIO_QUEUEING)
-	printf("\nrouter type priority");
+	printf("router type priority");
 #elif defined(PRIO_BY_FLOW_QUEUEING)
-	printf("\nrouter type priority by flow");
+	printf("router type priority by flow");
 #elif defined(ROUND_ROBIN)
-	printf("\nrouter type round robin");
+	printf("router type round robin");
 #elif defined(HULL)
-	printf("\nrouter type HULL");
+	printf("router type HULL");
 #elif defined(HULL_SCHED)
-	printf("\nrouter type HULL as scheduler");
+	printf("router type HULL as scheduler");
 #endif
+
+	/* compute and print total throughput across all routers */
+	for (core_index = 0; core_index < ALGO_N_CORES; core_index++) {
+		core_st = emulation->m_core_stats[core_index];
+		core_sv = &emu_saved_admission_core_statistics[core_index];
+		total_router_pulled += core_st->router_driver_pulled -
+				core_sv->router_driver_pulled;
+	}
+	/* assuming logging gap is 0.1 seconds */
+	gbps = total_router_pulled * 1500 * 8 / (0.1 * 1000 * 1000 * 1000);
+	printf("\ntotal router throughput: %f", gbps);
 
 	printf("\n warnings:");
 	if (st->packet_alloc_failed)

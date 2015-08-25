@@ -356,6 +356,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		min_next_iteration_time = now + loop_minimum_iteration_time;
 		do {
 			now = rte_get_timer_cycles();
+			comm_log_stress_test_ahead();
 		} while (now < min_next_iteration_time);
 	}
 

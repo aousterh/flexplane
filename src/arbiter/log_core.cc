@@ -60,8 +60,9 @@ void print_comm_log(uint16_t lcore_id)
 			(STRESS_TEST_RATE_INCREASE_GAP_SEC * 1000 * 1000 * 1000.0);
 	printf("\ncurrent stress test mean t btwn requests: %f, current gbps: %f (dropped: %f), best gbps: %f",
 			mean_t_btwn_requests_sec, gbps, dropped_gbps, best_gbps);
-	printf("\nstress test rate status (1:increase, 2:maintain, 3:decrease): %lu, increase factor: %f\n",
+	printf("\nstress test rate status (1:increase, 2:maintain, 3:decrease): %lu, increase factor: %f, ",
 			cl->stress_test_mode, cl->stress_test_increase_factor);
+	printf("ahead: %lu\n", D(stress_test_ahead));
 #endif
 
 	printf("\n  RX %lu pkts, %lu bytes in %lu batches (%lu non-empty batches), %lu dropped",

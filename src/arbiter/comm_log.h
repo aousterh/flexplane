@@ -75,10 +75,13 @@ struct comm_log {
 	uint64_t failed_to_allocate_watchdog;
 	uint64_t failed_to_burst_watchdog;
 	uint64_t admitted_too_many;
-	double mean_t_btwn_requests; /* used only in stress test */
-	uint64_t stress_test_mode; /* used only in stress test */
-	uint64_t stress_test_max_node_tslots; /* used only in stress test */
-	double stress_test_increase_factor; /* used only in stress test */
+
+	/* used only in stress test */
+	double mean_t_btwn_requests;
+	uint64_t stress_test_mode;
+	uint64_t stress_test_max_node_tslots;
+	double stress_test_increase_factor;
+	uint64_t stress_test_ahead;
 };
 
 extern struct comm_log comm_core_logs[RTE_MAX_LCORE];
@@ -380,6 +383,11 @@ static inline void comm_log_stress_test_max_node_tslots(uint64_t max_node_tslots
 /* stress test increase factor */
 static inline void comm_log_stress_test_increase_factor(double increase_factor) {
         CL->stress_test_increase_factor = increase_factor;
+}
+
+/* stress test increase factor */
+static inline void comm_log_stress_test_ahead() {
+        CL->stress_test_ahead++;
 }
 
 #undef CL

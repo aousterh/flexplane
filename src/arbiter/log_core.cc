@@ -33,12 +33,12 @@
 #define RTE_LOGTYPE_LOGGING RTE_LOGTYPE_USER1
 #define LOGGING_ERR(a...) RTE_LOG(CRIT, LOGGING, ##a)
 
-static struct comm_log saved_comm_log;
+static struct comm_log saved_comm_log[RTE_MAX_LCORE];
 
 void print_comm_log(uint16_t lcore_id)
 {
 	struct comm_log *cl = &comm_core_logs[lcore_id];
-	struct comm_log *sv = &saved_comm_log;
+	struct comm_log *sv = &saved_comm_log[lcore_id];
 	struct comm_core_state *ccs = &ccore_state[lcore_id];
 	u64 now_real = fp_get_time_ns();
 	u64 now_timeslot = (now_real * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
@@ -145,7 +145,8 @@ void print_comm_log(uint16_t lcore_id)
 				cl->flush_buffer_in_add_backlog);
 	printf("\n");
 
-	memcpy(&saved_comm_log, &comm_core_logs[lcore_id], sizeof(saved_comm_log));
+	memcpy(&saved_comm_log[lcore_id], &comm_core_logs[lcore_id],
+			sizeof(struct comm_log));
 
 }
 
@@ -369,8 +370,9 @@ int LogCore::exec()
 	}
 
 	/* copy baseline statistics */
-	memcpy(&saved_comm_log, &comm_core_logs[m_comm_lcores[0]],
-			sizeof(saved_comm_log));
+	for (i = 0; i < m_comm_lcores.size(); i++)
+		memcpy(&saved_comm_log[i], &comm_core_logs[m_comm_lcores[i]],
+				sizeof(struct comm_log));
 	save_admission_stats();
 	for (i = 0; i < N_ADMISSION_CORES; i++)
 		save_admission_core_stats(i);
@@ -402,7 +404,8 @@ int LogCore::exec()
 #endif
 		}
 
-		print_comm_log(m_comm_lcores[0]);
+		for (i = 0; i < m_comm_lcores.size(); i++)
+			print_comm_log(m_comm_lcores[i]);
 		print_global_algo_log();
 
 		for (i = 0; i < m_logged_lcores.size(); i++)

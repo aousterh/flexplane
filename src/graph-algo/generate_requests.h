@@ -25,10 +25,12 @@
 struct request_generator {
     double mean_t_btwn_requests;  // mean t for all requests
     double last_request_t;
-    uint16_t num_nodes;
+    uint16_t first_src_node; /* fixed at init */
+    uint16_t num_src_nodes; /* fixed at init */
+    uint16_t num_dst_nodes; /* fixed at init */
     uint32_t rand_state;
     double fractional_demand;
-    double mean_request_size;
+    double mean_request_size; /* fixed at init */
     double exp_dist_table[REQ_GEN_LOG_TABLE_SIZE];
 };
 
@@ -50,16 +52,13 @@ struct request_info {
 
 static inline
 void reinit_request_generator(struct request_generator* gen,
-		double mean_t_btwn_requests, double start_time, uint16_t num_nodes,
-		double mean_request_size)
+		double mean_t_btwn_requests, double start_time)
 {
 	assert(gen != NULL);
 
-	gen->mean_t_btwn_requests = mean_t_btwn_requests / num_nodes;
+	gen->mean_t_btwn_requests = mean_t_btwn_requests / gen->num_src_nodes;
 	gen->last_request_t = start_time;
-	gen->num_nodes = num_nodes;
 	gen->fractional_demand = 0.0;
-	gen->mean_request_size = mean_request_size;
 }
 
 // Initialize a request_generator, to enable generation of a stream
@@ -67,13 +66,16 @@ void reinit_request_generator(struct request_generator* gen,
 // mean_t_btwn_requests
 static inline
 void init_request_generator(struct request_generator *gen,
-                            double mean_t_btwn_requests,
-                            double start_time, uint16_t num_nodes,
-                            double mean_request_size) {
+		double mean_t_btwn_requests, double start_time,
+		uint16_t start_src_node, uint16_t num_src_nodes,
+		uint16_t num_dst_nodes, double mean_request_size) {
     int i;
 
-	reinit_request_generator(gen, mean_t_btwn_requests, start_time, num_nodes,
-			mean_request_size);
+    gen->first_src_node = start_src_node;
+    gen->num_src_nodes = num_src_nodes;
+    gen->num_dst_nodes = num_dst_nodes;
+    gen->mean_request_size = mean_request_size;
+	reinit_request_generator(gen, mean_t_btwn_requests, start_time);
 
 	gen->rand_state = rand();
 
@@ -117,9 +119,10 @@ void get_next_request(struct request_generator *gen, struct request *req) {
     req->backlog = (uint16_t)new_demand;
     gen->fractional_demand = new_demand - (uint16_t)new_demand;
 
-    req->src = ((gen->rand_state >> 16) * gen->num_nodes) >> 16;
+    req->src = ((gen->rand_state >> 16) * gen->num_src_nodes) >> 16;
+    req->src += gen->first_src_node;
     gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
-    req->dst = ((gen->rand_state >> 16) * (gen->num_nodes - 1)) >> 16;
+    req->dst = ((gen->rand_state >> 16) * (gen->num_dst_nodes - 1)) >> 16;
     gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
     if (req->dst >= req->src)
         req->dst++;  // Don't send to self
@@ -152,7 +155,8 @@ void get_next_request_biased(struct request_generator *gen,
     gen->fractional_demand = new_demand - (uint16_t)new_demand;
 
     /* choose source */
-    req->src = ((gen->rand_state >> 16) * gen->num_nodes) >> 16;
+    req->src = ((gen->rand_state >> 16) * gen->num_src_nodes) >> 16;
+    req->src += gen->first_src_node;
     gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
 
     /* determine if in same rack */
@@ -160,7 +164,7 @@ void get_next_request_biased(struct request_generator *gen,
     gen->rand_state = gen->rand_state * REQ_GEN_RAND_A + REQ_GEN_RAND_C;
     if (out_of_group < percent_out_of_group) {
     	/* to a different group */
-    	req->dst = ((gen->rand_state >> 16) * (gen->num_nodes - 32)) >> 16;
+    	req->dst = ((gen->rand_state >> 16) * (gen->num_dst_nodes - 32)) >> 16;
     	if (req->dst >= (req->src & ~0x1F))
     		req->dst += 32; /* skip past the group of src */
     } else {
@@ -206,8 +210,8 @@ struct request_generator *create_request_generator(double mean_t_btwn_requests,
     if (gen == NULL)
         return NULL;
 
-    init_request_generator(gen, mean_t_btwn_requests, start_time, num_nodes,
-    		mean_request_size);
+    init_request_generator(gen, mean_t_btwn_requests, start_time, 0, num_nodes,
+    		num_nodes, mean_request_size);
 
     return gen;
 }
@@ -228,7 +232,8 @@ uint32_t generate_requests_poisson(struct request_info *edges, uint32_t size,
     // Convert mean from micros to nanos
     struct request_generator gen;
     struct request req;
-    init_request_generator(&gen, mean / fraction, 0, num_nodes, mean);
+    init_request_generator(&gen, mean / fraction, 0, 0, num_nodes, num_nodes,
+    		mean);
 
     struct request_info *current_edge = edges;
     uint32_t num_generated = 0;

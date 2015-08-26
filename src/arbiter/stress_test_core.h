@@ -22,9 +22,11 @@ extern "C" {
 struct stress_test_core_cmd {
 	uint64_t start_time;
 	uint64_t end_time;
+	uint64_t first_time_slot;
 
 	double mean_t_btwn_requests;
 	uint32_t num_nodes;
+	uint32_t first_node;
 	uint32_t demand_tslots;
 
 	uint32_t num_initial_srcs;
@@ -32,18 +34,15 @@ struct stress_test_core_cmd {
 	uint32_t initial_flow_size;
 
 	struct rte_ring **q_allocated;
+	uint32_t num_q_allocated;
 	struct rte_mempool *admitted_traffic_mempool;
 };
 
-//struct stress_test_core_state {
-//	uint64_t latest_timeslot;
-//
-//	void *q_head_write_buffer[Q_HEAD_WRITE_BUFFER_SIZE];
-//	uint32_t q_head_buf_len;
-//};
-
-void exec_stress_test_core(struct stress_test_core_cmd * cmd,
-		uint64_t first_time_slot);
+/**
+ * If there are multiple stress test cores, n-1 of them will be slaves.
+ */
+int exec_slave_stress_test_core(void *void_cmd_p);
+int exec_stress_test_core(void *void_cmd_p);
 
 #ifdef __cplusplus
 }

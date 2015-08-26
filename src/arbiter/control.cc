@@ -94,25 +94,51 @@ void launch_stress_test_cores(uint64_t start_time,
 		struct rte_ring **q_admitted,
 		struct rte_mempool *admitted_traffic_mempool)
 {
-	struct stress_test_core_cmd cmd;
+	struct stress_test_core_cmd cmd[N_COMM_CORES];
 	uint64_t hz = rte_get_timer_hz();
+	uint16_t i;
 
-	// Set commands
-	cmd.start_time = start_time;
-	cmd.end_time = start_time + hz * STRESS_TEST_DURATION_SEC;
-	cmd.mean_t_btwn_requests = STRESS_TEST_MEAN_T_BETWEEN_REQUESTS_SEC * hz;
-	cmd.num_nodes = STRESS_TEST_NUM_NODES;
-	cmd.demand_tslots = STRESS_TEST_DEMAND_TSLOTS;
-	cmd.num_initial_srcs = STRESS_TEST_INITIAL_SOURCES;
-	cmd.num_initial_dsts_per_src = STRESS_TEST_INITIAL_DSTS_PER_SRC;
-	cmd.initial_flow_size = STRESS_TEST_INITIAL_FLOW_SIZE;
-	cmd.q_allocated =
-			((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
-	cmd.admitted_traffic_mempool = admitted_traffic_mempool;
+	/* Prepare commands */
+	uint32_t remaining_nodes = STRESS_TEST_NUM_NODES;
+	uint32_t remaining_q_admitted = ALGO_N_CORES;
+	for (i = 0; i < N_COMM_CORES; i++) {
+		cmd[i].start_time = start_time;
+		cmd[i].end_time = start_time + hz * STRESS_TEST_DURATION_SEC;
+		cmd[i].first_time_slot = first_time_slot;
+		cmd[i].mean_t_btwn_requests = STRESS_TEST_MEAN_T_BETWEEN_REQUESTS_SEC * hz;
+		cmd[i].demand_tslots = STRESS_TEST_DEMAND_TSLOTS;
+		cmd[i].num_initial_srcs = STRESS_TEST_INITIAL_SOURCES;
+		cmd[i].num_initial_dsts_per_src = STRESS_TEST_INITIAL_DSTS_PER_SRC;
+		cmd[i].initial_flow_size = STRESS_TEST_INITIAL_FLOW_SIZE;
+		cmd[i].admitted_traffic_mempool = admitted_traffic_mempool;
+#ifdef EMULATION_ALGO
+		uint16_t remaining_racks = remaining_nodes * EMU_NUM_RACKS /
+				STRESS_TEST_NUM_NODES;
+		uint16_t num_racks = remaining_racks / (N_COMM_CORES - i);
+		cmd[i].num_nodes = num_racks * STRESS_TEST_NUM_NODES / EMU_NUM_RACKS;
+		cmd[i].q_allocated = &q_admitted[ALGO_N_CORES - remaining_q_admitted];
+		cmd[i].num_q_allocated = remaining_q_admitted / (N_COMM_CORES - i);
+		remaining_q_admitted -= cmd[i].num_q_allocated;
+#else
+		cmd[i].num_nodes = remaining_nodes / (N_COMM_CORES - i);
+		cmd[i].q_allocated =
+					((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
+#endif
+		cmd[i].first_node = STRESS_TEST_NUM_NODES - remaining_nodes;
+		remaining_nodes -= cmd[i].num_nodes;
+		printf("STRESS TEST CORE %d: %d nodes (first: %d), %d admitted qs\n",
+				i, cmd[i].num_nodes, cmd[i].first_node,
+				cmd[i].num_q_allocated);
+	}
 
+	/* launch all but last stress test core */
+	for (i = 1; i < N_COMM_CORES; i++) {
+		uint16_t lcore_id = enabled_lcore[FIRST_COMM_CORE + i];
+		rte_eal_remote_launch(exec_slave_stress_test_core, &cmd[i], lcore_id);
+	}
 
-	/** Run the controller on this core */
-	exec_stress_test_core(&cmd, first_time_slot);
+	/** Run the last stress test core on this core */
+	exec_stress_test_core(&cmd[0]);
 }
 
 struct rte_mempool *allocate_admitted_traffic_mempool(int socketid)
@@ -255,7 +281,8 @@ void launch_cores(void)
 	/*** LOG CORE ***/
 	log_core = new LogCore((uint64_t)(LOG_GAP_SECS * rte_get_timer_hz()),
 						   (uint64_t)(Q_LOG_GAP_SECS * rte_get_timer_hz()));
-	log_core->add_comm_lcore(rte_lcore_id()); /* this core */
+	for (i = 0; i < N_COMM_CORES; i++)
+		log_core->add_comm_lcore(enabled_lcore[FIRST_COMM_CORE + i]);
 
 	/* add all admission cores */
 	for (i = 0; i < N_ADMISSION_CORES; i++)

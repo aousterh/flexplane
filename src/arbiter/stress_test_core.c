@@ -90,11 +90,12 @@ static inline uint64_t process_allocated_traffic_one_q(
 
 static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
 		struct rte_ring **q_admitted,
-		struct rte_mempool *admitted_traffic_mempool) {
+		struct rte_mempool *admitted_traffic_mempool, uint32_t num_q_allocated)
+{
 #ifdef EMULATION_ALGO
 	uint16_t i;
 	uint64_t total = 0;
-	for (i = 0; i < ALGO_N_CORES; i++)
+	for (i = 0; i < num_q_allocated; i++)
 		total += process_allocated_traffic_one_q(core, q_admitted[i],
 				admitted_traffic_mempool);
 	return total;
@@ -102,6 +103,16 @@ static inline uint64_t process_allocated_traffic(struct comm_core_state *core,
 	return process_allocated_traffic_one_q(core, q_admitted[0],
 			admitted_traffic_mempool);
 #endif
+}
+
+static inline void get_next_backlog_request(struct request_generator *gen,
+		struct request *next_request, uint32_t percent_out_of_group) {
+#if defined(EMULATION_ALGO)
+	get_next_request_biased(gen, next_request, percent_out_of_group);
+#else
+	get_next_request(gen, next_request);
+#endif
+
 }
 
 /**
@@ -121,9 +132,141 @@ static void add_initial_requests(struct comm_core_state *core,
 	flush_backlog(g_admissible_status());
 }
 
-void exec_stress_test_core(struct stress_test_core_cmd * cmd,
-		uint64_t first_time_slot)
+static inline print_completion_stats(uint64_t *admitted_tslots,
+		uint32_t admitted_index) {
+	/* Dump some stats */
+	printf("Stress test finished\n");
+
+	/* print measured endpoint throughput */
+	if (admitted_index > 30) {
+		double tput_gbps = (admitted_tslots[admitted_index - 1] -
+				admitted_tslots[admitted_index - 31]) * 1500 * 8 /
+						((double) 30 * 1000 * 1000 * 1000);
+		printf("Throughput over last 30 seconds: %f\n", tput_gbps);
+	} else if (admitted_index > 10) {
+		double tput_gbps = (admitted_tslots[admitted_index - 1] -
+				admitted_tslots[admitted_index - 11]) * 1500 * 8 /
+						((double) 10 * 1000 * 1000 * 1000);
+		printf("Ran for less than 30 seconds. Throughput over last 10 seconds: %f\n",
+				tput_gbps);
+	}
+}
+
+int exec_slave_stress_test_core(void *void_cmd_p) {
+	struct stress_test_core_cmd *cmd =
+			(struct stress_test_core_cmd *) void_cmd_p;
+	int i;
+	const unsigned lcore_id = rte_lcore_id();
+	uint64_t now;
+	struct request_generator gen;
+	struct request next_request;
+	struct comm_core_state *core = &ccore_state[lcore_id];
+	uint64_t min_next_iteration_time;
+	uint64_t loop_minimum_iteration_time =
+			rte_get_timer_hz() * STRESS_TEST_MIN_LOOP_TIME_SEC;
+	double mean_t_btwn_requests, next_mean_t_btwn_requests;
+	uint64_t admitted_tslots[STRESS_TEST_DURATION_SEC /
+		                         STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC];
+	uint64_t next_record_admitted_time;
+	uint32_t admitted_index = 0;
+	uint64_t total_occupied_node_tslots = 0;
+	uint32_t percent_out_of_group;
+
+	printf("IN SLAVE STRESS TEST CORE, lcore %d\n", lcore_id);
+
+	for (i = 0; i < N_PARTITIONS; i++)
+		core->latest_timeslot[i] = cmd->first_time_slot - 1;
+	stress_test_log_init(&stress_test_core_logs[lcore_id]);
+	comm_log_init(&comm_core_logs[lcore_id]);
+
+	/* determine percentage of traffic that will be out-of-group (aka out of
+	 * rack), for emulation  */
+	percent_out_of_group = 0;
+#if EMU_NUM_RACKS != 1
+		percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
+#endif
+
+	while (rte_get_timer_cycles() < cmd->start_time);
+
+	now = rte_get_timer_cycles();
+	next_record_admitted_time = now;
+
+	mean_t_btwn_requests = cmd->mean_t_btwn_requests;
+	comm_log_mean_t(mean_t_btwn_requests);
+	init_request_generator(&gen, mean_t_btwn_requests, now, cmd->first_node,
+			cmd->num_nodes, STRESS_TEST_NUM_NODES, cmd->demand_tslots);
+
+    /* generate the first request */
+	get_next_backlog_request(&gen, &next_request, percent_out_of_group);
+
+	/* MAIN LOOP */
+	while (now < cmd->end_time) {
+		uint32_t n_processed_requests = 0;
+
+		uint32_t master_index = enabled_lcore[FIRST_COMM_CORE];
+		next_mean_t_btwn_requests =
+				comm_core_logs[master_index].mean_t_btwn_requests;
+		if (next_mean_t_btwn_requests != mean_t_btwn_requests) {
+			/* reinitialize the request generator */
+			comm_log_mean_t(next_mean_t_btwn_requests);
+			reinit_request_generator(&gen, next_mean_t_btwn_requests, now);
+			get_next_backlog_request(&gen, &next_request, percent_out_of_group);
+            mean_t_btwn_requests = next_mean_t_btwn_requests;
+		}
+
+		/* if time to enqueue requests, do so now */
+		for (i = 0; i < MAX_ENQUEUES_PER_LOOP; i++) {
+			if (next_request.time > now)
+				break;
+
+			/* enqueue the request */
+			add_backlog(g_admissible_status(), next_request.src,
+					next_request.dst, next_request.backlog, 0, NULL);
+			comm_log_demand_increased(next_request.src, next_request.dst, 0,
+					next_request.backlog, next_request.backlog);
+			n_processed_requests++;
+
+			/* generate the next request */
+			get_next_backlog_request(&gen, &next_request, percent_out_of_group);
+		}
+		comm_log_processed_batch(n_processed_requests, now);
+
+		/* Process newly allocated timeslots */
+		total_occupied_node_tslots += process_allocated_traffic(core,
+				cmd->q_allocated, cmd->admitted_traffic_mempool,
+				cmd->num_q_allocated);
+
+		handle_spent_demands(g_admissible_status());
+		flush_backlog(g_admissible_status());
+
+		/* record the cumulative number of tslots allocated at each second
+		 * throughout the experiment */
+		if (next_record_admitted_time <= now) {
+			admitted_tslots[admitted_index++] = total_occupied_node_tslots;
+			next_record_admitted_time += rte_get_timer_hz() *
+					STRESS_TEST_RECORD_ADMITTED_INTERVAL_SEC;
+		}
+
+		/* wait until at least loop_minimum_iteration_time has passed from
+		 * beginning of loop */
+		min_next_iteration_time = now + loop_minimum_iteration_time;
+		do {
+			now = rte_get_timer_cycles();
+			comm_log_stress_test_ahead();
+		} while (now < min_next_iteration_time);
+	}
+
+	print_completion_stats(&admitted_tslots[0], admitted_index);
+
+	rte_exit(0, "Done!\n");
+
+	return 0;
+}
+
+int exec_stress_test_core(void *void_cmd_p)
 {
+	struct stress_test_core_cmd *cmd =
+			(struct stress_test_core_cmd *) void_cmd_p;
 	int i;
 	const unsigned lcore_id = rte_lcore_id();
 	uint64_t now;
@@ -153,10 +296,12 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	uint64_t core_ahead_prev[RTE_MAX_LCORE];
 	bool persistently_behind = false;
 	uint64_t next_rate_decrease_time;
-	uint32_t percent_out_of_group; (void) percent_out_of_group;
+	uint32_t percent_out_of_group;
+
+	printf("IN MASTER STRESS TEST CORE, lcore %d\n", lcore_id);
 
 	for (i = 0; i < N_PARTITIONS; i++)
-		core->latest_timeslot[i] = first_time_slot - 1;
+		core->latest_timeslot[i] = cmd->first_time_slot - 1;
 	stress_test_log_init(&stress_test_core_logs[lcore_id]);
 	comm_log_init(&comm_core_logs[lcore_id]);
 
@@ -166,7 +311,7 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	add_initial_requests(core, cmd->num_initial_srcs,
 			cmd->num_initial_dsts_per_src, cmd->initial_flow_size);
 
-	/* Initialize gen */
+	/* Determine mean t between requests */
 	next_mean_t_btwn_requests = cmd->mean_t_btwn_requests;
 	last_successful_mean_t = next_mean_t_btwn_requests;
 	cur_increase_factor = STRESS_TEST_RATE_INCREASE_FACTOR;
@@ -176,9 +321,10 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		comm_log_stress_test_mode(STRESS_TEST_RATE_MAINTAIN);
 
 	/* determine percentage of traffic that will be out-of-group (aka out of
-	 * rack) */
-#if defined(EMULATION_ALGO)
-	percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
+	 * rack), for emulation */
+	percent_out_of_group = 0;
+#if EMU_NUM_RACKS != 1
+		percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
 #endif
 
 	while (rte_get_timer_cycles() < cmd->start_time);
@@ -189,14 +335,11 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 	next_rate_check_time = now;
 
 	init_request_generator(&gen, next_mean_t_btwn_requests, now,
-			cmd->num_nodes, cmd->demand_tslots);
+			cmd->first_node, cmd->num_nodes, STRESS_TEST_NUM_NODES,
+			cmd->demand_tslots);
 
 	/* generate the first request */
-#if defined(EMULATION_ALGO)
-	get_next_request_biased(&gen, &next_request, percent_out_of_group);
-#else
-	get_next_request(&gen, &next_request);
-#endif
+	get_next_backlog_request(&gen, &next_request, percent_out_of_group);
 
 	/* MAIN LOOP */
 	while (now < cmd->end_time) {
@@ -287,14 +430,9 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			if (re_init_gen) {
 				/* reinitialize the request generator */
 				comm_log_mean_t(next_mean_t_btwn_requests);
-				reinit_request_generator(&gen, next_mean_t_btwn_requests, now,
-						cmd->num_nodes, cmd->demand_tslots);
-#if defined(EMULATION_ALGO)
-				get_next_request_biased(&gen, &next_request,
+				reinit_request_generator(&gen, next_mean_t_btwn_requests, now);
+				get_next_backlog_request(&gen, &next_request,
 						percent_out_of_group);
-#else
-				get_next_request(&gen, &next_request);
-#endif
 
 				next_rate_increase_time = rte_get_timer_cycles() +
 						rte_get_timer_hz() * STRESS_TEST_RATE_INCREASE_GAP_SEC;
@@ -321,18 +459,16 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			n_processed_requests++;
 
 			/* generate the next request */
-#if defined(EMULATION_ALGO)
-			get_next_request_biased(&gen, &next_request, percent_out_of_group);
-#else
-			get_next_request(&gen, &next_request);
-#endif
+			get_next_backlog_request(&gen, &next_request,
+					percent_out_of_group);
 		}
 
 		comm_log_processed_batch(n_processed_requests, now);
 
 		/* Process newly allocated timeslots */
 		total_occupied_node_tslots += process_allocated_traffic(core,
-				cmd->q_allocated, cmd->admitted_traffic_mempool);
+				cmd->q_allocated, cmd->admitted_traffic_mempool,
+				cmd->num_q_allocated);
 
 		/* Process the spent demands, launching a new demand for demands where
 		 * backlog increased while the original demand was being allocated */
@@ -358,21 +494,9 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 		} while (now < min_next_iteration_time);
 	}
 
-stress_test_done:
-	/* Dump some stats */
-	printf("Stress test finished\n");
+	print_completion_stats(&admitted_tslots[0], admitted_index);
 
-	if (admitted_index > 30) {
-		double tput_gbps = (admitted_tslots[admitted_index - 1] -
-				admitted_tslots[admitted_index - 31]) * 1500 * 8 /
-						((double) 30 * 1000 * 1000 * 1000);
-		printf("Throughput over last 30 seconds: %f\n", tput_gbps);
-	} else if (admitted_index > 10) {
-		double tput_gbps = (admitted_tslots[admitted_index - 1] -
-				admitted_tslots[admitted_index - 11]) * 1500 * 8 /
-						((double) 10 * 1000 * 1000 * 1000);
-		printf("Ran for less than 30 seconds. Throughput over last 10 seconds: %f\n",
-				tput_gbps);
-	}
 	rte_exit(0, "Done!\n");
+
+	return 0;
 }

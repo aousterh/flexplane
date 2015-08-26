@@ -25,7 +25,7 @@
 
 #define ADMITTED_MEMPOOL_SIZE			128
 #define ADMITTED_Q_LOG_SIZE				4
-#define PACKET_MEMPOOL_SIZE				(512 * 1024)
+#define PACKET_MEMPOOL_SIZE				(1024 * 1024)
 #define	PACKET_MEMPOOL_CACHE_SIZE		256
 #define PACKET_Q_LOG_SIZE				16
 #define MIN(X, Y)						(X <= Y ? X : Y)

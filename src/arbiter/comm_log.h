@@ -82,6 +82,7 @@ struct comm_log {
 	uint64_t stress_test_max_node_tslots;
 	double stress_test_increase_factor;
 	uint64_t stress_test_ahead;
+	uint64_t core_behind[N_ADMISSION_CORES];
 };
 
 extern struct comm_log comm_core_logs[RTE_MAX_LCORE];
@@ -388,6 +389,10 @@ static inline void comm_log_stress_test_increase_factor(double increase_factor) 
 /* stress test increase factor */
 static inline void comm_log_stress_test_ahead() {
         CL->stress_test_ahead++;
+}
+
+static inline void comm_log_admission_core_behind(uint32_t core_index) {
+	CL->core_behind[core_index]++;
 }
 
 #undef CL

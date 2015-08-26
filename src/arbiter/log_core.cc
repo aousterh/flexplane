@@ -42,6 +42,7 @@ void print_comm_log(uint16_t lcore_id)
 	struct comm_core_state *ccs = &ccore_state[lcore_id];
 	u64 now_real = fp_get_time_ns();
 	u64 now_timeslot = (now_real * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
+	uint32_t i;
 
 	printf("\ncomm_log lcore %d timeslot 0x%lX (now_timeslot 0x%llX, now - served %lld)",
 			lcore_id, ccs->latest_timeslot[0], now_timeslot,
@@ -63,6 +64,9 @@ void print_comm_log(uint16_t lcore_id)
 	printf("\nstress test rate status (1:increase, 2:maintain, 3:decrease): %lu, increase factor: %f, ",
 			cl->stress_test_mode, cl->stress_test_increase_factor);
 	printf("ahead: %lu\n", D(stress_test_ahead));
+	printf("cores behind:");
+	for (i = 0; i < N_ADMISSION_CORES; i++)
+		printf(" %lu", cl->core_behind[i]);
 #endif
 
 	printf("\n  RX %lu pkts, %lu bytes in %lu batches (%lu non-empty batches), %lu dropped",
@@ -276,9 +280,6 @@ void print_admission_core_log_emulation(uint16_t lcore, uint16_t adm_core_index)
 			al->current_timeslot, D(current_timeslot));
 	printf("  tslots core ahead: %lu (diff), %lu (total)\n", D(core_ahead),
 			al->core_ahead);
-//	printf("  tslots core behind by more than %d: %lu (diff), %lu (total)\n",
-//			TSLOTS_BEHIND_TOLERANCE, D(core_behind), al->core_behind);
-//	printf("  tslots skipped: %lu\n", al->tslots_skipped);
 #undef D
 
 	print_core_admission_log_emulation(adm_core_index);

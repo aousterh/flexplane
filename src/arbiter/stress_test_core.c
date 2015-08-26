@@ -212,7 +212,10 @@ void exec_stress_test_core(struct stress_test_core_cmd * cmd,
 			for (i = 0; i < N_ADMISSION_CORES; i++) {
 				lcore = enabled_lcore[FIRST_ADMISSION_CORE + i];
 				struct admission_log *al = &admission_core_logs[lcore];
-				fell_behind |= (al->core_ahead == core_ahead_prev[lcore]);
+				if (al->core_ahead == core_ahead_prev[lcore]) {
+					fell_behind = true;
+					comm_log_admission_core_behind(i);
+				}
 				core_ahead_prev[lcore] = al->core_ahead;
 			}
 #else

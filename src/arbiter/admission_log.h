@@ -25,15 +25,12 @@
 /**
  * logged information for a core
  * @core_ahead: this core was ahead of schedule for this many timeslots
- * @core_behind: this core was behind for this many timeslots
  */
 struct admission_log {
 	uint64_t batches_started;
 	uint64_t last_started_alloc_tsc;
 	uint64_t after_tslots_histogram[AFTER_TSLOTS_HISTOGRAM_NUM_BINS];
 	uint64_t core_ahead;
-	uint64_t core_behind;
-	uint64_t tslots_skipped;
 	uint64_t current_timeslot;
 } __attribute__((aligned(64))) /* don't want sharing between cores */;
 
@@ -85,11 +82,6 @@ static inline void admission_log_allocation_end(uint64_t logical_timeslot) {
 
 static inline void admission_log_core_ahead() {
 	AL->core_ahead++;
-}
-
-static inline void admission_log_core_skipped_tslots(uint64_t tslots_skipped) {
-	AL->core_behind++;
-	AL->tslots_skipped += tslots_skipped;
 }
 
 #undef CL

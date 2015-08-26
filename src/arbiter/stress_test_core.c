@@ -133,23 +133,28 @@ static void add_initial_requests(struct comm_core_state *core,
 }
 
 static inline print_completion_stats(uint64_t *admitted_tslots,
-		uint32_t admitted_index) {
+		uint32_t admitted_index, uint32_t percent_out_of_group) {
+	double ep_tput_gbps, rtr_tput_gbps;
+
 	/* Dump some stats */
 	printf("Stress test finished\n");
 
 	/* print measured endpoint throughput */
 	if (admitted_index > 30) {
-		double tput_gbps = (admitted_tslots[admitted_index - 1] -
+		ep_tput_gbps = (admitted_tslots[admitted_index - 1] -
 				admitted_tslots[admitted_index - 31]) * 1500 * 8 /
 						((double) 30 * 1000 * 1000 * 1000);
-		printf("Throughput over last 30 seconds: %f\n", tput_gbps);
+		printf("Throughput over last 30 seconds: %f\n", ep_tput_gbps);
 	} else if (admitted_index > 10) {
-		double tput_gbps = (admitted_tslots[admitted_index - 1] -
+		ep_tput_gbps = (admitted_tslots[admitted_index - 1] -
 				admitted_tslots[admitted_index - 11]) * 1500 * 8 /
 						((double) 10 * 1000 * 1000 * 1000);
 		printf("Ran for less than 30 seconds. Throughput over last 10 seconds: %f\n",
-				tput_gbps);
+				ep_tput_gbps);
 	}
+
+	rtr_tput_gbps = ep_tput_gbps * (1 + percent_out_of_group / 50.0);
+	printf("Estimated router throughput based on bias: %f\n", rtr_tput_gbps);
 }
 
 int exec_slave_stress_test_core(void *void_cmd_p) {
@@ -256,7 +261,8 @@ int exec_slave_stress_test_core(void *void_cmd_p) {
 		} while (now < min_next_iteration_time);
 	}
 
-	print_completion_stats(&admitted_tslots[0], admitted_index);
+	print_completion_stats(&admitted_tslots[0], admitted_index,
+			percent_out_of_group);
 
 	rte_exit(0, "Done!\n");
 
@@ -494,7 +500,8 @@ int exec_stress_test_core(void *void_cmd_p)
 		} while (now < min_next_iteration_time);
 	}
 
-	print_completion_stats(&admitted_tslots[0], admitted_index);
+	print_completion_stats(&admitted_tslots[0], admitted_index,
+			percent_out_of_group);
 
 	rte_exit(0, "Done!\n");
 

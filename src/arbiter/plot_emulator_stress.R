@@ -34,9 +34,9 @@ summary
 ggplot(summary, aes(x=cores, y=mean_tput, color=tput_type, shape=tput_type)) +
                 geom_point() +
                 coord_cartesian(ylim=c(0,400)) +
-                labs(x="Number of cores", y="Maximum total throughput (Gbits/s)") +
+                labs(x="Number of emulation cores", y="Maximum throughput (Gbits/s)") +
                 theme(legend.key = element_blank(), legend.position=c(0.8,0.2)) +
-                scale_color_discrete(name="", labels=c("Endpoint throughput", "Total router throughput")) +
-                scale_shape_discrete(name="", labels=c("Endpoint throughput", "Total router throughput"))
+                scale_color_discrete(name="", labels=c("Endpoint throughput", "Router throughput")) +
+                scale_shape_discrete(name="", labels=c("Endpoint throughput", "Router throughput"))
 
 ggsave("emulator_throughput.pdf", width=6, height=3.5)

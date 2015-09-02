@@ -51,7 +51,14 @@ typedef uint16_t __sum16;
 #include <linux/types.h>
 #endif
 
-#ifndef _RTE_IP_H_
+#ifdef _RTE_IP_H_
+#include <rte_version.h>
+#if RTE_VER_MAJOR == 1
+#include <rte_byteorder.h>
+#define ntohs(x) rte_be_to_cpu_16(x)
+#define ntohl(x) rte_be_to_cpu_32(x)
+#endif
+#else
 #include <arpa/inet.h>
 #endif
 

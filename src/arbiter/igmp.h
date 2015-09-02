@@ -14,6 +14,7 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 #include <rte_byteorder.h>
+#include <rte_version.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,8 +96,13 @@ make_igmp(struct rte_mempool* pktmbuf_pool, uint8_t src_port,
 
 	// Activate IP checksum offload for packet
 	m->ol_flags |= PKT_TX_IP_CKSUM;
+#if RTE_VER_MAJOR == 1
+	m->pkt.vlan_macip.f.l2_len = sizeof(struct ether_hdr);
+	m->pkt.vlan_macip.f.l3_len = sizeof(struct ipv4_hdr);
+#else
 	m->l2_len = sizeof(struct ether_hdr);
 	m->l3_len = sizeof(struct ipv4_hdr);
+#endif
 	ipv4_hdr->hdr_checksum = 0;
 
 	/* IGMP header */

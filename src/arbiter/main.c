@@ -62,7 +62,6 @@
 #include <rte_branch_prediction.h>
 #include <rte_interrupts.h>
 #include <rte_pci.h>
-#include <rte_power_common.h>
 #include <rte_random.h>
 #include <rte_debug.h>
 #include <rte_ether.h>
@@ -76,6 +75,11 @@
 #include <rte_errno.h>
 #include <rte_malloc.h>
 #include <rte_power.h>
+#include <rte_version.h>
+
+#if RTE_VER_MAJOR == 2
+#include <rte_power_common.h>
+#endif
 
 #include "main.h"
 #include "port_alloc.h"

@@ -31,6 +31,10 @@ struct emu_packet {
 	uint16_t	flow;
 	uint16_t	id;
 	uint16_t	flags;
+
+#if defined(PFABRIC)
+	uint32_t	priority;
+#endif
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 
 /**

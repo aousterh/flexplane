@@ -23,8 +23,11 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 	packet->id = id;
 	packet->flags = EMU_FLAGS_NONE; /* start with no flags */
 
-	/* TODO: add algo-specific fields to emu_packet and populate them from
-	 * areq_data, based on the algorithm used. */
+	/* copy algo-specific fields to emu_packet */
+#if defined(PFABRIC)
+	uint32_t priority = ntohl(*((uint32_t *) areq_data));
+	memcpy(&packet->priority, &priority, 1);
+#endif
 }
 
 static inline

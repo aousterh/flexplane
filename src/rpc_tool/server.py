@@ -1,12 +1,34 @@
 import argparse
+import math
 import os
 import socket
+import struct
 
 response_dict = {}
+DATA_PER_PACKET = 1448
+CUSTOM_DATA_SIZE = 4
 
-def generate_response(size):
-    # generate random data for the response
-    data = os.urandom(size)
+def generate_response(size, encode_pkts_remaining=False):
+    if encode_pkts_remaining:
+        # encode the number of remaining packets in the first 4 data bytes
+        # of each packet
+        num_pkts = math.ceil(float(size) / (DATA_PER_PACKET - CUSTOM_DATA_SIZE))
+        data = ""
+        remaining_bytes = size
+        print "generating response, encoding pkts remaining"
+        while num_pkts >= 0:
+            # append more custom data and another packet's worth of random data
+            random_data_size = min(DATA_PER_PACKET - CUSTOM_DATA_SIZE,
+                                   remaining_bytes)
+            data = (data + struct.pack('!L', num_pkts) +
+                    os.urandom(random_data_size))
+
+            remaining_bytes -= random_data_size
+            num_pkts -= 1
+    else:
+        # generate random data for the response
+        data = os.urandom(size)
+
     response_dict[size] = data
 
 def setup_socket(params):
@@ -48,7 +70,7 @@ def run_server(params):
             response_size = int(buf)
 
             if response_size not in response_dict:
-                generate_response(response_size)
+                generate_response(response_size, params.pfabric)
             connection.send(response_dict[response_size])
 
     server_socket.close()
@@ -63,6 +85,9 @@ def get_args():
                         help='the size of the response (1448 is max for 1 MTU)')
     parser.add_argument('--tos', metavar='tos', type=int,
                         help='tos (Type of Service), now called DSCP')
+    parser.add_argument('-pfabric', action="store_const", const=True,
+                        required=False, default=False,
+                        help='encode remaining flow size for pfabric')
 
     return parser.parse_args()
 

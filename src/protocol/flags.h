@@ -26,9 +26,10 @@ extern "C" {
 #define EMU_FLAGS_MODIFY	3 /* modify headers in some other way */
 
 /* parameters for areq data */
-#define MAX_REQ_DATA_BYTES		8 /* must be a multiple of two */
-#define AREQ_DATA_TYPE_NONE		0 /* no areq data used */
-#define AREQ_DATA_TYPE_UNSPEC	1 /* unspecified data type, assumes MAX_REQ_DATA_BYTES */
+#define MAX_REQ_DATA_BYTES			8 /* must be a multiple of two */
+#define AREQ_DATA_TYPE_NONE			0 /* no areq data used */
+#define AREQ_DATA_TYPE_UNSPEC		1 /* unspecified data type, assumes MAX_REQ_DATA_BYTES */
+#define AREQ_DATA_TYPE_PKTS_LEFT	2 /* 4 bytes specifying how many packets remain in the flow */
 
 /* parameters for alloc data */
 #define MAX_ALLOC_DATA_BYTES	2 /* must be a multiple of two */
@@ -46,6 +47,8 @@ static inline u16 emu_req_data_bytes(void) {
 #if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP) || defined(HULL) \
 	||	defined(ROUND_ROBIN) || defined(PRIO_QUEUEING))
 	req_data_bytes = 0;
+#elif (defined(PFABRIC))
+	req_data_bytes = 4;
 #else
 	req_data_bytes = MAX_REQ_DATA_BYTES;
 #endif
@@ -61,7 +64,7 @@ static inline u16 emu_alloc_data_bytes(void) {
 	u16 alloc_data_bytes;
 
 #if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP) || defined(HULL) \
-	||	defined(ROUND_ROBIN) || defined(PRIO_QUEUEING))
+	||	defined(ROUND_ROBIN) || defined(PRIO_QUEUEING)) || defined(PFABRIC)
 	alloc_data_bytes = 0;
 #else
 	alloc_data_bytes = MAX_ALLOC_DATA_BYTES;
@@ -78,6 +81,8 @@ static inline u8 areq_data_type_from_scheme(char *scheme) {
 	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
 			strcmp(scheme, "dctcp") == 0)
 		return AREQ_DATA_TYPE_NONE;
+	else if (strcmp(scheme, "pfabric") == 0)
+		return AREQ_DATA_TYPE_PKTS_LEFT;
 	else
 		return AREQ_DATA_TYPE_UNSPEC;
 }
@@ -89,6 +94,8 @@ static inline u8 areq_data_bytes_from_scheme(char *scheme) {
 	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
 			strcmp(scheme, "dctcp") == 0)
 		return 0;
+	else if (strcmp(scheme, "pfabric") == 0)
+		return 4;
 	else
 		return MAX_REQ_DATA_BYTES;
 }
@@ -98,7 +105,7 @@ static inline u8 areq_data_bytes_from_scheme(char *scheme) {
  */
 static inline u8 alloc_data_type_from_scheme(char *scheme) {
 	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
-			strcmp(scheme, "dctcp") == 0)
+			strcmp(scheme, "dctcp") == 0 || strcmp(scheme, "pfabric") == 0)
 		return ALLOC_DATA_TYPE_NONE;
 	else
 		return ALLOC_DATA_TYPE_UNSPEC;
@@ -109,7 +116,7 @@ static inline u8 alloc_data_type_from_scheme(char *scheme) {
  */
 static inline u8 alloc_data_bytes_from_scheme(char *scheme) {
 	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
-			strcmp(scheme, "dctcp") == 0)
+			strcmp(scheme, "dctcp") == 0 || strcmp(scheme, "pfabric") == 0)
 		return 0;
 	else
 		return MAX_ALLOC_DATA_BYTES;

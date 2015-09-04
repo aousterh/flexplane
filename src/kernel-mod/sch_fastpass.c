@@ -1313,6 +1313,47 @@ static void fpq_stop_qdisc(void *priv) {
 	fastpass_proc_cleanup(q);
 }
 
+/*
+ * Returns the first 32 bits of custom packet data after the transport header,
+ * or 0 if there is no transport header or no data contained.
+ */
+static inline u32 get_custom_packet_data(struct sk_buff *skb)
+{
+	__be16 proto = skb->protocol;
+	struct iphdr *iph;
+	u32 data_length;
+	struct tcphdr *tcph;
+	u32 *data_pointer;
+
+	if (proto != __constant_htons(ETH_P_IP)) {
+		/* not IPv4. probably IPv6? not currently handled. */
+		fp_debug("cannot get custom packet data from packet with protocol %u\n",
+				skb->protocol);
+		return 0;
+	}
+
+	iph = (struct iphdr *) skb_network_header(skb);
+	if (iph->protocol != IPPROTO_TCP) {
+		/* custom packet data only supported for TCP */
+		fp_debug("custom data not supported for transport protocol %u\n",
+				iph->protocol);
+		return 0;
+	}
+
+	tcph = (struct tcphdr *) skb_transport_header(skb);
+	data_length = ntohs(iph->tot_len) - ((iph->ihl + tcph->doff) << 2);
+	if (data_length == 0) {
+		/* no data in this packet */
+		fp_debug("TCP packet with no data in it\n");
+		return 0;
+	}
+
+	data_pointer = (u32 *) tcph + tcph->doff;
+
+	/* leave this in network order */
+	return *data_pointer;
+}
+
 #if defined(EMULATION_ALGO)
 /*
  * Copy data from @skb to @request_data, to be sent to the arbiter with the
@@ -1320,9 +1361,14 @@ static void fpq_stop_qdisc(void *priv) {
  */
 static void inline copy_request_data_from_pkt(struct fp_sched_data *q,
 		u8 *request_data, struct sk_buff *skb) {
-	/* TODO: fill in request data from packet, depending on scheme
-	 * (q->emu_areq_data_type specifies NONE, XCP, etc. as defined in
-	 * protocol/flags.h) */
+	u32 flow_pkts_left;
+
+	if (q->emu_areq_data_type == AREQ_DATA_TYPE_PKTS_LEFT) {
+		flow_pkts_left = get_custom_packet_data(skb);
+		*((u32 *) request_data) = flow_pkts_left;
+	} else
+		fp_debug("no specified way to copy request data for data type %d\n",
+				q->emu_areq_data_type);
 }
 #endif
 

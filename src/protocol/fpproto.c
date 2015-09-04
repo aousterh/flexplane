@@ -995,7 +995,8 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 			}
 			fp_debug("copying areq data of length %d", pd->areq_data_bytes);
 			memcpy(curp, &pd->areq_data[0], pd->areq_data_bytes);
-			fp_debug("areq data: %x %x", *curp, *(curp + 1));
+			fp_debug("areq data: %x %x %x %x\n", *curp, *(curp + 1),
+					*(curp + 2), *(curp + 3));
 			curp += pd->areq_data_bytes;
 			remaining_len -= pd->areq_data_bytes;
 		}

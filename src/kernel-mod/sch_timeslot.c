@@ -313,7 +313,7 @@ static inline u8 get_priority(struct sk_buff *skb)
 
 	if (proto != __constant_htons(ETH_P_IP)) {
 		/* not IPv4. probably IPv6? */
-		fp_debug("cannot get priority from packet with protocol %u:\n",
+		fp_debug("cannot get priority from packet with protocol %u\n",
 				skb->protocol);
 		return 0;
 	}

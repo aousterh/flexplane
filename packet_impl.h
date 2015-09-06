@@ -17,6 +17,8 @@
 static inline
 void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 		uint16_t flow, uint16_t id, uint8_t *areq_data) {
+	(void) areq_data;
+
 	packet->src = src;
 	packet->dst = dst;
 	packet->flow = flow;

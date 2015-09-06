@@ -91,9 +91,14 @@ public:
 	inline uint64_t *non_empty_port_mask();
 
 	/**
-	 * @returns 1 if port is empty, 0 otherwise
+	 * @returns 1 if port is full, 0 otherwise
 	 */
 	inline int full(uint32_t port);
+
+	/**
+	 * @returns 1 if port is empty, 0 otherwise
+	 */
+	inline int empty(uint32_t port);
 
 	/**
 	 * @returns a pointer to the queue bank stats
@@ -300,6 +305,11 @@ inline uint64_t *PFabricQueueBank::non_empty_port_mask()
 inline int PFabricQueueBank::full(uint32_t port)
 {
 	return (m_occupancies[port] == m_max_occupancy);
+}
+
+inline int PFabricQueueBank::empty(uint32_t port)
+{
+	return (m_occupancies[port] == 0);
 }
 
 inline struct queue_bank_stats *PFabricQueueBank::get_queue_bank_stats() {

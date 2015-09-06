@@ -13,8 +13,8 @@
  * Construct a pFabric Queue Bank, check that the port mask is empty,
  * delete it.
  */
-TEST(PfabricQueueBankTest, construct_empty) {
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+TEST(PFabricQueueBankTest, construct_empty) {
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 	EXPECT_EQ(0, *qb->non_empty_port_mask());
 	delete qb;
 }
@@ -22,11 +22,11 @@ TEST(PfabricQueueBankTest, construct_empty) {
 /*
  * Enqueue one packet and check that dequeue returns the same packet.
  */
-TEST(PfabricQueueBankTest, enqueue_dequeue_highest_prio) {
+TEST(PFabricQueueBankTest, enqueue_dequeue_highest_prio) {
 	struct emu_packet *p_enqueue, *p_dequeue;
 	uint32_t port_num = 7;
 
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 
 	p_enqueue = (struct emu_packet *) malloc(sizeof(struct emu_packet));
 	p_enqueue->priority = 13;
@@ -48,14 +48,14 @@ TEST(PfabricQueueBankTest, enqueue_dequeue_highest_prio) {
  * returns the lowest priority. Also check that dequeue_lowest_priority
  * repeatedly dequeues the correct packet.
  */
-TEST(PfabricQueueBankTest, lowest_priority) {
+TEST(PFabricQueueBankTest, lowest_priority) {
 	uint32_t i, lowest_priority;
 	struct emu_packet *p;
 	uint32_t port_num = 27;
 	uint32_t priorities[5] = {19651, 50979, 21943, 2602, 674};
 	uint32_t dequeued_priorities[5];
 
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 
 	/* enqueue several packets */
 	for (i = 0; i < 5; i++) {
@@ -91,14 +91,14 @@ TEST(PfabricQueueBankTest, lowest_priority) {
  * Enqueue packets with different priorities, check that
  * dequeue_highest_priority repeatedly dequeues the correct packet.
  */
-TEST(PfabricQueueBankTest, highest_priority_different_flows) {
+TEST(PFabricQueueBankTest, highest_priority_different_flows) {
 	uint32_t i;
 	struct emu_packet *p;
 	uint32_t port_num = 27;
 	uint32_t priorities[5] = {674, 19651, 50979, 21943, 2602};
 	uint32_t dequeued_priorities[5];
 
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 
 	/* enqueue several packets */
 	for (i = 0; i < 5; i++) {
@@ -131,7 +131,7 @@ TEST(PfabricQueueBankTest, highest_priority_different_flows) {
  * Enqueue packets with different priorities in the same flow, check that
  * dequeue_highest_priority repeatedly dequeues the correct packet.
  */
-TEST(PfabricQueueBankTest, highest_priority_one_flow) {
+TEST(PFabricQueueBankTest, highest_priority_one_flow) {
 	uint32_t i;
 	struct emu_packet *p;
 	uint32_t port_num = 27;
@@ -139,7 +139,7 @@ TEST(PfabricQueueBankTest, highest_priority_one_flow) {
 	uint32_t ids[5] = {3, 2, 0, 4, 1};
 	uint32_t dequeued_ids[5];
 
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 
 	/* enqueue several packets */
 	for (i = 0; i < 5; i++) {
@@ -174,7 +174,7 @@ TEST(PfabricQueueBankTest, highest_priority_one_flow) {
  * packets each, check that dequeue_highest_priority repeatedly dequeues the
  * correct packet.
  */
-TEST(PfabricQueueBankTest, highest_priority_mixed_flows) {
+TEST(PFabricQueueBankTest, highest_priority_mixed_flows) {
 	uint32_t i;
 	struct emu_packet packets[5];
 	uint32_t srcs[5] = {0, 3, 3, 0, 3};
@@ -184,7 +184,7 @@ TEST(PfabricQueueBankTest, highest_priority_mixed_flows) {
 	uint32_t port_num = 27;
 	struct emu_packet *dequeued_packets[5];
 
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 
 	/* enqueue several packets */
 	for (i = 0; i < 5; i++) {
@@ -214,12 +214,12 @@ TEST(PfabricQueueBankTest, highest_priority_mixed_flows) {
 /*
  * Test the full function.
  */
-TEST(PfabricQueueBankTest, full) {
+TEST(PFabricQueueBankTest, full) {
 	uint32_t i;
 	uint32_t port_num = 7;
 	struct emu_packet p[PFABRIC_QUEUE_CAPACITY];
 
-	PfabricQueueBank *qb = new PfabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
 
 	/* should be non-full after first n-1 enqueues, then full after nth */
 	for (i = 0; i < 23; i++) {

@@ -37,7 +37,7 @@ struct pfabric_metadata {
  * A collection of PFabric queues. The queue bank keeps 1 queues for each of N
  * input ports
  */
-class PfabricQueueBank {
+class PFabricQueueBank {
 public:
 	/**
 	 * c'tor
@@ -47,13 +47,13 @@ public:
 	 *
 	 * @important: this assumes exactly one queue per port
 	 */
-	PfabricQueueBank(uint32_t n_ports, uint32_t queue_max_size);
+	PFabricQueueBank(uint32_t n_ports, uint32_t queue_max_size);
 
 	/**
 	 * d'tor
 	 * @assumes all memory pointed to by queues is already freed
 	 */
-	~PfabricQueueBank();
+	~PFabricQueueBank();
 
 	/**
 	 * Enqueues the packet
@@ -124,7 +124,7 @@ private:
 
 /** implementation */
 
-PfabricQueueBank::PfabricQueueBank(uint32_t n_ports, uint32_t queue_max_size)
+PFabricQueueBank::PFabricQueueBank(uint32_t n_ports, uint32_t queue_max_size)
 	: m_n_ports(n_ports),
 	  m_max_occupancy(queue_max_size)
 {
@@ -171,7 +171,7 @@ PfabricQueueBank::PfabricQueueBank(uint32_t n_ports, uint32_t queue_max_size)
 	memset(&m_stats, 0, sizeof(m_stats));
 }
 
-PfabricQueueBank::~PfabricQueueBank()
+PFabricQueueBank::~PFabricQueueBank()
 {
 	for (uint32_t i = 0; i < m_n_ports; i++) {
 		free(m_queues[i]);
@@ -181,7 +181,7 @@ PfabricQueueBank::~PfabricQueueBank()
 	free(m_non_empty_ports);
 }
 
-inline void PfabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
+inline void PFabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
 	uint16_t i;
 
 	/* mark port as non-empty */
@@ -209,7 +209,7 @@ inline void PfabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
 	queue_bank_log_enqueue(&m_stats, port);
 }
 
-inline struct emu_packet *PfabricQueueBank::dequeue_highest_priority(
+inline struct emu_packet *PFabricQueueBank::dequeue_highest_priority(
 		uint32_t port) {
 	uint16_t i, dequeue_index, dequeue_id;
 	struct pfabric_metadata highest_prio;
@@ -251,7 +251,7 @@ inline struct emu_packet *PfabricQueueBank::dequeue_highest_priority(
 	return m_queues[port][dequeue_index];
 }
 
-inline struct emu_packet *PfabricQueueBank::dequeue_lowest_priority(
+inline struct emu_packet *PFabricQueueBank::dequeue_lowest_priority(
 		uint32_t port) {
 	uint16_t i;
 	struct pfabric_metadata *metadata = m_metadata[port];
@@ -279,7 +279,7 @@ inline struct emu_packet *PfabricQueueBank::dequeue_lowest_priority(
 	return m_queues[port][lowest_priority_index];
 }
 
-inline uint32_t PfabricQueueBank::lowest_priority(uint32_t port) {
+inline uint32_t PFabricQueueBank::lowest_priority(uint32_t port) {
 	uint16_t i;
 	uint32_t lowest_priority = 0;
 
@@ -292,17 +292,17 @@ inline uint32_t PfabricQueueBank::lowest_priority(uint32_t port) {
 	return lowest_priority;
 }
 
-inline uint64_t *PfabricQueueBank::non_empty_port_mask()
+inline uint64_t *PFabricQueueBank::non_empty_port_mask()
 {
 	return m_non_empty_ports;
 }
 
-inline int PfabricQueueBank::full(uint32_t port)
+inline int PFabricQueueBank::full(uint32_t port)
 {
 	return (m_occupancies[port] == m_max_occupancy);
 }
 
-inline struct queue_bank_stats *PfabricQueueBank::get_queue_bank_stats() {
+inline struct queue_bank_stats *PFabricQueueBank::get_queue_bank_stats() {
 	return &m_stats;
 }
 

@@ -59,6 +59,7 @@ static inline u16 fp_map_mac_to_id(u64 mac) {
 
 /* returns true if this mac is out-of-rack */
 static inline bool mac_is_out_of_rack(u64 mac) {
+	(void) mac;
 #if (FB_DEPLOYMENT == 1)
 	u64 masked_mac = mac & MANUFACTURER_MAC_MASK;
 	return ((masked_mac == VRRP_SWITCH_MAC_PREFIX) ||

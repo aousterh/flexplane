@@ -40,6 +40,10 @@ static inline
 struct fp_ring *fp_ring_create(const char *name, unsigned num_elems, int socket_id,
 		unsigned flags)
 {
+	(void) name;
+	(void) socket_id;
+	(void) flags;
+
 	uint32_t mem_size = sizeof(struct fp_ring)
 							+ num_elems * sizeof(void *);
     struct fp_ring *ring = (struct fp_ring *) malloc(mem_size);
@@ -68,7 +72,7 @@ int fp_ring_enqueue(struct fp_ring *ring, void *elem) {
 // Insert new bin to the back of this backlog queue
 static inline
 int fp_ring_enqueue_bulk(struct fp_ring *ring, void **elems, unsigned n) {
-	int i;
+	unsigned i;
 
 	assert(ring != NULL);
 
@@ -99,7 +103,7 @@ static inline int fp_ring_dequeue(struct fp_ring *ring, void **obj_p) {
 static inline
 int fp_ring_dequeue_burst(struct fp_ring *r, void **obj_table, unsigned n) {
 	int rc = 0;
-	int i;
+	unsigned i;
 	for (i = 0; i < n; i++) {
 		if (fp_ring_dequeue(r, &obj_table[i]) == 0)
 			rc++;

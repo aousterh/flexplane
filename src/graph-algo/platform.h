@@ -71,6 +71,10 @@ struct fp_mempool {
 static struct fp_mempool * fp_mempool_create(const char *name, unsigned n,
 		unsigned elt_size, unsigned cache_size, int socket_id, unsigned flags)
 {
+	(void) name;
+	(void) cache_size;
+	(void) socket_id;
+	(void) flags;
 	struct fp_mempool *mp;
 	unsigned i;
 	/* allocate the struct */

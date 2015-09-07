@@ -23,6 +23,7 @@
 #include "../emulation/classifiers/BySourceClassifier.h"
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"
+#include "../emulation/queue_managers/pfabric_qm.h"
 #include "../emulation/queue_managers/red.h"
 #include "../emulation/packet.h"
 #include "../emulation/router.h"
@@ -153,6 +154,14 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 
     rtype = R_HULL_sched;
     rtr_args = &hl_args;
+#elif defined(PFABRIC)
+    struct pfabric_args p_args;
+    p_args.q_capacity = PFABRIC_QUEUE_CAPACITY;
+    RTE_LOG(INFO, ADMISSION, "Using PFabric routers with q_capacity %d\n",
+    		p_args.q_capacity);
+
+    rtype = R_PFabric;
+    rtr_args = &p_args;
 #else
 #error "Unrecognized router type"
 #endif

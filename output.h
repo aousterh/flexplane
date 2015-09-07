@@ -136,8 +136,6 @@ EmulationOutput::EmulationOutput(struct fp_ring* q_admitted,
 }
 
 inline EmulationOutput::~EmulationOutput() {
-	uint16_t i;
-
 	/* free the allocated next batch */
 	fp_mempool_put(admitted_traffic_mempool, admitted);
 }
@@ -146,7 +144,7 @@ inline void __attribute__((always_inline))
 EmulationOutput::drop(struct emu_packet* packet)
 {
 	/* add dropped packet to admitted struct */
-	admitted_insert_dropped_edge(admitted, packet, m_stat);
+	admitted_insert_dropped_edge(admitted, packet);
 
 	/* if admitted struct is full, flush now */
 	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))
@@ -158,7 +156,7 @@ EmulationOutput::drop(struct emu_packet* packet)
 inline void __attribute__((always_inline))
 EmulationOutput::admit(struct emu_packet* packet)
 {
-	admitted_insert_admitted_edge(admitted, packet, m_stat);
+	admitted_insert_admitted_edge(admitted, packet);
 	adm_log_emu_admitted_packet(m_stat);
 
 	/* if admitted struct is full, flush now */

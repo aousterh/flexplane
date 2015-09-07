@@ -42,7 +42,7 @@ class Classifier {
 public:
 	/**
 	 * @param pkt: packet to classify
-	 * @param port: port where packet will be output
+	 * @param port: port where packet will be output (TODO: remove this?)
 	 * @returns the index of the per-port queue to enqueue packet
 	 */
 	uint32_t classify(struct emu_packet *pkt, uint32_t port) {THROW;}

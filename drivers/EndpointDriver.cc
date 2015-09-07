@@ -89,7 +89,7 @@ inline void EndpointDriver::push() {
  * Emulate pull at a single endpoint group with index @index
  */
 inline void EndpointDriver::pull() {
-	uint32_t n_pkts, i;
+	uint32_t n_pkts;
 	struct emu_packet *pkts[EPG_MAX_BURST];
 
 	adm_log_emu_endpoint_driver_pull_begin(m_stat);

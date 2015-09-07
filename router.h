@@ -14,7 +14,8 @@ struct emu_packet;
 struct emu_topo_config;
 
 enum RouterType {
-    R_DropTail, R_RED, R_DCTCP, R_Prio, R_RR, R_Prio_by_flow, R_HULL_sched
+    R_DropTail, R_RED, R_DCTCP, R_Prio, R_RR, R_Prio_by_flow, R_HULL_sched,
+    R_PFabric
 };
 
 enum RouterFunction {

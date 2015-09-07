@@ -9,6 +9,7 @@
 #include "queue_managers/drop_tail.h"
 #include "queue_managers/red.h"
 #include "queue_managers/dctcp.h"
+#include "queue_managers/pfabric_qm.h"
 #include "schedulers/hull_sched.h"
 #include <assert.h>
 #include "output.h"
@@ -60,6 +61,9 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 		assert(args != NULL);
 		return new HULLSchedRouter((struct hull_args *) args, router_index,
 				topo_config);
+
+	case (R_PFabric):
+		return new PFabricRouter(router_index, topo_config);
 	}
 
 	throw std::runtime_error("invalid router type\n");

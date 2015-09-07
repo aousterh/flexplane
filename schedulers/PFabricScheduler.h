@@ -18,7 +18,7 @@
  */
 class PFabricScheduler : public Scheduler {
 public:
-	SingleQueueScheduler(PFabricQueueBank *bank) : m_bank(bank) {}
+	PFabricScheduler(PFabricQueueBank *bank) : m_bank(bank) {}
 
 	inline struct emu_packet *schedule(uint32_t output_port, uint64_t cur_time,
 			Dropper *dropper)

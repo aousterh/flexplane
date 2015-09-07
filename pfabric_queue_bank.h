@@ -16,10 +16,12 @@
 #include <vector>
 
 #define MAX(X, Y)	(((X) > (Y)) ? (X) : (Y))
+#ifndef MIN
 #define MIN(X, Y)	(((X) < (Y)) ? (X) : (Y))
+#endif
 
 #define PFABRIC_QUEUE_CAPACITY	24
-uint32_t PFABRIC_MAX_PRIORITY = ULONG_MAX;
+#define PFABRIC_MAX_PRIORITY	(1*1000*1000)
 
 /* Metadata about a queued packet in pfabric.
  * TODO: on dequeue, copy last entry to freed spot. This allows us to remove
@@ -47,13 +49,13 @@ public:
 	 *
 	 * @important: this assumes exactly one queue per port
 	 */
-	PFabricQueueBank(uint32_t n_ports, uint32_t queue_max_size);
+	inline PFabricQueueBank(uint32_t n_ports, uint32_t queue_max_size);
 
 	/**
 	 * d'tor
 	 * @assumes all memory pointed to by queues is already freed
 	 */
-	~PFabricQueueBank();
+	inline ~PFabricQueueBank();
 
 	/**
 	 * Enqueues the packet
@@ -129,7 +131,8 @@ private:
 
 /** implementation */
 
-PFabricQueueBank::PFabricQueueBank(uint32_t n_ports, uint32_t queue_max_size)
+inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
+		uint32_t queue_max_size)
 	: m_n_ports(n_ports),
 	  m_max_occupancy(queue_max_size)
 {
@@ -176,7 +179,7 @@ PFabricQueueBank::PFabricQueueBank(uint32_t n_ports, uint32_t queue_max_size)
 	memset(&m_stats, 0, sizeof(m_stats));
 }
 
-PFabricQueueBank::~PFabricQueueBank()
+inline PFabricQueueBank::~PFabricQueueBank()
 {
 	for (uint32_t i = 0; i < m_n_ports; i++) {
 		free(m_queues[i]);

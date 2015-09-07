@@ -18,6 +18,12 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/PFabricScheduler.h"
 
+#define PFABRIC_QUEUE_CAPACITY	24
+
+struct pfabric_args {
+	uint16_t q_capacity;
+};
+
 class PFabricQueueManager : public QueueManager {
 public:
 	PFabricQueueManager(PFabricQueueBank *bank);
@@ -38,7 +44,8 @@ typedef CompositeRouter<TorRoutingTable, SingleQueueClassifier,
  */
 class PFabricRouter : public PFabricRouterBase {
 public:
-	PFabricRouter(uint32_t rack_index, struct emu_topo_config *topo_config);
+	PFabricRouter(struct pfabric_args *pfabric_params, uint32_t rack_index,
+			struct emu_topo_config *topo_config);
 	virtual struct queue_bank_stats *get_queue_bank_stats();
     virtual ~PFabricRouter();
 

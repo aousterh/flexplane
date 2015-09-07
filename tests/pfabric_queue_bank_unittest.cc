@@ -5,7 +5,8 @@
  *      Author: aousterh
  */
 
-#include "../pfabric_queue_bank.h"
+#include "pfabric_queue_bank.h"
+#include "queue_managers/pfabric_qm.h"
 #include "gtest/gtest.h"
 
 /*

@@ -16,11 +16,7 @@
 #include <vector>
 
 #define MAX(X, Y)	(((X) > (Y)) ? (X) : (Y))
-#ifndef MIN
-#define MIN(X, Y)	(((X) < (Y)) ? (X) : (Y))
-#endif
 
-#define PFABRIC_QUEUE_CAPACITY	24
 #define PFABRIC_MAX_PRIORITY	(1*1000*1000)
 
 /* Metadata about a queued packet in pfabric.

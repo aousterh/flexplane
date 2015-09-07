@@ -38,9 +38,9 @@ void PFabricQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
  * All ports of a PFabricRouter run PFabric. We don't currently support routers with
  * different ports running different QMs or schedulers.
  */
-PFabricRouter::PFabricRouter(uint32_t rack_index,
-		struct emu_topo_config *topo_config)
-    : m_bank(tor_ports(topo_config), PFABRIC_QUEUE_CAPACITY),
+PFabricRouter::PFabricRouter(struct pfabric_args *pfabric_params,
+		uint32_t rack_index, struct emu_topo_config *topo_config)
+    : m_bank(tor_ports(topo_config), pfabric_params->q_capacity),
       m_rt(topo_config->rack_shift, rack_index,
     		  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),

@@ -8,6 +8,8 @@
 #include "emulation.h"
 #include "emulation_container.h"
 #include "emu_topology.h"
+#include "pfabric_queue_bank.h"
+#include "queue_managers/pfabric_qm.h"
 #include "gtest/gtest.h"
 
 /*
@@ -15,6 +17,7 @@
  */
 TEST(PFabricTest, two_flows) {
 	struct emu_topo_config topo_config;
+	struct pfabric_args rtr_args;
 	EmulationContainer *container;
 	u8 areq_data_0[4*4] = {0, 0, 0, 10, 0, 0, 0, 9, 0, 0, 0, 8, 0, 0, 0, 7};
 	u8 areq_data_1[4*3] = {0, 0, 0, 11, 0, 0, 0, 6, 0, 0, 0, 5};
@@ -27,10 +30,13 @@ TEST(PFabricTest, two_flows) {
 	topo_config.num_racks = 1;
 	topo_config.rack_shift = 5; /* 32 machines per rack */
 
+	/* initialize router arguments */
+	rtr_args.q_capacity = PFABRIC_QUEUE_CAPACITY;
+
 	/* initialize emulation container */
 	container = new EmulationContainer(ADMITTED_MEMPOOL_SIZE,
 			(1 << ADMITTED_Q_LOG_SIZE), PACKET_MEMPOOL_SIZE,
-			(1 << PACKET_Q_LOG_SIZE), R_PFabric, NULL, E_Simple, NULL,
+			(1 << PACKET_Q_LOG_SIZE), R_PFabric, &rtr_args, E_Simple, NULL,
 			&topo_config);
 
     /* src, dst, flow, amount, start_id, pointer to additional data */

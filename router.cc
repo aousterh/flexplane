@@ -63,7 +63,9 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 				topo_config);
 
 	case (R_PFabric):
-		return new PFabricRouter(router_index, topo_config);
+		assert(args != NULL);
+		return new PFabricRouter((struct pfabric_args *) args, router_index,
+				topo_config);
 	}
 
 	throw std::runtime_error("invalid router type\n");

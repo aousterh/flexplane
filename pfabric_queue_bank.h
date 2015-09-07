@@ -158,7 +158,7 @@ inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
 		m_metadata.push_back(metadata_array);
 
 		for (j = 0; j < queue_max_size; j++)
-			metadata_array[i].in_use = false;
+			metadata_array[j].in_use = false;
 	}
 
 	/* initialize occupancies to zero */

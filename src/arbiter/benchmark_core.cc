@@ -103,7 +103,7 @@ void DequeueCore::exec() {
 
 			/* add packets' data to admitted struct */
 			for (j = 0; j < n_pkts; j++) {
-				admitted_insert_admitted_edge(m_admitted, packets[j], NULL);
+				admitted_insert_admitted_edge(m_admitted, packets[j]);
 
 				if (m_admitted->size == EMU_ADMITS_PER_ADMITTED)
 					flush();

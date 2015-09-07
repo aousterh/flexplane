@@ -1,8 +1,6 @@
 # This Makefile requires that GTEST_DIR is set to the directory of GoogleTest.
 # GoogleTest: https://code.google.com/p/googletest/downloads/list
 
-TESTS = pfabric_queue_bank_unittest
-
 # Emulation stuff
 CXXDEFINES += -DNO_DPDK
 CXXDEFINES += -DEMULATION_ALGO
@@ -30,10 +28,10 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 
 # House-keeping build targets.
-all : $(TESTS)
+all : unittests
 
 clean :
-	rm -f $(TESTS) gtest.a gtest_main.a *.o
+	rm -f unittests gtest.a gtest_main.a *.o
 
 # Builds gtest.a and gtest_main.a.
 
@@ -59,13 +57,15 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-# Builds a sample test.  A test should link with either gtest.a or
-# gtest_main.a, depending on whether it defines its own main()
-# function.
+# Build all unittests in this directory. Link with gtest_main.a, because we do
+# not define our own Makefile.
 
-pfabric_queue_bank_unittest.o : ./pfabric_queue_bank_unittest.cc \
+%_unittest.o : ./%_unittest.cc \
                      $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c pfabric_queue_bank_unittest.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
-pfabric_queue_bank_unittest : pfabric_queue_bank_unittest.o gtest_main.a
+TESTS_CC = $(wildcard *_unittest.cc)
+TESTS_O = $(addsuffix .o, $(basename $(TESTS_CC)))
+
+unittests : $(TESTS_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

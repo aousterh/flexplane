@@ -1,5 +1,5 @@
 /*
- * pfabric_queue_bank_unittest.h
+ * pfabric_queue_bank_unittest.cc
  *
  *  Created on: September 5, 2015
  *      Author: aousterh
@@ -7,7 +7,6 @@
 
 #include "../pfabric_queue_bank.h"
 #include "gtest/gtest.h"
-#include <assert.h>
 
 /*
  * Construct a pFabric Queue Bank, check that the port mask is empty,

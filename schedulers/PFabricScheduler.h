@@ -26,7 +26,7 @@ public:
 		if (unlikely(m_bank->empty(output_port)))
 			throw std::runtime_error("called schedule on an empty port");
 		else
-			return m_bank->dequeue_lowest_priority(output_port);
+			return m_bank->dequeue_highest_priority(output_port);
 	}
 
 	inline uint64_t *non_empty_port_mask() {

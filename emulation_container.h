@@ -35,6 +35,12 @@ public:
 			uint32_t amount, uint16_t start_id, u8* areq_data);
 	inline void step();
 	inline void print_admitted();
+
+	/* Return the first struct of admitted packets. */
+	inline struct emu_admitted_traffic *get_admitted();
+
+	/* Return the admitted struct to the mempool. */
+	inline void free_admitted(struct emu_admitted_traffic *admitted);
 private:
 	Emulation			*m_emulation;
 	struct fp_mempool	*m_admitted_mempool;
@@ -108,6 +114,24 @@ inline void EmulationContainer::print_admitted() {
 			fp_mempool_put(m_admitted_mempool, admitted);
 		}
 	}
+}
+
+inline struct emu_admitted_traffic *EmulationContainer::get_admitted() {
+	struct emu_admitted_traffic *admitted;
+	uint32_t i;
+
+	for (i = 0; i < ALGO_N_CORES; i++) {
+		while (fp_ring_dequeue(m_q_admitted_out[i], (void **) &admitted) == 0)
+		{
+			return admitted;
+		}
+	}
+	return NULL;
+}
+
+inline void EmulationContainer::free_admitted(
+		struct emu_admitted_traffic *admitted) {
+	fp_mempool_put(m_admitted_mempool, admitted);
 }
 
 #endif /* EMULATION_CONTAINER_H */

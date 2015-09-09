@@ -60,7 +60,7 @@ extern "C" {
 #define N_PATH_SEL_CORES		0
 #define N_COMM_CORES			1
 #define N_LOG_CORES				1
-#define N_BENCHMARK_CORES		2
+#define N_BENCHMARK_CORES		0
 
 /* Core indices */
 #define FIRST_COMM_CORE			0

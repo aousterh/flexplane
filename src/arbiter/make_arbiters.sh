@@ -26,6 +26,10 @@ mv build/fast build/fast_rr
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DHULL_SCHED -j22
 mv build/fast build/fast_hull_sched
 
+# make arbiter that runs pFabric
+make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DPFABRIC -j22
+mv build/fast build/fast_pfabric
+
 # make arbiter that runs drop tail. drop tail is the default and must come last.
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DDROP_TAIL -j22
 cp build/fast build/fast_drop_tail

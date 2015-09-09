@@ -29,6 +29,9 @@ elif [ "$1" = "hull" ]; then
 elif [ "$1" = "hull_sched" ]; then
     FAST="./fast_hull_sched"
     echo "running hull as a scheduler arbiter"
+elif [ "$1" = "pfabric" ]; then
+    FAST="./fast_pfabric"
+    echo "running pfabric arbiter"
 else
     echo "unrecognized arbiter type $1"
     exit

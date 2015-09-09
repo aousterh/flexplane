@@ -169,6 +169,7 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 #endif
 
 		amount -= amount_this_iter;
+		start_id += amount_this_iter;
 	}
 }
 

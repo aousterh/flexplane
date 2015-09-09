@@ -24,7 +24,7 @@ else
 fi
 echo "inserting module with emu scheme $EMU_SCHEME"
 
-sudo insmod fastpass.ko fastpass_debug=0 ctrl_addr=$CONTROLLER_IP req_cost=20000 req_bucketlen=40000 retrans_timeout_ns=2000000 req_min_gap=1000
+sudo insmod fastpass.ko fastpass_debug=0 ctrl_addr=$CONTROLLER_IP req_cost=20000 req_bucketlen=40000 retrans_timeout_ns=2000000 req_min_gap=1000 emu_scheme=$EMU_SCHEME
 
 echo -- lsmod after --
 lsmod | grep fastpass

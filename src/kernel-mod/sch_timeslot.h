@@ -71,5 +71,10 @@ void tsq_reset_ids(void *priv, u64 src_dst_key);
  */
 void tsq_garbage_collect(void *priv);
 
+/**
+ * Print the id of all packets queued for this flow to the kernel log.
+ */
+void tsq_print_queued_packets(void *priv, u64 src_dst_key);
+
 
 #endif /* SCH_TIMESLOT_H_ */

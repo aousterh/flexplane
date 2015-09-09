@@ -1076,6 +1076,23 @@ void tsq_garbage_collect(void *priv)
 	spin_unlock(&q->hash_tbl_lock);
 }
 
+void tsq_print_queued_packets(void *priv, u64 src_dst_key) {
+	struct tsq_sched_data *q = priv_to_sched_data(priv);
+	struct tsq_dst *dst;
+	struct timeslot_skb_q *timeslot_q;
+
+	spin_lock(&q->hash_tbl_lock);
+	dst = dst_lookup(q, src_dst_key, false);
+	if (unlikely(dst == NULL))
+		return;
+
+	list_for_each_entry(timeslot_q, &dst->skb_qs, list) {
+		printk(KERN_DEBUG "flow %llu, id %d\n", src_dst_key, timeslot_q->id);
+	}
+
+	spin_unlock(&q->hash_tbl_lock);
+}
+
 /* netlink protocol data */
 static const struct nla_policy tsq_policy[TCA_FASTPASS_MAX + 1] = {
 	[TCA_FASTPASS_PLIMIT]			= { .type = NLA_U32 },

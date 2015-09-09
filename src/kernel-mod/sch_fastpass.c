@@ -108,7 +108,7 @@ module_param(update_timer_ns, uint, 0444);
 MODULE_PARM_DESC(update_timer_ns, "how often to perform periodic tasks");
 EXPORT_SYMBOL_GPL(update_timer_ns);
 
-static bool proc_dump_dst = true;
+static bool proc_dump_dst = false;
 module_param(proc_dump_dst, bool, 0444);
 MODULE_PARM_DESC(proc_dump_dst, "should the proc file contain a dump of per-dst status");
 EXPORT_SYMBOL_GPL(proc_dump_dst);
@@ -1061,6 +1061,10 @@ static void dump_flow_info(struct seq_file *seq, struct fp_sched_data *q,
 				flow_id, dst->demand_tslots, dst->requested_tslots,
 				dst->acked_tslots, dst->alloc_tslots, dst->used_tslots,
 				dst->state);
+
+		/* print the flow and id of any packets that are currently queued,
+		 * waiting for allocs */
+		tsq_print_queued_packets(q, flow_id);
 	}
 
 	printk(KERN_DEBUG "fastpass printed %u flows\n", num_printed);

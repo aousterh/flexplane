@@ -86,6 +86,8 @@ void print_global_admission_log_emulation() {
 	printf("router type HULL");
 #elif defined(HULL_SCHED)
 	printf("router type HULL as scheduler");
+#elif defined(PFABRIC)
+	printf("router type pFabric");
 #endif
 
 	/* compute and print total throughput across all routers */

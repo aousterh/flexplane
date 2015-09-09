@@ -558,7 +558,9 @@ static void handle_alloc(void *param, u32 base_tslot, u16 *dst_ids,
 			}
 #endif
 
-			atomic_inc(&q->alloc_tslots);
+			if (handled_tslots == 1)
+				atomic_inc(&q->alloc_tslots);
+
 			if (full_tslot > current_timeslot) {
 				q->stat.early_enqueue++;
 			} else {

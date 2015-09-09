@@ -1,10 +1,12 @@
 import argparse
 import random
 import socket
+import struct
 import time
 
 from stats import *
 
+HIGHEST_PRIORITY = 0
 receive_buffer_size = 1024 * 1024
 
 def setup_socket(params):
@@ -61,7 +63,9 @@ def run_client(params):
         next_send_time += random.expovariate(params.qps)
 
         t_before = time.time()
-        client_socket.send(str(params.response_size))
+        # requests are only one packet long, so they get highest priority
+        client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY,
+                                       params.response_size))
 
         # wait for reply
         amount_received = 0

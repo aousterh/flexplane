@@ -67,7 +67,8 @@ def run_server(params):
     while True:
         buf = connection.recv(64)
         if len(buf) > 0:
-            response_size = int(buf)
+            data = struct.unpack('!LL', buf)
+            response_size = int(data[1])
 
             if response_size not in response_dict:
                 generate_response(response_size, params.pfabric)

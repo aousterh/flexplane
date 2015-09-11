@@ -14,18 +14,20 @@ def generate_response(size, encode_pkts_remaining=False):
         # of each packet
         num_pkts = int(math.ceil(float(size) / (DATA_PER_PACKET - CUSTOM_DATA_SIZE)))
 
-        data = ""
+        pkts = []
         remaining_bytes = size
         print "generating response, encoding pkts remaining"
         while num_pkts > 0:
             # append more custom data and another packet's worth of random data
             random_data_size = min(DATA_PER_PACKET - CUSTOM_DATA_SIZE,
                                    remaining_bytes)
-            data = (data + struct.pack('!L', num_pkts) +
-                    os.urandom(random_data_size))
+            pkts.append(struct.pack('!L', num_pkts) +
+                        os.urandom(random_data_size))
 
             remaining_bytes -= random_data_size
             num_pkts -= 1
+
+        data = ''.join(pkts)
     else:
         # generate random data for the response
         data = os.urandom(size)

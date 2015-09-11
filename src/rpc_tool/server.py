@@ -29,14 +29,14 @@ def generate_response(size, encode_pkts_remaining=False):
     else:
         # generate random data for the response
         data = os.urandom(size)
-
+    print 'done generating response'
     response_dict[size] = data
 
 def setup_socket(params):
     # prepare a response before connecting if a size is specified. this is
     # helpful when responses are large and take a long time to generate
     if params.r_size is not None:
-        generate_response(params.r_size)
+        generate_response(params.r_size, params.pfabric)
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((params.server_addr, params.server_port))

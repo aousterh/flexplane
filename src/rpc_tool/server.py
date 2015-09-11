@@ -12,11 +12,12 @@ def generate_response(size, encode_pkts_remaining=False):
     if encode_pkts_remaining:
         # encode the number of remaining packets in the first 4 data bytes
         # of each packet
-        num_pkts = math.ceil(float(size) / (DATA_PER_PACKET - CUSTOM_DATA_SIZE))
+        num_pkts = int(math.ceil(float(size) / (DATA_PER_PACKET - CUSTOM_DATA_SIZE)))
+
         data = ""
         remaining_bytes = size
         print "generating response, encoding pkts remaining"
-        while num_pkts >= 0:
+        while num_pkts > 0:
             # append more custom data and another packet's worth of random data
             random_data_size = min(DATA_PER_PACKET - CUSTOM_DATA_SIZE,
                                    remaining_bytes)

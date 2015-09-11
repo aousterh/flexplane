@@ -81,7 +81,7 @@ extern bool fastpass_debug;
 /* END NODE */
 #define FASTPASS_PKT_MAX_ALLOC_TSLOTS	0
 #define FASTPASS_PKT_ALLOC_LEN			0
-#define FASTPASS_PKT_AREQ_LEN			(2 + 4 * FASTPASS_PKT_MAX_AREQ + \
+#define FASTPASS_PKT_AREQ_LEN			(2 + 5 * FASTPASS_PKT_MAX_AREQ + \
 										FASTPASS_PKT_MAX_AREQ_DATA)
 #endif
 

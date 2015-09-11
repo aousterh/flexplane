@@ -118,9 +118,6 @@ void print_comm_log(uint16_t lcore_id)
 		printf("\n  %lu A-REQ payloads from invalid src (check id map?)", cl->areq_invalid_src);
 	if (cl->areq_invalid_dst)
 		printf("\n  %lu A-REQ payloads with invalid dst (check id map?)", cl->areq_invalid_dst);
-	if (cl->areq_data_count_disagrees)
-		printf("\n  %lu A-REQ data counts disagree with cumulative counts",
-				cl->areq_data_count_disagrees);
 	if (cl->dequeue_admitted_failed)
 		printf("\n  %lu times couldn't dequeue a struct admitted_traffic!",
 				cl->dequeue_admitted_failed);
@@ -143,6 +140,9 @@ void print_comm_log(uint16_t lcore_id)
 	if (cl->flush_buffer_in_add_backlog)
 		printf("\n  %lu buffer flushes in add backlog (buffer might be too small)",
 				cl->flush_buffer_in_add_backlog);
+	if (cl->areq_data_count_disagrees)
+		printf("\n  %lu A-REQ data counts disagree with cumulative counts (probably due to a lost packet)",
+				cl->areq_data_count_disagrees);
 	printf("\n");
 
 	memcpy(&saved_comm_log[lcore_id], &comm_core_logs[lcore_id],

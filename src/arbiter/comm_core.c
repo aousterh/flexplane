@@ -308,7 +308,7 @@ static void set_retrans_timer(void *param, u64 when)
 
 static void handle_areq(void *param, u16 *dst_and_count, int n)
 {
-	int i;
+	int i, j;
 	struct end_node_state *en = (struct end_node_state *)param;
 	struct comm_core_state *core = &ccore_state[rte_lcore_id()];
 	u16 dst, dst_node, flow_within_dst, count;
@@ -316,7 +316,6 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	u32 orig_demand;
 	u32 node_id = en - end_nodes;
 	s32 demand_diff;
-	u32 num_increases = 0;
 	u8 *areq_data_counts, *areq_data;
 	(void) areq_data_counts; (void) areq_data;
 
@@ -351,14 +350,22 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 
 #if defined(EMULATION_ALGO)
 			if (emu_req_data_bytes() > 0 &&
-					*areq_data_counts != demand_diff) /* todo: handle lost areqs */
+					*areq_data_counts != demand_diff) {
 				comm_log_areq_data_count_disagrees(node_id, dst,
 						*areq_data_counts, demand_diff);
+				/* estimate lost areq data by duplicating the first received
+				 * TODO: actually retransmit these from the endpoint */
+				for (j = 0; j < demand_diff - *areq_data_counts; j++)
+					add_backlog(g_admissible_status(), node_id, dst, 1,
+							(orig_demand & 0xFFFF) + j, areq_data);
+				orig_demand += demand_diff - *areq_data_counts;
+				demand_diff = *areq_data_counts;
+			}
 
 			/* get the sequential ID from the demand, also pass in areq data */
 			add_backlog(g_admissible_status(), node_id, dst, demand_diff,
 					orig_demand & 0xFFFF, areq_data);
-			areq_data += emu_req_data_bytes() * demand_diff;
+			areq_data += emu_req_data_bytes() * (*areq_data_counts);
 			areq_data_counts++;
 #else
 			/* no need for sequential id or additional areq data */
@@ -366,7 +373,6 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 					NULL);
 #endif
 			en->demands[dst] = demand;
-			num_increases++;
 		} else {
 			comm_log_demand_remained(node_id, dst, orig_demand, demand);
 		}

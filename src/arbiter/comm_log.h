@@ -311,7 +311,7 @@ static inline void comm_log_skipped_ack(uint16_t src,
 static inline void comm_log_neg_ack(uint16_t src, uint16_t n_dsts,
 		uint32_t n_tslots, uint64_t seqno, uint32_t num_triggered) {
 	(void)src;(void)n_dsts;(void)n_tslots;(void)seqno;(void)num_triggered;
-	if (n_dsts == 0) {
+	if (n_tslots == 0) {
 		CL->neg_acks_without_alloc++;
 		return;
 	}

@@ -18,11 +18,14 @@ def generate_response(size, encode_pkts_remaining=False):
         remaining_bytes = size
         print "generating response, encoding pkts remaining"
         while num_pkts > 0:
-            # append more custom data and another packet's worth of random data
+            # append more custom data and another packet's worth of data
             random_data_size = min(DATA_PER_PACKET - CUSTOM_DATA_SIZE,
                                    remaining_bytes)
-            pkts.append(struct.pack('!L', num_pkts) +
-                        os.urandom(random_data_size))
+
+            # make packet data all the custom data, in case packets aren't
+            # perfectly segmented into the expected sizes
+            for i in range(1 + random_data_size / CUSTOM_DATA_SIZE):
+                pkts.append(struct.pack('!L', num_pkts))
 
             remaining_bytes -= random_data_size
             num_pkts -= 1

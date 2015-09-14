@@ -316,8 +316,8 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 	u32 orig_demand;
 	u32 node_id = en - end_nodes;
 	s32 demand_diff;
-	u8 *areq_data_counts, *areq_data;
-	(void) areq_data_counts; (void) areq_data;
+	u8 *areq_data_counts, *areq_data, *missing_areq_data;
+	(void) areq_data_counts; (void) areq_data; (void) missing_areq_data;
 
 	COMM_DEBUG("handling A-REQ with %d destinations\n", n);
 
@@ -349,17 +349,22 @@ static void handle_areq(void *param, u16 *dst_and_count, int n)
 			comm_log_demand_increased(node_id, dst, orig_demand, demand, demand_diff);
 
 #if defined(EMULATION_ALGO)
-			if (emu_req_data_bytes() > 0 &&
-					*areq_data_counts != demand_diff) {
+			if (emu_req_data_bytes() > 0 && *areq_data_counts != demand_diff) {
 				comm_log_areq_data_count_disagrees(node_id, dst,
 						*areq_data_counts, demand_diff);
-				/* estimate lost areq data by duplicating the first received
+				/* estimate lost areq data by duplicating the first received, if present
 				 * TODO: actually retransmit these from the endpoint */
-				for (j = 0; j < demand_diff - *areq_data_counts; j++)
-					add_backlog(g_admissible_status(), node_id, dst, 1,
-							(orig_demand & 0xFFFF) + j, areq_data);
-				orig_demand += demand_diff - *areq_data_counts;
-				demand_diff = *areq_data_counts;
+				if (demand_diff > *areq_data_counts) {
+					missing_areq_data = areq_data;
+					if (*areq_data_counts == 0)
+						missing_areq_data = NULL;
+
+					for (j = 0; j < demand_diff - *areq_data_counts; j++)
+						add_backlog(g_admissible_status(), node_id, dst, 1,
+								(orig_demand & 0xFFFF) + j, missing_areq_data);
+					orig_demand += demand_diff - *areq_data_counts;
+					demand_diff = *areq_data_counts;
+				}
 			}
 
 			/* get the sequential ID from the demand, also pass in areq data */

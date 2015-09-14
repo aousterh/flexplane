@@ -17,7 +17,7 @@
 
 #define MAX(X, Y)	(((X) > (Y)) ? (X) : (Y))
 
-#define PFABRIC_MAX_PRIORITY	(1*1000*1000)
+#define PFABRIC_MAX_PRIORITY	0xFFFFFFFF
 
 /* Metadata about a queued packet in pfabric.
  * TODO: on dequeue, copy last entry to freed spot. This allows us to remove
@@ -225,7 +225,7 @@ inline struct emu_packet *PFabricQueueBank::dequeue_highest_priority(
 	/* find metadata with highest priority */
 	for (i = 0; i < m_max_occupancy; i++) {
 		if (metadata[i].in_use &&
-				(metadata[i].priority < highest_prio.priority))
+				(metadata[i].priority <= highest_prio.priority))
 			memcpy(&highest_prio, &metadata[i],
 					sizeof(struct pfabric_metadata));
 	}
@@ -265,7 +265,7 @@ inline struct emu_packet *PFabricQueueBank::dequeue_lowest_priority(
 
 	/* find entry with lowest priority (aka highest prio number) */
 	for (i = 0; i < m_max_occupancy; i++) {
-		if (metadata[i].in_use && (metadata[i].priority > lowest_priority)) {
+		if (metadata[i].in_use && (metadata[i].priority >= lowest_priority)) {
 			lowest_priority = metadata[i].priority;
 			lowest_priority_index = i;
 		}

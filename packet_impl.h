@@ -27,7 +27,10 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
 
 	/* copy algo-specific fields to emu_packet */
 #if defined(PFABRIC)
-	packet->priority = ntohl(*((uint32_t *) areq_data));
+        if (areq_data != NULL)
+          packet->priority = ntohl(*((uint32_t *) areq_data));
+        else
+          packet->priority = 0;
 #endif
 
 }

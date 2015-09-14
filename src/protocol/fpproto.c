@@ -984,8 +984,8 @@ int fpproto_encode_packet(struct fpproto_pktdesc *pd, u8 *pkt, u32 max_len,
 		}
 
 #if defined(EMULATION_ALGO) && defined(FASTPASS_ENDPOINT)
-		if (pd->areq_data_bytes > 0) {
-			/* additional A-REQ data */
+		if (pd->areq_data_type != AREQ_DATA_TYPE_NONE) {
+			/* additional A-REQ data possible */
 			memcpy(curp, &pd->areq_data_counts[0], pd->n_areq);
 			curp += pd->n_areq;
 			remaining_len -= pd->n_areq;

@@ -2,6 +2,7 @@ import argparse
 import random
 import socket
 import struct
+import sys
 import time
 
 from empirical import *
@@ -51,6 +52,7 @@ def run_client(params):
     # 1 / params.qps
     next_send_time = current_time + random.expovariate(params.qps)
 
+    num_requests = 0
     while 1:
         too_late = 0
         if current_time > next_send_time:
@@ -74,14 +76,19 @@ def run_client(params):
             response_size = params.r_size
 
         t_before = time.time()
+
         # requests are only one packet long, so they get highest priority
+        sys.stderr.write("about to send request %d\n" % num_requests)
         client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY, response_size))
+        sys.stderr.write("sent request %d\n" % num_requests)
 
         # wait for reply
         amount_received = 0
         while amount_received < response_size:
             data = client_socket.recv(receive_buffer_size)
             amount_received += len(data)
+        sys.stderr.write("received response %d\n" % num_requests)
+        num_requests += 1
         t_after = time.time()
         fct = t_after - t_before
 

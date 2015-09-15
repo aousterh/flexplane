@@ -3,6 +3,8 @@ import math
 import os
 import socket
 import struct
+import sys
+import time
 
 from empirical import *
 
@@ -74,17 +76,29 @@ def run_server(params):
 
     server_socket, connection, address = setup_socket(params)
 
-    print "connected to port %d" % params.server_port
+    print "connected to port %d at time %f" % (params.server_port, time.time())
+    sys.stdout.flush()
 
-    while True:
-        buf = connection.recv(64)
-        if len(buf) > 0:
-            data = struct.unpack('!LL', buf)
-            response_size = int(data[1])
+    try:
+        num_responses = 0
+        while True:
+            buf = connection.recv(64)
+            if len(buf) > 0:
+                data = struct.unpack('!LL', buf)
+                response_size = int(data[1])
 
-            if response_size not in response_dict:
-                generate_response(response_size, params.pfabric)
-            connection.send(response_dict[response_size])
+                if response_size not in response_dict:
+                    generate_response(response_size, params.pfabric)
+
+                sys.stderr.write("about to send response %d\n" % num_responses)
+                connection.send(response_dict[response_size])
+                sys.stderr.write("sent response %d\n" % num_responses)
+                num_responses += 1
+
+    except socket.error:
+        print "socket error at time %f" % time.time()
+        sys.stdout.flush()
+        raise
 
     server_socket.close()
 

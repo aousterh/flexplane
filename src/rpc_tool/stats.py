@@ -29,8 +29,8 @@ class ConnectionStats():
         min_fct = min(self.FCTs)
         max_fct = max(self.FCTs)
 
-        fields = [self.start_time, time_now, duration, qps, mean_fct, min_fct,
-                  max_fct, self.too_late]
+        fields = [self.start_time, time_now, duration, qps, self.queries,
+                  mean_fct, min_fct, max_fct, self.too_late]
         fields_str = [str(x) for x in fields]
 
         # print and flush
@@ -46,4 +46,4 @@ class ConnectionStats():
 
     @staticmethod
     def header_names():
-        return "start_time,end_time,interval_duration,qps,mean_fct,min_fct,max_fct,late_requests"
+        return "start_time,end_time,interval_duration,qps,queries,mean_fct,min_fct,max_fct,late_requests"

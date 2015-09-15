@@ -4,6 +4,7 @@ import socket
 import struct
 import time
 
+from empirical import *
 from stats import *
 
 HIGHEST_PRIORITY = 0
@@ -35,6 +36,10 @@ def setup_socket(params):
 def run_client(params):
     print params
 
+    # read in cdf values from file if necessary
+    if params.ecdf is not None:
+        empir_rand = EmpiricalRandomVariable(params.ecdf)
+
     client_socket = setup_socket(params)
 
     stats = ConnectionStats(time.time())
@@ -62,14 +67,19 @@ def run_client(params):
         # update next sent time
         next_send_time += random.expovariate(params.qps)
 
+        # choose response size
+        if params.ecdf:
+            response_size = empir_rand.get_value()
+        else:
+            response_size = params.r_size
+
         t_before = time.time()
         # requests are only one packet long, so they get highest priority
-        client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY,
-                                       params.response_size))
+        client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY, response_size))
 
         # wait for reply
         amount_received = 0
-        while amount_received < params.response_size:
+        while amount_received < response_size:
             data = client_socket.recv(receive_buffer_size)
             amount_received += len(data)
         t_after = time.time()
@@ -89,10 +99,13 @@ def get_args():
                         help='the port of the server')
     parser.add_argument('qps', metavar='qps', type=float,
                         help='the target queries per second')
-    parser.add_argument('response_size', metavar='r_size', type=int,
-                        help='the size of the response (1448 is max for 1 MTU)')
+    parser.add_argument('--r_size', metavar='response_size', type=int,
+                        help='the size of the response (1448 is max for 1 MTU)',
+                        required=False)
     parser.add_argument('--tos', metavar='tos', type=int,
                         help='tos (Type of Service), now called DSCP')
+    parser.add_argument('--ecdf', metavar='ecdf_file_name', type=str,
+                        help='choose response sizes from an empirical CDF from file')
 
     return parser.parse_args()
 

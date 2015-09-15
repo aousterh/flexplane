@@ -20,15 +20,16 @@ class EmpiricalRandomVariable():
             self.cum_probs.append(float(fields[2]))
             self.values.append(int(fields[0]))
 
-        print self.cum_probs
-        print self.values
-
     def get_value(self):
         r = random.random()
-        
+
         for i in range(len(self.cum_probs)):
             if r <= self.cum_probs[i]:
                 return self.values[i]
+
+    def get_all_values(self):
+        # remove duplicates
+        return set(self.values)
 
 def main():
     args = sys.argv
@@ -38,7 +39,7 @@ def main():
         exit()
 
     in_filename = args[1]
-    
+
     rand_var = EmpiricalRandomVariable(in_filename)
 
     # Test that it obeys the distribution (assuming the CDF_search.txt input

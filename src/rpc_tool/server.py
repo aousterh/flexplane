@@ -4,6 +4,8 @@ import os
 import socket
 import struct
 
+from empirical import *
+
 response_dict = {}
 DATA_PER_PACKET = 1448
 CUSTOM_DATA_SIZE = 4
@@ -34,15 +36,10 @@ def generate_response(size, encode_pkts_remaining=False):
     else:
         # generate random data for the response
         data = os.urandom(size)
-    print 'done generating response'
+    print 'done generating response of size %d' % size
     response_dict[size] = data
 
 def setup_socket(params):
-    # prepare a response before connecting if a size is specified. this is
-    # helpful when responses are large and take a long time to generate
-    if params.r_size is not None:
-        generate_response(params.r_size, params.pfabric)
-
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((params.server_addr, params.server_port))
 
@@ -66,6 +63,15 @@ def setup_socket(params):
 def run_server(params):
     print params
 
+    # prepare responses before connecting if a size is specified. this is
+    # helpful when responses are large and take a long time to generate
+    if params.r_size is not None:
+        generate_response(params.r_size, params.pfabric)
+    elif params.ecdf is not None:
+        empir_rand = EmpiricalRandomVariable(params.ecdf)
+        for response_size in empir_rand.get_all_values():
+            generate_response(response_size, params.pfabric)
+
     server_socket, connection, address = setup_socket(params)
 
     print "connected to port %d" % params.server_port
@@ -88,13 +94,16 @@ def get_args():
                         help='the IP address or hostname of this server')
     parser.add_argument('server_port', metavar='s_port', type=int,
                         help='the port of this server')
-    parser.add_argument('--r_size', metavar='r_size', type=int, required=False,
+    parser.add_argument('--r_size', metavar='response_size', type=int,
+                        required=False,
                         help='the size of the response (1448 is max for 1 MTU)')
     parser.add_argument('--tos', metavar='tos', type=int,
                         help='tos (Type of Service), now called DSCP')
     parser.add_argument('-pfabric', action="store_const", const=True,
                         required=False, default=False,
                         help='encode remaining flow size for pfabric')
+    parser.add_argument('--ecdf', metavar='ecdf_file_name', type=str,
+                        help='choose response sizes from an empirical CDF from file')
 
     return parser.parse_args()
 

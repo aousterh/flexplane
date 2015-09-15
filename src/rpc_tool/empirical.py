@@ -31,6 +31,15 @@ class EmpiricalRandomVariable():
         # remove duplicates
         return set(self.values)
 
+    def get_expected_request_mtus(self):
+        prev = 0
+        exp = 0
+        for i in range(len(self.cum_probs)):
+            exp += self.values[i] * (self.cum_probs[i] - prev)
+            prev = self.cum_probs[i]
+
+        return exp
+
 def main():
     args = sys.argv
 
@@ -55,6 +64,8 @@ def main():
 
     bucket_counts = [(x * 0.00001) for x in bucket_counts]
     print bucket_counts
+
+    print rand_var.get_expected_request_mtus()
 
 if __name__ == "__main__":
     main()

@@ -16,22 +16,21 @@ def generate_response(size, encode_pkts_remaining=False):
     if encode_pkts_remaining:
         # encode the number of remaining packets in the first 4 data bytes
         # of each packet
-        num_pkts = int(math.ceil(float(size) / (DATA_PER_PACKET - CUSTOM_DATA_SIZE)))
+        num_pkts = int(math.ceil(float(size) / DATA_PER_PACKET))
 
         pkts = []
         remaining_bytes = size
         print "generating response, encoding pkts remaining"
         while num_pkts > 0:
             # append more custom data and another packet's worth of data
-            random_data_size = min(DATA_PER_PACKET - CUSTOM_DATA_SIZE,
-                                   remaining_bytes)
+            data_size = min(DATA_PER_PACKET, remaining_bytes)
 
             # make packet data all the custom data, in case packets aren't
             # perfectly segmented into the expected sizes
-            for i in range(1 + random_data_size / CUSTOM_DATA_SIZE):
+            for i in range(data_size / CUSTOM_DATA_SIZE):
                 pkts.append(struct.pack('!L', num_pkts))
 
-            remaining_bytes -= random_data_size
+            remaining_bytes -= data_size
             num_pkts -= 1
 
         data = ''.join(pkts)

@@ -53,51 +53,53 @@ def run_client(params):
     next_send_time = current_time + random.expovariate(params.qps)
 
     num_requests = 0
-    while 1:
-        too_late = 0
-        if current_time > next_send_time:
-            too_late = 1
-        else:
-            current_time = time.time()
+    try:
+        while 1:
+            too_late = 0
             if current_time > next_send_time:
                 too_late = 1
             else:
-                # early! spin until next send time
-                while current_time < next_send_time:
-                    current_time = time.time()
+                current_time = time.time()
+                if current_time > next_send_time:
+                    too_late = 1
+                else:
+                    # early! spin until next send time
+                    while current_time < next_send_time:
+                        current_time = time.time()
 
-        # update next sent time
-        next_send_time += random.expovariate(params.qps)
+            # update next sent time
+            next_send_time += random.expovariate(params.qps)
 
-        # choose response size
-        if params.ecdf:
-            # value is in MTUs - we want bytes
-            response_size = empir_rand.get_value() * 1448
-        else:
-            response_size = params.r_size
+            # choose response size
+            if params.ecdf:
+                # value is in MTUs - we want bytes
+                response_size = empir_rand.get_value() * 1448
+            else:
+                response_size = params.r_size
 
-        t_before = time.time()
+            t_before = time.time()
 
-        # requests are only one packet long, so they get highest priority
-#        sys.stderr.write("about to send request %d\n" % num_requests)
-        client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY, response_size))
-#        sys.stderr.write("sent request %d\n" % num_requests)
+            # requests are only one packet long, so they get highest priority
+            # sys.stderr.write("about to send request %d\n" % num_requests)
+            client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY, response_size))
+            # sys.stderr.write("sent request %d\n" % num_requests)
 
-        # wait for reply
-        amount_received = 0
-        while amount_received < response_size:
-            data = client_socket.recv(receive_buffer_size)
-            amount_received += len(data)
-#        sys.stderr.write("received response %d\n" % num_requests)
-        num_requests += 1
-        t_after = time.time()
-        fct = t_after - t_before
+            # wait for reply
+            amount_received = 0
+            while amount_received < response_size:
+                data = client_socket.recv(receive_buffer_size)
+                amount_received += len(data)
+            # sys.stderr.write("received response %d\n" % num_requests)
+            num_requests += 1
+            t_after = time.time()
+            fct = t_after - t_before
 
-        # handle logging
-        stats.add_sample(t_after, fct, too_late)
-        stats.start_new_interval_if_time(t_after)
-
-    client_socket.close()
+            # handle logging
+            stats.add_sample(t_after, fct, response_size, too_late)
+            stats.start_new_interval_if_time(t_after)
+    finally:
+        stats.print_summary_stats()
+        client_socket.close()
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run an RPC client")

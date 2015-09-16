@@ -13,10 +13,17 @@ class ConnectionStats():
         self.FCTs = [] # in microseconds
         self.too_late = 0
 
-    def add_sample(self, time_now, fct, too_late):
+        # dict mapping request size to list of FCTs
+        self.all_FCTs = {}
+
+    def add_sample(self, time_now, fct, size, too_late):
         self.queries += 1
         self.FCTs.append(fct * 1000 * 1000)
         self.too_late += too_late
+
+        if size not in self.all_FCTs:
+            self.all_FCTs[size] = []
+        self.all_FCTs[size].append(fct * 1000 * 1000)
 
     def start_new_interval_if_time(self, time_now):
         if time_now < self.end_time:
@@ -43,6 +50,12 @@ class ConnectionStats():
         self.queries = 0
         self.FCTs = []
         self.too_late = 0
+
+    def print_summary_stats(self):
+        print 'response_size, fct'
+        for size, fcts in self.all_FCTs.iteritems():
+            for fct in fcts:
+                print '%d, %d' % (size, fct)
 
     @staticmethod
     def header_names():

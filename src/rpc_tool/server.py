@@ -89,9 +89,13 @@ def run_server(params):
                 if response_size not in response_dict:
                     generate_response(response_size, params.pfabric)
 
-                sys.stderr.write("about to send response %d\n" % num_responses)
-                connection.send(response_dict[response_size])
-                sys.stderr.write("sent response %d\n" % num_responses)
+                response = response_dict[response_size]
+                response_length = len(response_dict[response_size])
+                sent_bytes = 0
+
+                while sent_bytes < response_length:
+                    sent_bytes += connection.send(response[sent_bytes:])
+
                 num_responses += 1
 
     except socket.error:

@@ -71,7 +71,8 @@ def run_client(params):
 
         # choose response size
         if params.ecdf:
-            response_size = empir_rand.get_value()
+            # value is in MTUs - we want bytes
+            response_size = empir_rand.get_value() * 1448
         else:
             response_size = params.r_size
 

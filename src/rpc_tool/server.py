@@ -72,7 +72,7 @@ def run_server(params):
     elif params.ecdf is not None:
         empir_rand = EmpiricalRandomVariable(params.ecdf)
         for response_size in empir_rand.get_all_values():
-            generate_response(response_size, params.pfabric)
+            generate_response(response_size * DATA_PER_PACKET, params.pfabric)
 
     server_socket, connection, address = setup_socket(params)
 

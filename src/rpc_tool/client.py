@@ -79,16 +79,16 @@ def run_client(params):
         t_before = time.time()
 
         # requests are only one packet long, so they get highest priority
-        sys.stderr.write("about to send request %d\n" % num_requests)
+#        sys.stderr.write("about to send request %d\n" % num_requests)
         client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY, response_size))
-        sys.stderr.write("sent request %d\n" % num_requests)
+#        sys.stderr.write("sent request %d\n" % num_requests)
 
         # wait for reply
         amount_received = 0
         while amount_received < response_size:
             data = client_socket.recv(receive_buffer_size)
             amount_received += len(data)
-        sys.stderr.write("received response %d\n" % num_requests)
+#        sys.stderr.write("received response %d\n" % num_requests)
         num_requests += 1
         t_after = time.time()
         fct = t_after - t_before

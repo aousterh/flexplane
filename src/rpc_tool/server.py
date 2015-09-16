@@ -81,7 +81,7 @@ def run_server(params):
     try:
         num_responses = 0
         while True:
-            buf = connection.recv(64)
+            buf = connection.recv(8)
             if len(buf) > 0:
                 data = struct.unpack('!LL', buf)
                 response_size = int(data[1])

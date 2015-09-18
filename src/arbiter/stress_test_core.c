@@ -28,6 +28,7 @@
 #define STRESS_TEST_RATE_DECREASE               3
 #define STRESS_TEST_MIN_RATE_CHECK_TIME_SEC		1e-2
 #define STRESS_TEST_RATE_DECREASE_GAP_SEC		1
+#define	STRESS_TEST_MAX_AREQS					256
 
 /* logs */
 struct stress_test_log {
@@ -37,6 +38,8 @@ struct stress_test_log {
 struct stress_test_log stress_test_core_logs[RTE_MAX_LCORE];
 /* current log */
 #define CL		(&stress_test_core_logs[rte_lcore_id()])
+
+uint8_t areq_data[MAX_REQ_DATA_BYTES * STRESS_TEST_MAX_AREQS];
 
 static inline void stress_test_log_init(struct stress_test_log *cl)
 {
@@ -157,8 +160,23 @@ static inline print_completion_stats(uint64_t *admitted_tslots,
 	printf("Estimated router throughput based on bias: %f\n", rtr_tput_gbps);
 }
 
-void add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amount) {
+void inline initialize_areq_data() {
+	uint16_t i;
+	uint8_t *areq_pointer = &areq_data[0];
+	(void) i;
+
+#if defined(PFABRIC)
+	for (i = 0; i < STRESS_TEST_MAX_AREQS; i++) {
+		*((uint32_t *) areq_pointer) = htonl(STRESS_TEST_MAX_AREQS - i);
+		areq_pointer += emu_req_data_bytes();
+	}
+#endif
+
+}
+
+void inline add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amount) {
 #if defined(PRIO_BY_FLOW_QUEUEING)
+
 #if FLOW_SHIFT != 2
 #error "Invalid FLOW_SHIFT for stress test with priority by flow queueing"
 #endif
@@ -172,6 +190,17 @@ void add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amount) {
 		flow = 1;
 	add_backlog(g_admissible_status(), src, ((dst << FLOW_SHIFT) | flow),
 			amount, 0, NULL);
+#elif defined(PFABRIC)
+	uint16_t index;
+
+	/* use areq data - last amount of them so that they get remaining packets
+	 * of amount down to 0 */
+	if (amount <= STRESS_TEST_MAX_AREQS) {
+		index = STRESS_TEST_MAX_AREQS - amount;
+		add_backlog(g_admissible_status(), src, dst, amount, 0,
+				&areq_data[index * emu_req_data_bytes()]);
+	} else
+		add_backlog(g_admissible_status(), src, dst, amount, 0, NULL);
 #else
 	add_backlog(g_admissible_status(), src, dst, amount, 0, NULL);
 #endif
@@ -325,6 +354,9 @@ int exec_stress_test_core(void *void_cmd_p)
 	uint32_t percent_out_of_group;
 
 	printf("IN MASTER STRESS TEST CORE, lcore %d\n", lcore_id);
+
+	/* initialize areq data */
+	initialize_areq_data();
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = cmd->first_time_slot - 1;

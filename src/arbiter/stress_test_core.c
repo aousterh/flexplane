@@ -157,6 +157,26 @@ static inline print_completion_stats(uint64_t *admitted_tslots,
 	printf("Estimated router throughput based on bias: %f\n", rtr_tput_gbps);
 }
 
+void add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amount) {
+#if defined(PRIO_BY_FLOW_QUEUEING)
+#if FLOW_SHIFT != 2
+#error "Invalid FLOW_SHIFT for stress test with priority by flow queueing"
+#endif
+	/* add a priority value as the lower bits of the dst. 1/8 of flows are
+	 * priority 0, 1/4 are 1, rest are 2. */
+	double rand_val = (rand() / ((double) RAND_MAX)) * 8;
+	uint16_t flow = 2;
+	if (rand_val < 1)
+		flow = 0;
+	else if (rand_val < 3)
+		flow = 1;
+	add_backlog(g_admissible_status(), src, ((dst << FLOW_SHIFT) | flow),
+			amount, 0, NULL);
+#else
+	add_backlog(g_admissible_status(), src, dst, amount, 0, NULL);
+#endif
+}
+
 int exec_slave_stress_test_core(void *void_cmd_p) {
 	struct stress_test_core_cmd *cmd =
 			(struct stress_test_core_cmd *) void_cmd_p;
@@ -225,8 +245,8 @@ int exec_slave_stress_test_core(void *void_cmd_p) {
 				break;
 
 			/* enqueue the request */
-			add_backlog(g_admissible_status(), next_request.src,
-					next_request.dst, next_request.backlog, 0, NULL);
+			add_backlog_wrapper(next_request.src, next_request.dst,
+					next_request.backlog);
 			comm_log_demand_increased(next_request.src, next_request.dst, 0,
 					next_request.backlog, next_request.backlog);
 			n_processed_requests++;
@@ -456,8 +476,8 @@ int exec_stress_test_core(void *void_cmd_p)
 				break;
 
 			/* enqueue the request */
-			add_backlog(g_admissible_status(), next_request.src,
-					next_request.dst, next_request.backlog, 0, NULL);
+			add_backlog_wrapper(next_request.src, next_request.dst,
+								next_request.backlog);
 			comm_log_demand_increased(next_request.src, next_request.dst, 0,
 					next_request.backlog, next_request.backlog);
 			total_demand += next_request.backlog;

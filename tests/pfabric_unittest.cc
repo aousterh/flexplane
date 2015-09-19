@@ -39,7 +39,7 @@ TEST(PFabricTest, two_flows) {
 			(1 << PACKET_Q_LOG_SIZE), R_PFabric, &rtr_args, E_Simple, NULL,
 			&topo_config);
 
-    /* src, dst, flow, amount, start_id, pointer to additional data */
+	/* src, dst, flow, amount, start_id, pointer to additional data */
 	container->add_backlog(12, 14, 0, 4, 20, &areq_data_0[0]);
 	container->add_backlog(13, 14, 0, 3, 10, &areq_data_1[0]);
 
@@ -97,7 +97,7 @@ TEST(PFabricTest, drop_on_full_queue) {
 			(1 << PACKET_Q_LOG_SIZE), R_PFabric, &rtr_args, E_Simple, NULL,
 			&topo_config);
 
-    /* src, dst, flow, amount, start_id, pointer to additional data */
+	/* src, dst, flow, amount, start_id, pointer to additional data */
 	container->add_backlog(12, 14, 0, 3, 20, &areq_data_0[0]);
 	container->add_backlog(13, 14, 0, 3, 10, &areq_data_1[0]);
 

@@ -19,12 +19,12 @@
 
 #define PFABRIC_MAX_PRIORITY	0xFFFFFFFF
 
-/* Metadata about a queued packet in pfabric.
- * TODO: on dequeue, copy last entry to freed spot. This allows us to remove
- * the in_use field and only visit the number of entries used on each
- * operation. Then enqueue would also be constant time. */
+/* Metadata about a queued packet in pfabric, maintained in an array. On
+ * enqueue, we add the new packet to the end of the array. On dequeue, we
+ * iterate through the array and find the item to dequeue. We then copy the last
+ * item in the array into the vacated spot, so that enqueue is constant time
+ * and dequeue is linear in the number of queued packets. */
 struct pfabric_metadata {
-	bool in_use;
 	uint16_t src;
 	uint16_t dst;
 	uint16_t id;
@@ -156,9 +156,6 @@ inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
 		struct pfabric_metadata *metadata_array = (struct pfabric_metadata *)
 				malloc(metadata_array_size);
 		m_metadata.push_back(metadata_array);
-
-		for (j = 0; j < queue_max_size; j++)
-			metadata_array[j].in_use = false;
 	}
 
 	/* initialize occupancies to zero */
@@ -186,7 +183,7 @@ inline PFabricQueueBank::~PFabricQueueBank()
 }
 
 inline void PFabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
-	uint16_t i;
+	uint16_t index;
 
 	/* mark port as non-empty */
 	asm("bts %1,%0" : "+m" (*m_non_empty_ports) : "r" (port));
@@ -194,19 +191,14 @@ inline void PFabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
 	/* put packet and metadata in first available spot */
 	struct pfabric_metadata *metadata = m_metadata[port];
 	struct emu_packet **pkt_pointers = m_queues[port];
-	for (i = 0; i < m_max_occupancy; i++) {
-		if (!metadata[i].in_use) {
-			/* found an available spot, fill it */
-			metadata[i].in_use = true;
-			metadata[i].src = p->src;
-			metadata[i].dst = p->dst;
-			metadata[i].id = p->id;
-			metadata[i].priority = p->priority;
-			pkt_pointers[i] = p;
 
-			break;
-		}
-	}
+        /* add to end of arrays */
+	index = m_occupancies[port];
+        metadata[index].src = p->src;
+        metadata[index].dst = p->dst;
+        metadata[index].id = p->id;
+        metadata[index].priority = p->priority;
+        pkt_pointers[index] = p;
 
 	m_occupancies[port]++;
 
@@ -215,17 +207,17 @@ inline void PFabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
 
 inline struct emu_packet *PFabricQueueBank::dequeue_highest_priority(
 		uint32_t port) {
-	uint16_t i, dequeue_index, dequeue_id;
+	uint16_t i, dequeue_index, dequeue_id, last_index;
 	struct pfabric_metadata highest_prio;
 	struct pfabric_metadata *metadata;
+	struct emu_packet *p;
 
 	metadata = m_metadata[port];
 	highest_prio.priority = PFABRIC_MAX_PRIORITY;
 
 	/* find metadata with highest priority */
-	for (i = 0; i < m_max_occupancy; i++) {
-		if (metadata[i].in_use &&
-				(metadata[i].priority <= highest_prio.priority))
+	for (i = 0; i < m_occupancies[port]; i++) {
+		if (metadata[i].priority <= highest_prio.priority)
 			memcpy(&highest_prio, &metadata[i],
 					sizeof(struct pfabric_metadata));
 	}
@@ -234,53 +226,70 @@ inline struct emu_packet *PFabricQueueBank::dequeue_highest_priority(
 	 * re-ordering. NOTE: flow should also be checked if we use flow with
 	 * pFabric. */
 	dequeue_id = highest_prio.id;
-	for (i = 0; i < m_max_occupancy; i++) {
-		if (metadata[i].in_use && (metadata[i].src == highest_prio.src) &&
-				(metadata[i].dst == highest_prio.dst) &&
-				(metadata[i].id <= dequeue_id)) {
+	for (i = 0; i < m_occupancies[port]; i++) {
+		if ((metadata[i].src == highest_prio.src) &&
+		    (metadata[i].dst == highest_prio.dst) &&
+		    (metadata[i].id <= dequeue_id)) {
 			dequeue_index = i;
 			dequeue_id = metadata[i].id;
 		}
 	}
 
+	p = m_queues[port][dequeue_index];
+
 	/* bookkeeping */
-	metadata[dequeue_index].in_use = false;
 	m_occupancies[port]--;
+
+	/* copy last entry into vacated spot (changes nothing if this was in the
+	   last spot) */
+	last_index = m_occupancies[port];
+	memcpy(&metadata[dequeue_index], &metadata[last_index],
+	       sizeof(struct pfabric_metadata));
+	m_queues[port][dequeue_index] = m_queues[port][last_index];
 
 	uint64_t port_empty = (m_occupancies[port] == 0) & 0x1;
 	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
 
 	queue_bank_log_dequeue(&m_stats, port);
 
-	return m_queues[port][dequeue_index];
+	return p;
 }
 
 inline struct emu_packet *PFabricQueueBank::dequeue_lowest_priority(
 		uint32_t port) {
-	uint16_t i;
+	uint16_t i, last_index;
 	struct pfabric_metadata *metadata = m_metadata[port];
+	struct emu_packet *p;
 
 	uint32_t lowest_priority = 0;
 	uint16_t lowest_priority_index = 0;
 
 	/* find entry with lowest priority (aka highest prio number) */
-	for (i = 0; i < m_max_occupancy; i++) {
-		if (metadata[i].in_use && (metadata[i].priority >= lowest_priority)) {
+	for (i = 0; i < m_occupancies[port]; i++) {
+		if (metadata[i].priority >= lowest_priority) {
 			lowest_priority = metadata[i].priority;
 			lowest_priority_index = i;
 		}
 	}
 
+	p = m_queues[port][lowest_priority_index];
+
 	/* bookkeeping */
-	metadata[lowest_priority_index].in_use = false;
 	m_occupancies[port]--;
+
+	/* copy last entry into vacated spot (changes nothing if this was in the
+	   last spot) */
+	last_index = m_occupancies[port];
+	memcpy(&metadata[lowest_priority_index], &metadata[last_index],
+	       sizeof(struct pfabric_metadata));
+	m_queues[port][lowest_priority_index] = m_queues[port][last_index];
 
 	uint64_t port_empty = (m_occupancies[port] == 0) & 0x1;
 	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
 
 	queue_bank_log_dequeue(&m_stats, port);
 
-	return m_queues[port][lowest_priority_index];
+	return p;
 }
 
 inline uint32_t PFabricQueueBank::lowest_priority(uint32_t port) {
@@ -288,9 +297,8 @@ inline uint32_t PFabricQueueBank::lowest_priority(uint32_t port) {
 	uint32_t lowest_priority = 0;
 
 	struct pfabric_metadata *metadata = m_metadata[port];
-	for (i = 0; i < m_max_occupancy; i++) {
-		if (metadata[i].in_use)
-			lowest_priority = MAX(lowest_priority, metadata[i].priority);
+	for (i = 0; i < m_occupancies[port]; i++) {
+		lowest_priority = MAX(lowest_priority, metadata[i].priority);
 	}
 
 	return lowest_priority;

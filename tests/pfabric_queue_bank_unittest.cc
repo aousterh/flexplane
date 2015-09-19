@@ -232,3 +232,57 @@ TEST(PFabricQueueBankTest, full) {
 
 	delete qb;
 }
+
+/*
+ * Interleaves packet enqueues and dequeues.
+ */
+TEST(PFabricQueueBankTest, interleaved_enqueue_dequeue) {
+	uint32_t enq, deq;
+	struct emu_packet packets[5];
+	uint32_t srcs[5] = {0, 1, 2, 3, 4};
+	uint32_t dsts[5] = {5, 5, 5, 5, 5};
+	uint32_t prios[5] = {0, 2, 3, 1, 4};
+	uint32_t port_num = 27;
+	struct emu_packet *dequeued_packets[5];
+
+	PFabricQueueBank *qb = new PFabricQueueBank(32, PFABRIC_QUEUE_CAPACITY);
+
+	/* enqueue first 3 packets */
+	for (enq = 0; enq < 3; enq++) {
+		/* initialize packet */
+		packets[enq].src = srcs[enq];
+		packets[enq].dst = dsts[enq];
+		packets[enq].id = 0;
+		packets[enq].priority = prios[enq];
+
+		qb->enqueue(port_num, &packets[enq]);
+	}
+
+	/* dequeue two packets */
+	for (deq = 0; deq < 2; deq++)
+		dequeued_packets[deq] = qb->dequeue_highest_priority(port_num);
+
+	/* enqueue remaining 2 packets */
+	for (; enq < 5; enq++) {
+		/* initialize packet */
+		packets[enq].src = srcs[enq];
+		packets[enq].dst = dsts[enq];
+		packets[enq].id = 0;
+		packets[enq].priority = prios[enq];
+
+		qb->enqueue(port_num, &packets[enq]);
+	}
+
+	/* dequeue two packets */
+	for (; deq < 5; deq++)
+		dequeued_packets[deq] = qb->dequeue_highest_priority(port_num);
+
+	/* check that we dequeued packets in the correct order */
+	EXPECT_EQ(dequeued_packets[0], &packets[0]);
+	EXPECT_EQ(dequeued_packets[1], &packets[1]);
+	EXPECT_EQ(dequeued_packets[2], &packets[3]);
+	EXPECT_EQ(dequeued_packets[3], &packets[2]);
+	EXPECT_EQ(dequeued_packets[4], &packets[4]);
+
+	delete qb;
+}

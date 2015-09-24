@@ -167,6 +167,10 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 #error "Unrecognized router type"
 #endif
 
+#if defined(USE_TSO)
+    RTE_LOG(INFO, ADMISSION, "running with TSO (TCP Segmentation Offload)\n");
+#endif
+
 	RTE_LOG(INFO, ADMISSION,
 			"admitted_traffic_mempool=%p q_admitted_out=%p\n",
 			admitted_traffic_mempool, q_admitted_out);

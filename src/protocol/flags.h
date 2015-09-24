@@ -30,6 +30,7 @@ extern "C" {
 #define AREQ_DATA_TYPE_NONE			0 /* no areq data used */
 #define AREQ_DATA_TYPE_UNSPEC		1 /* unspecified data type, assumes MAX_REQ_DATA_BYTES */
 #define AREQ_DATA_TYPE_PKTS_LEFT	2 /* 4 bytes specifying how many packets remain in the flow */
+#define AREQ_DATA_TYPE_TSO			3 /* 1 byte specifying the number of MTUs in this segment */
 
 /* parameters for alloc data */
 #define MAX_ALLOC_DATA_BYTES	2 /* must be a multiple of two */
@@ -83,6 +84,8 @@ static inline u8 areq_data_type_from_scheme(char *scheme) {
 		return AREQ_DATA_TYPE_NONE;
 	else if (strcmp(scheme, "pfabric") == 0)
 		return AREQ_DATA_TYPE_PKTS_LEFT;
+	else if (strcmp(scheme, "drop_tail_tso") == 0)
+		return AREQ_DATA_TYPE_TSO;
 	else
 		return AREQ_DATA_TYPE_UNSPEC;
 }
@@ -96,6 +99,8 @@ static inline u8 areq_data_bytes_from_scheme(char *scheme) {
 		return 0;
 	else if (strcmp(scheme, "pfabric") == 0)
 		return 4;
+	else if (strcmp(scheme, "drop_tail_tso") == 0)
+		return 2;
 	else
 		return MAX_REQ_DATA_BYTES;
 }
@@ -105,7 +110,8 @@ static inline u8 areq_data_bytes_from_scheme(char *scheme) {
  */
 static inline u8 alloc_data_type_from_scheme(char *scheme) {
 	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
-			strcmp(scheme, "dctcp") == 0 || strcmp(scheme, "pfabric") == 0)
+			strcmp(scheme, "dctcp") == 0 || strcmp(scheme, "pfabric") == 0 ||
+			strcmp(scheme, "drop_tail_tso") == 0)
 		return ALLOC_DATA_TYPE_NONE;
 	else
 		return ALLOC_DATA_TYPE_UNSPEC;
@@ -116,7 +122,8 @@ static inline u8 alloc_data_type_from_scheme(char *scheme) {
  */
 static inline u8 alloc_data_bytes_from_scheme(char *scheme) {
 	if (strcmp(scheme, "drop_tail") == 0 || strcmp(scheme, "red") == 0 ||
-			strcmp(scheme, "dctcp") == 0 || strcmp(scheme, "pfabric") == 0)
+			strcmp(scheme, "dctcp") == 0 || strcmp(scheme, "pfabric") == 0 ||
+			strcmp(scheme, "drop_tail_tso") == 0)
 		return 0;
 	else
 		return MAX_ALLOC_DATA_BYTES;

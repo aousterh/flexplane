@@ -94,7 +94,7 @@ RRRouter::RRRouter(uint16_t q_capacity, uint32_t rack_index,
 			  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity),
-	  m_sch(&m_bank),
+	  m_sch(&m_bank, tor_ports(topo_config)),
 	  RRRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
 {}
 

@@ -24,12 +24,12 @@
  */
 class EmulationContainer {
 public:
-	EmulationContainer(uint32_t admitted_mempool_size,
+	inline EmulationContainer(uint32_t admitted_mempool_size,
 			uint32_t admitted_ring_size, uint32_t packet_mempool_size,
 			uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
 			enum EndpointType e_type, void *e_args,
 			struct emu_topo_config *topo_config);
-	~EmulationContainer();
+	inline ~EmulationContainer();
 
 	inline void add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 			uint32_t amount, uint16_t start_id, u8* areq_data);
@@ -48,7 +48,7 @@ private:
 	struct fp_mempool	*m_packet_mempool;
 };
 
-EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
+inline EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
 		uint32_t admitted_ring_size, uint32_t packet_mempool_size,
 		uint32_t packet_ring_size, enum RouterType r_type, void *r_args,
 		enum EndpointType e_type, void *e_args,
@@ -76,7 +76,7 @@ EmulationContainer::EmulationContainer(uint32_t admitted_mempool_size,
 			packet_ring_size, r_type, r_args, e_type, e_args, topo_config);
 }
 
-EmulationContainer::~EmulationContainer() {
+inline EmulationContainer::~EmulationContainer() {
 	m_emulation->cleanup();
 	delete m_emulation;
 }

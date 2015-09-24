@@ -21,7 +21,7 @@ CXXDEFINES += -DNO_DPDK
 CXXDEFINES += -DEMULATION_ALGO
 CXXDEFINES += -DFASTPASS_CONTROLLER
 CXXDEFINES += -DALGO_N_CORES=1
-CXXDEFINES += -DPFABRIC
+#CXXDEFINES += -DPFABRIC
 
 CXXINCLUDES = 
 CXXINCLUDES += -I$(PWD)/../../../../fastpass-public/src/graph-algo
@@ -43,11 +43,11 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 
 # House-keeping build targets.
-all : unittests
+all : unittests round_robin_unittets
 
 clean :
-	rm -f unittests gtest.a gtest_main.a *.o ../*.o ../drivers/*.o \
-	../queue_managers/*.o ../schedulers/*.o
+	rm -f unittests round_robin_unittests gtest.a gtest_main.a *.o ../*.o \
+	../drivers/*.o ../queue_managers/*.o ../schedulers/*.o
 
 # Builds gtest.a and gtest_main.a.
 
@@ -88,4 +88,7 @@ TESTS_CC = $(wildcard *_unittest.cc)
 TESTS_O = $(addsuffix .o, $(basename $(TESTS_CC)))
 
 unittests : $(TESTS_O) $(EMULATION_ALL_O) gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+round_robin_unittests : round_robin_unittest.o $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

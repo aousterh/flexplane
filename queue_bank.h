@@ -98,6 +98,23 @@ public:
 	 */
 	inline struct queue_bank_stats *get_queue_bank_stats();
 
+	/**
+	 * Get TSO occupancy count
+	 */
+	inline uint16_t get_tso_occupancy(uint32_t port, uint32_t queue);
+
+	/**
+	 * Increment TSO occupancy count
+	 */
+	inline void increment_tso_occupancy(uint32_t port, uint32_t queue,
+			uint16_t amount);
+
+	/**
+	 * Decrement TSO occupancy count
+	 */
+	inline void decrement_tso_occupancy(uint32_t port, uint32_t queue,
+			uint16_t amount);
+
 private:
 	uint32_t m_n_ports;
 
@@ -117,6 +134,11 @@ private:
 
 	/** logging stats */
 	struct queue_bank_stats m_stats;
+
+#ifdef USE_TSO
+	/** special occupancy counts used for TSO */
+	std::vector<uint32_t> m_tso_occupancies;
+#endif
 };
 
 
@@ -168,6 +190,12 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 		throw std::runtime_error("could not allocate m_non_empty_queues");
 
 	memset(&m_stats, 0, sizeof(m_stats));
+
+#ifdef USE_TSO
+	for (i = 0; i < (n_ports * n_queues); i++) {
+		m_tso_occupancies.push_back(0);
+	}
+#endif
 }
 
 template <typename ELEM >
@@ -266,6 +294,24 @@ inline int QueueBank<ELEM>::last_empty_time(uint32_t port, uint32_t queue)
 template <typename ELEM >
 inline struct queue_bank_stats *QueueBank<ELEM>::get_queue_bank_stats() {
 	return &m_stats;
+}
+
+template <typename ELEM >
+inline uint16_t QueueBank<ELEM>::get_tso_occupancy(uint32_t port,
+		uint32_t queue) {
+	return m_tso_occupancies[flat_index(port, queue)];
+}
+
+template <typename ELEM >
+inline void QueueBank<ELEM>::increment_tso_occupancy(uint32_t port,
+		uint32_t queue, uint16_t amount) {
+	m_tso_occupancies[flat_index(port, queue)] += amount;
+}
+
+template <typename ELEM >
+inline void QueueBank<ELEM>::decrement_tso_occupancy(uint32_t port,
+		uint32_t queue, uint16_t amount) {
+	m_tso_occupancies[flat_index(port, queue)] -= amount;
 }
 
 #endif /* QUEUE_BANK_H_ */

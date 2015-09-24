@@ -24,6 +24,7 @@
  * @flow: id to disambiguate between flows with the same src and dst ips
  * @id: sequential id within this flow, to enforce ordering of packets
  * @flags: flags indicating marks or other info to be conveyed to endpoints
+ * @n_mtus: number of MTUs for a segment in TSO
  */
 struct emu_packet {
 	uint16_t	src;
@@ -33,6 +34,7 @@ struct emu_packet {
 	uint16_t	flags;
 
 	/* custom per-scheme fields */
+	uint8_t		n_mtus;
 	uint32_t	priority;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 

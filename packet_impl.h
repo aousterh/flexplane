@@ -33,6 +33,10 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
           packet->priority = 0;
 #endif
 
+#if defined(USE_TSO)
+        packet->n_mtus = areq_data[0];
+#endif
+
 }
 
 static inline

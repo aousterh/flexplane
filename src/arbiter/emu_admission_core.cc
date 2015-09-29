@@ -86,6 +86,7 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 	/* init emu_state */
 	enum RouterType rtype;
 	void *rtr_args;
+	enum EndpointType etype = E_Simple;
 #if defined(DCTCP)
 	struct dctcp_args dctcp_args;
     dctcp_args.q_capacity = 1024;
@@ -111,6 +112,15 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 
     rtype = R_RED;
     rtr_args = &red_params;
+#elif defined(DROP_TAIL) && defined(USE_TSO)
+    struct drop_tail_args dt_args;
+    dt_args.q_capacity = 1024;
+	RTE_LOG(INFO, ADMISSION, "Using DropTail routers with TSO and q_capacity %d\n",
+			dt_args.q_capacity);
+
+    rtype = R_DropTail;
+    rtr_args = &dt_args;
+    etype = E_SimpleTSO;
 #elif defined(DROP_TAIL)
     struct drop_tail_args dt_args;
     dt_args.q_capacity = 1024;

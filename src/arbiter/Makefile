@@ -21,6 +21,7 @@ SRCS-y := main.c \
           benchmark_core.cc \
           emu_admission_core.cc \
           $(EMU_DIR)/queue_managers/drop_tail.cc \
+          $(EMU_DIR)/queue_managers/drop_tail_tso.cc \
           $(EMU_DIR)/queue_managers/red.cc \
           $(EMU_DIR)/queue_managers/dctcp.cc \
           $(EMU_DIR)/queue_managers/pfabric_qm.cc \
@@ -56,6 +57,7 @@ CFLAGS += -march=core2
 #CFLAGS += -DPARALLEL_ALGO
 #CFLAGS += -DPIPELINED_ALGO
 CFLAGS += -DEMULATION_ALGO
+CFLAGS += -DUSE_TSO
 #CFLAGS += -DBENCHMARK_ALGO
 #CCFLAGS += -DEMU_NO_BATCH_CALLS
 CFLAGS += $(CMD_LINE_CFLAGS)

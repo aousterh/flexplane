@@ -45,7 +45,9 @@ extern "C" {
 static inline u16 emu_req_data_bytes(void) {
 	u16 req_data_bytes;
 
-#if (defined(DROP_TAIL) || defined(RED) || defined(DCTCP) || defined(HULL) \
+#if (defined(USE_TSO))
+	req_data_bytes = 2;
+#elif (defined(DROP_TAIL) || defined(RED) || defined(DCTCP) || defined(HULL) \
 	||	defined(ROUND_ROBIN) || defined(PRIO_QUEUEING))
 	req_data_bytes = 0;
 #elif (defined(PFABRIC))

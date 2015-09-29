@@ -7,6 +7,7 @@
 
 #include "router.h"
 #include "queue_managers/drop_tail.h"
+#include "queue_managers/drop_tail_tso.h"
 #include "queue_managers/red.h"
 #include "queue_managers/dctcp.h"
 #include "queue_managers/pfabric_qm.h"
@@ -65,6 +66,12 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 	case (R_PFabric):
 		assert(args != NULL);
 		return new PFabricRouter((struct pfabric_args *) args, router_index,
+				topo_config);
+
+	case (R_DropTailTSO):
+		assert(args != NULL);
+		dt_args = (struct drop_tail_args *) args;
+		return new DropTailTSORouter(dt_args->q_capacity, router_index,
 				topo_config);
 	}
 

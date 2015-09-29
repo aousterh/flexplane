@@ -25,6 +25,8 @@
 
 #include <stdexcept>
 
+#define DROP_TAIL_QUEUE_CAPACITY 4096
+
 struct drop_tail_args {
     uint16_t q_capacity;
 };
@@ -46,21 +48,12 @@ private:
 inline void DropTailQueueManager::enqueue(struct emu_packet *pkt,
 		uint32_t port, uint32_t queue, uint64_t cur_time, Dropper *dropper)
 {
-#ifndef USE_TSO
 	if (m_bank->occupancy(port, queue) >= m_q_capacity) {
 		/* no space to enqueue, drop this packet */
 		dropper->drop(pkt, port);
 	} else {
 		m_bank->enqueue(port, queue, pkt);
 	}
-#else
-	if (m_bank->get_tso_occupancy(port, queue) + pkt->n_mtus >= m_q_capacity)
-		dropper->drop(pkt, port);
-	else {
-		m_bank->enqueue(port, queue, pkt);
-		m_bank->increment_tso_occupancy(port, queue, pkt->n_mtus);
-	}
-#endif
 }
 
 typedef CompositeRouter<TorRoutingTable, FlowIDClassifier, DropTailQueueManager, SingleQueueScheduler>

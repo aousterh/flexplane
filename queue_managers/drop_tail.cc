@@ -7,8 +7,6 @@
 
 #include "queue_managers/drop_tail.h"
 
-#define DROP_TAIL_QUEUE_CAPACITY 4096
-
 DropTailQueueManager::DropTailQueueManager(PacketQueueBank *bank,
 		uint32_t queue_capacity)
 	: m_bank(bank), m_q_capacity(queue_capacity)

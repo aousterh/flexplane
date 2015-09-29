@@ -135,10 +135,8 @@ private:
 	/** logging stats */
 	struct queue_bank_stats m_stats;
 
-#ifdef USE_TSO
 	/** special occupancy counts used for TSO */
 	std::vector<uint32_t> m_tso_occupancies;
-#endif
 };
 
 
@@ -191,11 +189,9 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 
 	memset(&m_stats, 0, sizeof(m_stats));
 
-#ifdef USE_TSO
 	for (i = 0; i < (n_ports * n_queues); i++) {
 		m_tso_occupancies.push_back(0);
 	}
-#endif
 }
 
 template <typename ELEM >

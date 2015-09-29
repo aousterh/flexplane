@@ -4,3 +4,4 @@ fastemu.py
 *_wrap.cc
 *_wrap.h
 .cproject
+*_count.c

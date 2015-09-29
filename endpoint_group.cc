@@ -31,6 +31,11 @@ EndpointGroup *EndpointGroupFactory::NewEndpointGroup(enum EndpointType type,
 			rl_args = (struct rate_limiting_ep_args *) args;
 			return new RateLimitingEndpointGroup(start_id, rl_args->q_capacity,
 					rl_args->t_btwn_pkts, topo_config);
+	case(E_SimpleTSO):
+			q_capacity = (args == NULL) ? SIMPLE_ENDPOINT_QUEUE_CAPACITY :
+					((struct simple_ep_args *) args)->q_capacity;
+			return new SimpleTSOEndpointGroup(start_id, q_capacity,
+					topo_config);
 	}
 	throw std::runtime_error("invalid endpoint type\n");
 }

@@ -17,6 +17,9 @@
 #include "composite.h"
 #include "classifiers/SingleQueueClassifier.h"
 #include "queue_managers/drop_tail.h"
+#include "queue_managers/drop_tail_tso.h"
+#include "schedulers/SingleQueueScheduler.h"
+#include "schedulers/SingleQueueTSOScheduler.h"
 #include "schedulers/RateLimitingScheduler.h"
 
 #define SIMPLE_ENDPOINT_QUEUE_CAPACITY 8192
@@ -92,6 +95,30 @@ private:
     SingleQueueClassifier m_cla;
     DropTailQueueManager m_qm;
     RateLimitingScheduler m_sch;
+    SimpleSink m_sink;
+};
+
+
+typedef CompositeEndpointGroup<SingleQueueClassifier, DropTailTSOQueueManager,
+		SingleQueueTSOScheduler, SimpleSink>
+	SimpleTSOEndpointGroupBase;
+
+/**
+ * A drop tail endpoint group that supports TSO.
+ */
+class SimpleTSOEndpointGroup : public SimpleTSOEndpointGroupBase {
+public:
+	SimpleTSOEndpointGroup(uint16_t start_id, uint16_t q_capacity,
+			struct emu_topo_config *topo_config);
+	virtual void assign_to_core(EmulationOutput *out);
+
+	virtual void reset(uint16_t endpoint_id);
+private:
+    PacketQueueBank m_bank;
+    EmulationOutput *m_emu_output;
+    SingleQueueClassifier m_cla;
+    DropTailTSOQueueManager m_qm;
+    SingleQueueTSOScheduler m_sch;
     SimpleSink m_sink;
 };
 

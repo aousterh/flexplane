@@ -90,6 +90,10 @@ void print_global_admission_log_emulation() {
 	printf("router type pFabric");
 #endif
 
+#if defined(USE_TSO)
+	printf(", using TSO");
+#endif
+
 	/* compute and print total throughput across all routers */
 	for (core_index = 0; core_index < ALGO_N_CORES; core_index++) {
 		core_st = emulation->m_core_stats[core_index];

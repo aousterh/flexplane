@@ -4,7 +4,7 @@
 EMU_FILES = emulation.cc emulation_core.cc router.cc endpoint_group.cc \
 	simple_endpoint.cc
 DRV_FILES = RouterDriver.cc EndpointDriver.cc
-QM_FILES = drop_tail.cc red.cc dctcp.cc pfabric_qm.cc
+QM_FILES = drop_tail.cc red.cc dctcp.cc pfabric_qm.cc drop_tail_tso.cc
 SCHED_FILES = hull_sched.cc
 
 # Rules for constructing paths to .o files
@@ -21,6 +21,7 @@ CXXDEFINES += -DNO_DPDK
 CXXDEFINES += -DEMULATION_ALGO
 CXXDEFINES += -DFASTPASS_CONTROLLER
 CXXDEFINES += -DALGO_N_CORES=1
+CXXDEFINES += -DUSE_TSO
 #CXXDEFINES += -DPFABRIC
 
 CXXINCLUDES = 
@@ -91,4 +92,7 @@ unittests : $(TESTS_O) $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 round_robin_unittests : round_robin_unittest.o $(EMULATION_ALL_O) gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+tso_unittests : drop_tail_tso_unittest.o $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

@@ -30,6 +30,10 @@ mv build/fast build/fast_hull_sched
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DPFABRIC -j22
 mv build/fast build/fast_pfabric
 
+# make arbiter that runs drop tail with TSO support
+make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DDROP_TAIL CMD_LINE_CFLAGS+=-DUSE_TSO -j22
+mv build/fast build/fast_drop_tail_tso
+
 # make arbiter that runs drop tail. drop tail is the default and must come last.
 make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y EMU_RTR_FLAGS=-DDROP_TAIL -j22
 cp build/fast build/fast_drop_tail

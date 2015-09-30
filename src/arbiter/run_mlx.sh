@@ -8,6 +8,9 @@ if [ "$#" -ne 1 ]; then
 elif [ "$1" = "drop_tail"  ]; then
     FAST="./fast_drop_tail"
     echo "running drop tail arbiter"
+elif [ "$1" = "drop_tail_tso"  ]; then
+    FAST="./fast_drop_tail_tso"
+    echo "running drop tail arbiter with tso"
 elif [ "$1" = "red"  ]; then
     FAST="./fast_red"
     echo "running red arbiter"

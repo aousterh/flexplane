@@ -29,6 +29,9 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 			D(wait_for_admitted_enqueue), D(admitted_alloc_failed));
 	printf("\n  packets: %lu admitted, %lu dropped, %lu marked",
 			D(admitted_packet), D(dropped_packet), D(marked_packet));*/
+#ifdef USE_TSO
+	printf("\n  admitted mtus %lu", D(admitted_mtu));
+#endif
 	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu",
 			D(endpoint_driver_pushed), D(endpoint_driver_pulled),
 			D(endpoint_driver_processed_new));
@@ -40,7 +43,9 @@ void print_core_admission_log_emulation(uint16_t core_index) {
 			st->wait_for_admitted_enqueue, st->admitted_alloc_failed);
 	printf("\n  packets: %lu admitted, %lu dropped, %lu marked",
 			st->admitted_packet, st->dropped_packet, st->marked_packet);*/
-
+#ifdef USE_TSO
+	printf("\n  admitted mtus %lu", st->admitted_mtu);
+#endif
 	printf("\n  endpoint driver pushed %lu, pulled %lu, new %lu, push begin %lu, pull begin %lu, new begin %lu",
 			st->endpoint_driver_pushed, st->endpoint_driver_pulled,
 			st->endpoint_driver_processed_new, st->endpoint_driver_push_begin, st->endpoint_driver_pull_begin, st->endpoint_driver_new_begin);

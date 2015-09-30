@@ -158,6 +158,7 @@ EmulationOutput::admit(struct emu_packet* packet)
 {
 	admitted_insert_admitted_edge(admitted, packet);
 	adm_log_emu_admitted_packet(m_stat);
+	adm_log_emu_admitted_mtus(m_stat, packet->n_mtus);
 
 	/* if admitted struct is full, flush now */
 	if (unlikely(admitted->size == EMU_ADMITS_PER_ADMITTED))

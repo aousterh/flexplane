@@ -26,6 +26,7 @@ struct emu_admission_core_statistics {
 	uint64_t admitted_packet;
 	uint64_t dropped_packet;
 	uint64_t marked_packet;
+	uint64_t admitted_mtu;
 
 	/* framework failures */
 	uint64_t send_packet_failed;
@@ -101,6 +102,13 @@ void adm_log_emu_marked_packet(
 		struct emu_admission_core_statistics *st) {
 	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
 		st->marked_packet++;
+}
+
+static inline __attribute__((always_inline))
+void adm_log_emu_admitted_mtus(
+		struct emu_admission_core_statistics *st, uint32_t n_mtus) {
+	if (MAINTAIN_EMU_ADM_LOG_COUNTERS)
+		st->admitted_mtu += n_mtus;
 }
 
 static inline __attribute__((always_inline))

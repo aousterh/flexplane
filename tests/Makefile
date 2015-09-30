@@ -21,8 +21,10 @@ CXXDEFINES += -DNO_DPDK
 CXXDEFINES += -DEMULATION_ALGO
 CXXDEFINES += -DFASTPASS_CONTROLLER
 CXXDEFINES += -DALGO_N_CORES=1
-CXXDEFINES += -DUSE_TSO
-#CXXDEFINES += -DPFABRIC
+
+# Target-specific includes
+tso_unittests: CXXDEFINES += -DUSE_TSO
+pfabric_unittests: CXXDEFINES += -DPFABRIC
 
 CXXINCLUDES = 
 CXXINCLUDES += -I$(PWD)/../../../../fastpass-public/src/graph-algo
@@ -89,6 +91,9 @@ TESTS_CC = $(wildcard *_unittest.cc)
 TESTS_O = $(addsuffix .o, $(basename $(TESTS_CC)))
 
 unittests : $(TESTS_O) $(EMULATION_ALL_O) gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+pfabric_unittests : pfabric_unittest.o $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 round_robin_unittests : round_robin_unittest.o $(EMULATION_ALL_O) gtest_main.a

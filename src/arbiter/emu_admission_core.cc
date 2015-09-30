@@ -118,7 +118,7 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 	RTE_LOG(INFO, ADMISSION, "Using DropTail routers with TSO and q_capacity %d\n",
 			dt_args.q_capacity);
 
-    rtype = R_DropTail;
+    rtype = R_DropTailTSO;
     rtr_args = &dt_args;
     etype = E_SimpleTSO;
 #elif defined(DROP_TAIL)
@@ -187,7 +187,7 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 
 	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
 			(fp_ring **) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
-			rtr_args, E_Simple, NULL, &topo_config);
+			rtr_args, etype, NULL, &topo_config);
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

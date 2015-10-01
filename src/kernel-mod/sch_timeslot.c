@@ -527,8 +527,8 @@ static void enqueue_single_skb(struct Qdisc *sch, struct sk_buff *skb)
 
 		/* packets bigger than a timeslot cause warning and still get timeslot */
 		if (unlikely(cost > q->tslot_len_approx)) {
-			FASTPASS_WARN("got packet that is larger than a timeslot len=%d\n",
-				qdisc_pkt_len(skb));
+/*			FASTPASS_WARN("got packet that is larger than a timeslot len=%d\n",
+                        qdisc_pkt_len(skb));*/
 			q->stat.pkt_too_big++;
 		}
 	} else {

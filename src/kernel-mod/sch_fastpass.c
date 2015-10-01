@@ -1369,16 +1369,16 @@ static void inline copy_request_data_from_pkt(struct fp_sched_data *q,
 		u8 *request_data, struct sk_buff *skb) {
 	u32 flow_pkts_left;
 	u8 num_mtus;
+	struct skb_shared_info *shared = skb_shinfo(skb);
 
 	if (q->emu_areq_data_type == AREQ_DATA_TYPE_PKTS_LEFT) {
 		flow_pkts_left = get_custom_packet_data(skb);
 		*((u32 *) request_data) = flow_pkts_left;
 	} else if (q->emu_areq_data_type == AREQ_DATA_TYPE_TSO) {
-		/* TODO: make this flexible enough to accommodate other MTU sizes */
-		if (qdisc_pkt_len(skb) <= (1514-1448))
-			num_mtus = 1;
+		if (!skb_is_gso(skb))
+			num_mtus = 1; /* not gso/tso - just one mtu */
 		else
-			num_mtus = (qdisc_pkt_len(skb) - (1514-1448) + 1447) / 1448;
+			num_mtus = shared->gso_segs;
 		request_data[0] = num_mtus;
 	} else
 		fp_debug("no specified way to copy request data for data type %d\n",

@@ -181,6 +181,9 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
     RTE_LOG(INFO, ADMISSION, "running with TSO (TCP Segmentation Offload)\n");
 #endif
 
+    RTE_LOG(INFO, ADMISSION, "setup info: %d nodes, flow shift %d, comm cores: %d\n",
+            NUM_NODES, FLOW_SHIFT, N_COMM_CORES);
+
 	RTE_LOG(INFO, ADMISSION,
 			"admitted_traffic_mempool=%p q_admitted_out=%p\n",
 			admitted_traffic_mempool, q_admitted_out);

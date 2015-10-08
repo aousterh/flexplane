@@ -18,7 +18,7 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/PFabricScheduler.h"
 
-#define PFABRIC_QUEUE_CAPACITY	24
+#define PFABRIC_QUEUE_CAPACITY	112
 
 struct pfabric_args {
 	uint16_t q_capacity;

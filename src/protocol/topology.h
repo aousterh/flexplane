@@ -21,7 +21,7 @@ extern "C" {
 /* multiple flows per IP-pair is only supported in emulation right now */
 #if (defined(PIPELINED_ALGO) | defined(PARALLEL_ALGO))
 #define FLOW_SHIFT 0
-#else
+#elif (!defined(FLOW_SHIFT))
 //#define	FLOW_SHIFT 6
 #define FLOW_SHIFT 0
 #endif

@@ -28,6 +28,7 @@ TEST(RoundRobinTest, two_flows) {
 	/* initialize emulated topology */
 	topo_config.num_racks = 1;
 	topo_config.rack_shift = 5; /* 32 machines per rack */
+	topo_config.num_core_rtrs = 0;
 
 	/* initialize router arguments */
 	rtr_args.q_capacity = 32;
@@ -91,6 +92,7 @@ TEST(RoundRobinTest, two_ports) {
 	/* initialize emulated topology */
 	topo_config.num_racks = 1;
 	topo_config.rack_shift = 5; /* 32 machines per rack */
+	topo_config.num_core_rtrs = 0;
 
 	/* initialize router arguments */
 	rtr_args.q_capacity = 32;

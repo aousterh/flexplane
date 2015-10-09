@@ -88,6 +88,7 @@ int main() {
 	/* initialize emulated topology */
 	topo_config.num_racks = 1;
 	topo_config.rack_shift = 5; /* 32 machines per rack */
+	topo_config.num_core_rtrs = 0;
 
     /* run a basic test of emulation framework */
     container = create_container(R_DropTail, &topo_config);

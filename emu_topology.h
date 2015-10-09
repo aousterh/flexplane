@@ -17,6 +17,7 @@
 struct emu_topo_config {
 	uint16_t	num_racks;
 	uint16_t	rack_shift;
+	uint16_t	num_core_rtrs; /* 0 or 1 for now */
 };
 
 /* The number of endpoints per rack, from the rack shift. */
@@ -38,10 +39,10 @@ static inline uint16_t num_tors(struct emu_topo_config *topo_config) {
 /* The number of core routers in the network (routers in the tier above ToR).
  * */
 static inline uint16_t num_core_routers(struct emu_topo_config *topo_config) {
-	if (topo_config->num_racks == 1)
-		return 0;
+	if (topo_config->num_core_rtrs > 1)
+		throw std::runtime_error("this number of core routers is not yet supported");
 	else
-		return 1; /* for now */
+		return topo_config->num_core_rtrs;
 }
 
 /* The total number of routers in the emulated topology. */
@@ -95,7 +96,7 @@ static inline uint16_t tor_neighbors(struct emu_topo_config *topo_config) {
 	if (num_core_routers(topo_config) > 1)
 		throw std::runtime_error("this number of cores is not yet supported");
 
-	if (topo_config->num_racks == 1)
+	if (num_core_routers(topo_config) == 0)
 		return 1; /* just the endpoint group */
 	else
 		return 2; /* endpoint group and core router */

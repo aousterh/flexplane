@@ -156,7 +156,7 @@ void Emulation::construct_topology(EndpointGroup **epgs, Router **rtrs,
 void Emulation::set_tor_port_masks(uint64_t *rtr_masks) {
 	if (num_core_routers(m_topo_config) == 0) {
 		/* single rack topology */
-		if (num_endpoints(m_topo_config) <= 32)
+		if (endpoints_per_rack(m_topo_config) <= 32)
 			rtr_masks[0] = 0xFFFFFFFF; /* 32 ports */
 		else
 			rtr_masks[0] = 0xFFFFFFFFFFFFFFFF; /* 64 ports */
@@ -264,7 +264,7 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 					m_admitted_traffic_mempool, m_packet_mempool);
 			core_index++;
 		}
-	} else if (ALGO_N_CORES == m_topo_config->num_racks + 1) {
+	} else if (ALGO_N_CORES == num_routers(m_topo_config)) {
 		/* 1 epg + 1 rtr on first num_racks cores, core router on last core */
 		for (i = 0; i < m_topo_config->num_racks; i++) {
 			m_cores[core_index] = new EmulationCore(&epg_drivers[i],
@@ -273,10 +273,11 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 					m_packet_mempool);
 			core_index++;
 		}
-		m_cores[core_index] = new EmulationCore(NULL,
-				&router_drivers[core_index], 0, 1, core_index,
-				m_q_admitted_out[core_index], m_admitted_traffic_mempool,
-				m_packet_mempool);
+		if (num_core_routers(m_topo_config) == 1)
+			m_cores[core_index] = new EmulationCore(NULL,
+					&router_drivers[core_index], 0, 1, core_index,
+					m_q_admitted_out[core_index], m_admitted_traffic_mempool,
+					m_packet_mempool);
 	} else if (ALGO_N_CORES == 1) {
 		/* assign everything to one core */
 		m_cores[core_index] = new EmulationCore(epg_drivers, router_drivers,

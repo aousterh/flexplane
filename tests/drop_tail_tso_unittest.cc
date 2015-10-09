@@ -27,6 +27,7 @@ TEST(DropTailTSOTest, one_flow_backlogged) {
 	/* initialize emulated topology */
 	topo_config.num_racks = 1;
 	topo_config.rack_shift = 5; /* 32 machines per rack */
+	topo_config.num_core_rtrs = 0;
 
 	/* initialize router arguments */
 	rtr_args.q_capacity = 32;
@@ -84,6 +85,7 @@ TEST(DropTailTSOTest, one_flow_on_off) {
 	/* initialize emulated topology */
 	topo_config.num_racks = 1;
 	topo_config.rack_shift = 5; /* 32 machines per rack */
+	topo_config.num_core_rtrs = 0;
 
 	/* initialize router arguments */
 	rtr_args.q_capacity = 32;

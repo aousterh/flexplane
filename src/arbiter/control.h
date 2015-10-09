@@ -22,6 +22,7 @@ extern "C" {
 #ifndef EMU_NUM_RACKS
 #define EMU_NUM_RACKS			1
 #endif
+#define SEPARATE_RACKS			0
 
 #define STRESS_TEST_IS_AUTOMATED        1
 #define STRESS_TEST_MEAN_T_BETWEEN_REQUESTS_SEC		.3e-3

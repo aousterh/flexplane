@@ -236,7 +236,7 @@ int exec_slave_stress_test_core(void *void_cmd_p) {
 	/* determine percentage of traffic that will be out-of-group (aka out of
 	 * rack), for emulation  */
 	percent_out_of_group = 0;
-#if EMU_NUM_RACKS != 1
+#if (!SEPARATE_RACKS) && (EMU_NUM_RACKS != 1)
 		percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
 #endif
 
@@ -381,7 +381,7 @@ int exec_stress_test_core(void *void_cmd_p)
 	/* determine percentage of traffic that will be out-of-group (aka out of
 	 * rack), for emulation */
 	percent_out_of_group = 0;
-#if EMU_NUM_RACKS != 1
+#if (!SEPARATE_RACKS) && (EMU_NUM_RACKS != 1)
 		percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
 #endif
 

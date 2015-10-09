@@ -55,6 +55,7 @@ clean:
 emulation: emulation_test.o emulation.o endpoint_group.o simple_endpoint.o \
 			router.o emulation_core.o \
 			drop_tail.qm.o red.qm.o dctcp.qm.o probdrop.qm.o pfabric_qm.qm.o \
+			drop_tail_tso.qm.o \
 			hull_sched.sch.o \
 			RouterDriver.drv.o EndpointDriver.drv.o
 	$(CXX) $^ -o $@ $(LDFLAGS)

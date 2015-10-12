@@ -92,9 +92,9 @@ private:
 	/**
 	 * Creates a batch of packets, putting pointers to them in pkt_ptrs.
 	 */
-	inline void create_packet_batch(struct emu_packet **pkt_ptrs, uint16_t src,
-			uint16_t dst, uint16_t flow, uint16_t start_id, uint32_t amount,
-			uint8_t *areq_data);
+	inline uint32_t create_packet_batch(struct emu_packet **pkt_ptrs,
+			uint16_t src, uint16_t dst, uint16_t flow, uint16_t start_id,
+			uint32_t amount, uint8_t *areq_data);
 
 	/**
 	 * Creates all of the routers and endpoint groups in the network.
@@ -131,7 +131,7 @@ private:
 
 inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 		uint32_t amount, uint16_t start_id, u8* areq_data) {
-	uint32_t amount_this_iter;
+	uint32_t amount_this_iter, amount_created;
 	struct fp_ring *q_epg_new_pkts;
 	assert(src < num_endpoints(m_topo_config));
 	assert(dst < num_endpoints(m_topo_config));
@@ -149,12 +149,15 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 	while (amount > 0) {
 		amount_this_iter = MIN(amount, EMU_ADD_BACKLOG_BATCH_SIZE);
 
-		create_packet_batch(&pkt_ptrs[0], src, dst, flow, start_id,
-				amount_this_iter, areq_data);
+		/* this might return 0 if using DROP_ON_FAILED_ENQUEUE and the packet
+		 * pool has been exhausted */
+		amount_created = create_packet_batch(&pkt_ptrs[0], src, dst, flow,
+				start_id, amount_this_iter, areq_data);
 
 		/* enqueue the packets to the correct endpoint group packet queue */
 #ifdef DROP_ON_FAILED_ENQUEUE
-		if (fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
+		if ((amount_created != 0) &&
+				fp_ring_enqueue_bulk(q_epg_new_pkts, (void **) &pkt_ptrs[0],
 				amount_this_iter) == -ENOBUFS) {
 			/* no space in ring. log but don't retry. */
 			adm_log_emu_enqueue_backlog_failed(&m_stat, amount_this_iter);
@@ -202,17 +205,28 @@ inline struct emu_packet *Emulation::create_packet(uint16_t src, uint16_t dst,
 	return packet;
 }
 
-inline void Emulation::create_packet_batch(struct emu_packet **pkt_ptrs,
+inline uint32_t Emulation::create_packet_batch(struct emu_packet **pkt_ptrs,
 		uint16_t src, uint16_t dst, uint16_t flow, uint16_t start_id,
 		uint32_t amount, uint8_t *areq_data)
 {
 	uint32_t i;
 
 	/* fetch a batch of packets */
+#ifdef DROP_ON_FAILED_ENQUEUE
+	if (fp_mempool_get_bulk(m_packet_mempool, (void **) pkt_ptrs, amount)
+			== -ENOENT) {
+		adm_log_emu_packet_alloc_failed(&m_stat);
+
+		/* failed to alloc packets */
+		areq_data += emu_req_data_bytes() * amount;
+		return 0;
+	}
+#else
 	while (fp_mempool_get_bulk(m_packet_mempool, (void **) pkt_ptrs, amount)
 			== -ENOENT) {
 		adm_log_emu_packet_alloc_failed(&m_stat);
 	}
+#endif
 
 	/* initialize all packets, using prefetching */
 	for (i = 0; i < BACKLOG_PREFETCH_OFFSET && i < amount; i++)
@@ -228,6 +242,8 @@ inline void Emulation::create_packet_batch(struct emu_packet **pkt_ptrs,
 		packet_init(pkt_ptrs[i], src, dst, flow, start_id++, areq_data);
 		areq_data += emu_req_data_bytes();
 	}
+
+	return amount;
 }
 
 #endif /* EMULATION_H_ */

@@ -158,6 +158,7 @@ static inline print_completion_stats(uint64_t *admitted_tslots,
 
 	rtr_tput_gbps = ep_tput_gbps * (1 + percent_out_of_group / 50.0);
 	printf("Estimated router throughput based on bias: %f\n", rtr_tput_gbps);
+        fflush(stdout);
 }
 
 void inline initialize_areq_data() {

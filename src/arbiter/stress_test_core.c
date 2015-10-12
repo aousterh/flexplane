@@ -240,6 +240,7 @@ int exec_slave_stress_test_core(void *void_cmd_p) {
 #if (!SEPARATE_RACKS) && (EMU_NUM_RACKS != 1)
 		percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
 #endif
+        printf("percent of traffic out of group: %d\n", percent_out_of_group);
 
 	while (rte_get_timer_cycles() < cmd->start_time);
 
@@ -385,6 +386,7 @@ int exec_stress_test_core(void *void_cmd_p)
 #if (!SEPARATE_RACKS) && (EMU_NUM_RACKS != 1)
 		percent_out_of_group = 100 / (EMU_NUM_RACKS - 1);
 #endif
+        printf("percent of traffic out of group: %d\n", percent_out_of_group);
 
 	while (rte_get_timer_cycles() < cmd->start_time);
 

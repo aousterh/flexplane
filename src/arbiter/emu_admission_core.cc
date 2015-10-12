@@ -75,7 +75,10 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 	/* choose topology */
 	topo_config.num_racks = EMU_NUM_RACKS;
 	topo_config.rack_shift = 5;
-	topo_config.num_core_rtrs = 0;
+	if (SEPARATE_RACKS == 1)
+		topo_config.num_core_rtrs = 0;
+	else
+		topo_config.num_core_rtrs = 1;
 
 	if (IS_STRESS_TEST) {
 		RTE_LOG(INFO, ADMISSION,

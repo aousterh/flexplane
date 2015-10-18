@@ -21,58 +21,78 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 {
 	struct drop_tail_args *dt_args;
 	struct prio_by_src_args *prio_args;
+	void *p_aligned; /* all memory must be aligned to 64-byte cache lines */
 
 	switch (type) {
 	case (R_DropTail):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		if (func == TOR_ROUTER)
-			return new DropTailRouter(dt_args->q_capacity, router_index,
+		if (func == TOR_ROUTER) {
+			p_aligned = fp_malloc("DropTailRouter",
+					sizeof(class DropTailRouter));
+			return new (p_aligned) DropTailRouter(dt_args->q_capacity,
+					router_index, topo_config);
+		} else {
+			p_aligned = fp_malloc("DropTailCoreRouter",
+					sizeof(class DropTailCoreRouter));
+			return new (p_aligned) DropTailCoreRouter(dt_args->q_capacity,
 					topo_config);
-		else
-			return new DropTailCoreRouter(dt_args->q_capacity, topo_config);
+		}
 	case (R_RED):
 		assert(args != NULL);
-		return new REDRouter((struct red_args *)args, router_index,
+		p_aligned = fp_malloc("REDRouter", sizeof(class REDRouter));
+		return new (p_aligned) REDRouter((struct red_args *)args, router_index,
 				topo_config);
 
 	case (R_DCTCP):
 		assert(args != NULL);
-		return new DCTCPRouter((struct dctcp_args *)args, router_index,
-				topo_config);
+		p_aligned = fp_malloc("DCTCPRouter", sizeof(class DCTCPRouter));
+		return new (p_aligned) DCTCPRouter((struct dctcp_args *)args,
+				router_index, topo_config);
 
 	case (R_Prio):
 		assert(args != NULL);
 		prio_args = (struct prio_by_src_args *) args;
-		return new PriorityBySourceRouter(prio_args, router_index,
+		p_aligned = fp_malloc("PriorityBySourceRouter",
+				sizeof(class PriorityBySourceRouter));
+		return new (p_aligned) PriorityBySourceRouter(prio_args, router_index,
 				topo_config);
 
 	case (R_Prio_by_flow):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		return new PriorityByFlowRouter(dt_args->q_capacity, router_index,
-				topo_config);
+		p_aligned = fp_malloc("PriorityByFlowRouter",
+				sizeof(class PriorityByFlowRouter));
+		return new (p_aligned) PriorityByFlowRouter(dt_args->q_capacity,
+				router_index, topo_config);
 
 	case (R_RR):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		return new RRRouter(dt_args->q_capacity, router_index, topo_config);
+		p_aligned = fp_malloc("RRRouter", sizeof(class RRRouter));
+		return new (p_aligned) RRRouter(dt_args->q_capacity, router_index,
+				topo_config);
 
 	case (R_HULL_sched):
 		assert(args != NULL);
-		return new HULLSchedRouter((struct hull_args *) args, router_index,
-				topo_config);
+		p_aligned = fp_malloc("HULLSchedRouter",
+				sizeof(class HULLSchedRouter));
+		return new (p_aligned) HULLSchedRouter((struct hull_args *) args,
+				router_index, topo_config);
 
 	case (R_PFabric):
 		assert(args != NULL);
-		return new PFabricRouter((struct pfabric_args *) args, router_index,
-				topo_config);
+		p_aligned = fp_malloc("PFabricRouter", sizeof(class PFabricRouter));
+		return new (p_aligned) PFabricRouter((struct pfabric_args *) args,
+				router_index, topo_config);
 
 	case (R_DropTailTSO):
 		assert(args != NULL);
 		dt_args = (struct drop_tail_args *) args;
-		return new DropTailTSORouter(dt_args->q_capacity, router_index,
-				topo_config);
+		p_aligned = fp_malloc("DropTailTSORouter",
+				sizeof(class DropTailTSORouter));
+		return new (p_aligned) DropTailTSORouter(dt_args->q_capacity,
+				router_index, topo_config);
 	}
 
 	throw std::runtime_error("invalid router type\n");

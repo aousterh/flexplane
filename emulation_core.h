@@ -45,17 +45,17 @@ public:
 		return &m_stat;
 	}
 	inline struct port_drop_stats *get_port_drop_stats() {
-		return m_dropper->get_port_drop_stats();
+		return m_dropper.get_port_drop_stats();
 	}
 private:
-	EmulationOutput	*m_out;
+	EmulationOutput	m_out;
 	std::vector<EndpointDriver *> m_endpoint_drivers;
 	uint16_t		m_n_epgs;
 	std::vector<RouterDriver *> m_router_drivers;
 	uint16_t		m_n_rtrs;
 	struct emu_admission_core_statistics m_stat;
 	uint16_t		m_core_index;
-	Dropper*		m_dropper;
+	Dropper			m_dropper;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 
 #endif /* EMULATION_CORE_H_ */

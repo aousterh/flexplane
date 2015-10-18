@@ -10,6 +10,7 @@
 
 #include "packet.h"
 #include "queue_bank_log.h"
+#include "../graph-algo/platform.h"
 #include <climits>
 #include <stdexcept>
 #include <stdint.h>
@@ -147,14 +148,14 @@ inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
 	for (i = 0; i < n_ports; i++) {
 		/* allocate queue for packet pointers */
 		struct emu_packet **pkt_pointers = (struct emu_packet **)
-				malloc(pkt_pointers_size);
+				fp_malloc("pFabricPacketPointers", pkt_pointers_size);
 		if (pkt_pointers == NULL)
 			throw std::runtime_error("could not allocate packet queue");
 		m_queues.push_back(pkt_pointers);
 
 		/* allocate metadata queue */
 		struct pfabric_metadata *metadata_array = (struct pfabric_metadata *)
-				malloc(metadata_array_size);
+				fp_malloc("pFabricMetadata", metadata_array_size);
 		m_metadata.push_back(metadata_array);
 	}
 

@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include "circular_queue.h"
 #include "queue_bank_log.h"
+#include "../graph-algo/platform.h"
 
 /**
  * A collection of queues. The queue bank keeps M queues for each of N input
@@ -151,6 +152,7 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 {
 	uint32_t i;
 	uint32_t size_bytes = cq_memsize(queue_max_size);
+	struct circular_queue *q;
 
 	if (n_queues > 64)
 		throw std::runtime_error("QueueBank: n_queues must be <= 64");
@@ -163,7 +165,7 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 	/* for every queue in the queue bank: */
 	for (i = 0; i < (n_ports * n_queues); i++) {
 		/* allocate queue */
-		struct circular_queue *q = (struct circular_queue *)malloc(size_bytes);
+		q = (struct circular_queue *) fp_malloc("QueueBankQueue", size_bytes);
 		if (q == NULL)
 			throw std::runtime_error("could not allocate circular queue");
 		/* initialize */

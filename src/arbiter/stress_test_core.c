@@ -136,7 +136,8 @@ static void add_initial_requests(struct comm_core_state *core,
 }
 
 static inline print_completion_stats(uint64_t *admitted_tslots,
-		uint32_t admitted_index, uint32_t percent_out_of_group) {
+		uint32_t admitted_index, uint32_t percent_out_of_group,
+		unsigned lcore_id) {
 	double ep_tput_gbps, rtr_tput_gbps;
 
 	/* Dump some stats */
@@ -147,7 +148,8 @@ static inline print_completion_stats(uint64_t *admitted_tslots,
 		ep_tput_gbps = (admitted_tslots[admitted_index - 1] -
 				admitted_tslots[admitted_index - 31]) * 1500 * 8 /
 						((double) 30 * 1000 * 1000 * 1000);
-		printf("Throughput over last 30 seconds: %f\n", ep_tput_gbps);
+		printf("Throughput over last 30 seconds: %f (core %d)\n", ep_tput_gbps,
+				lcore_id);
 	} else if (admitted_index > 10) {
 		ep_tput_gbps = (admitted_tslots[admitted_index - 1] -
 				admitted_tslots[admitted_index - 11]) * 1500 * 8 /
@@ -313,9 +315,9 @@ int exec_slave_stress_test_core(void *void_cmd_p) {
 	}
 
 	print_completion_stats(&admitted_tslots[0], admitted_index,
-			percent_out_of_group);
+			percent_out_of_group, lcore_id);
 
-	rte_exit(0, "Done!\n");
+	printf("Done! (core %d)\n", lcore_id);
 
 	return 0;
 }
@@ -556,9 +558,12 @@ int exec_stress_test_core(void *void_cmd_p)
 	}
 
 	print_completion_stats(&admitted_tslots[0], admitted_index,
-			percent_out_of_group);
+			percent_out_of_group, lcore_id);
 
-	rte_exit(0, "Done!\n");
+	/* wait for other stress test cores to exit */
+	rte_delay_ms(100);
+
+	rte_exit(0, "Done! (core %d)\n", lcore_id);
 
 	return 0;
 }

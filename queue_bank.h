@@ -181,11 +181,13 @@ QueueBank<ELEM>::QueueBank(uint32_t n_ports, uint32_t n_queues,
 	}
 
 	uint32_t mask_n_64 = (n_ports + 63) / 64;
-	m_non_empty_ports = (uint64_t *)calloc(1, sizeof(uint64_t) * mask_n_64);
+	m_non_empty_ports = (uint64_t *)fp_calloc("non_empty_ports", 1,
+			sizeof(uint64_t) * mask_n_64);
 	if (m_non_empty_ports == NULL)
 		throw std::runtime_error("could not allocate m_non_empty_ports");
 
-	m_non_empty_queues = (uint64_t *)calloc(1, sizeof(uint64_t) * n_ports);
+	m_non_empty_queues = (uint64_t *)fp_calloc("non_empty_queues", 1,
+			sizeof(uint64_t) * n_ports);
 	if (m_non_empty_queues == NULL)
 		throw std::runtime_error("could not allocate m_non_empty_queues");
 

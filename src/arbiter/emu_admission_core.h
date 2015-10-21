@@ -10,8 +10,8 @@
 
 #include <rte_ring.h>
 
-#define		ADMITTED_TRAFFIC_MEMPOOL_SIZE		(16*1024)
-#define		ADMITTED_TRAFFIC_CACHE_SIZE			512
+#define		ADMITTED_TRAFFIC_MEMPOOL_SIZE		(4*1024)
+#define		ADMITTED_TRAFFIC_CACHE_SIZE			256
 
 /* emu state */
 struct Emulation;

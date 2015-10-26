@@ -50,8 +50,8 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	pq = 0;
 	for (i = 0; i < num_packet_qs(m_topo_config); i++) {
 		snprintf(s, sizeof(s), "packet_q_%d", i);
-		if (i < epgs_per_comm(m_topo_config)) {
-			/* for comm -> epgs communication, single produer */
+		if (i < 2 * num_endpoint_groups(m_topo_config)) {
+			/* for comm -> epgs communication and resets, single producer */
 			packet_queues[i] = make_ring(s, packet_ring_size, 0,
 					RING_F_SP_ENQ | RING_F_SC_DEQ);
 		} else {
@@ -64,7 +64,7 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	memset(&m_stat, 0, sizeof(struct emu_admission_statistics));
 
 	/* initialize state used to communicate with comm cores */
-	for (i = 0; i < epgs_per_comm(m_topo_config); i++) {
+	for (i = 0; i < num_endpoint_groups(m_topo_config); i++) {
 		m_comm_state.q_epg_new_pkts[i] = packet_queues[pq++];
 		m_comm_state.q_resets[i] = packet_queues[pq++];
 	}

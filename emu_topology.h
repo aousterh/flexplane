@@ -112,11 +112,6 @@ static inline uint16_t core_neighbors(struct emu_topo_config *topo_config) {
 	return num_tors(topo_config);
 }
 
-/* Endpoint groups per comm core. */
-static inline uint16_t epgs_per_comm(struct emu_topo_config *topo_config) {
-	return num_endpoint_groups(topo_config);
-}
-
 /* Number of packet queues needed for this topology. */
 static inline uint16_t num_packet_qs(struct emu_topo_config *topo_config) {
 	return 3 * num_endpoint_groups(topo_config) + num_routers(topo_config);

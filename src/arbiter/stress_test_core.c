@@ -229,7 +229,8 @@ int exec_slave_stress_test_core(void *void_cmd_p) {
 	uint64_t total_occupied_node_tslots = 0;
 	uint32_t percent_out_of_group;
 
-	printf("IN SLAVE STRESS TEST CORE, lcore %d\n", lcore_id);
+	printf("IN SLAVE STRESS TEST CORE, lcore %d, socket %d\n", lcore_id,
+			rte_lcore_to_socket_id(lcore_id));
 
 	for (i = 0; i < N_PARTITIONS; i++)
 		core->latest_timeslot[i] = cmd->first_time_slot - 1;
@@ -357,7 +358,8 @@ int exec_stress_test_core(void *void_cmd_p)
 	uint64_t next_rate_decrease_time;
 	uint32_t percent_out_of_group;
 
-	printf("IN MASTER STRESS TEST CORE, lcore %d\n", lcore_id);
+	printf("IN MASTER STRESS TEST CORE, lcore %d, socket %d\n", lcore_id,
+			rte_lcore_to_socket_id(lcore_id));
 
 	/* initialize areq data */
 	initialize_areq_data();

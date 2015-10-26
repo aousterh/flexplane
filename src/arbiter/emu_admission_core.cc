@@ -216,8 +216,9 @@ int exec_emu_admission_core(void *void_cmd_p)
 	tslot = (time_now * TIMESLOT_MUL) >> TIMESLOT_SHIFT;
 
 	RTE_LOG(INFO, ADMISSION,
-			"core %d admission %d starting allocations, first tslot %lu current %lu\n",
-			rte_lcore_id(), core_ind, cmd->start_timeslot, tslot);
+			"core %d (socket %d) admission %d starting allocations, first tslot %lu current %lu\n",
+			rte_lcore_id(), rte_lcore_to_socket_id(rte_lcore_id()), core_ind,
+			cmd->start_timeslot, tslot);
 
 	while (1) {
 		/* re-calibrate clock */

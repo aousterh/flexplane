@@ -22,7 +22,7 @@
 #include "schedulers/SingleQueueTSOScheduler.h"
 #include "schedulers/RateLimitingScheduler.h"
 
-#define SIMPLE_ENDPOINT_QUEUE_CAPACITY 8192
+#define SIMPLE_ENDPOINT_QUEUE_CAPACITY 1024
 
 struct simple_ep_args {
     uint16_t q_capacity;

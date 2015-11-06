@@ -27,7 +27,7 @@
 #define ADMITTED_Q_LOG_SIZE				4
 #define PACKET_MEMPOOL_SIZE				(1024 * 16)
 #define	PACKET_MEMPOOL_CACHE_SIZE		256
-#define PACKET_Q_LOG_SIZE				16
+#define PACKET_Q_LOG_SIZE				10
 #define MIN(X, Y)						(X <= Y ? X : Y)
 #define EMU_ADD_BACKLOG_BATCH_SIZE		64
 #define BACKLOG_PREFETCH_OFFSET			3

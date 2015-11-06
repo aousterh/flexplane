@@ -25,7 +25,7 @@
 
 #include <stdexcept>
 
-#define DROP_TAIL_QUEUE_CAPACITY 4096
+#define DROP_TAIL_QUEUE_CAPACITY 1024
 
 struct drop_tail_args {
     uint16_t q_capacity;

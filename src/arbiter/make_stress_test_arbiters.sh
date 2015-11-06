@@ -4,10 +4,12 @@
 # first arg is "mlx" if we should compile for mellanox, empty otherwise
 
 n_racks=( 2 3 4 5 6 7 8 )
+n_comms=2
 
 for racks in "${n_racks[@]}"
 do
     cores=$((racks + 1))
+#    cores=$((racks))
     echo "Building emulator with $racks racks and $cores cores"
 
     if [ "$#" -ne 1 ]; then
@@ -20,7 +22,7 @@ do
         echo "unrecognized argument $1"
     fi
 
-    cp build/fast build/fast_"$racks"_racks
+    cp build/fast build/fast_"$racks"_racks_"$n_comms"_comms
 done
 
 # copy build arbiters to build directory for deployment to arbiter machines

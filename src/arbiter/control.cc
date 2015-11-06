@@ -221,7 +221,8 @@ void launch_cores(void)
 	/* create admitted_out queues */
 	for (i = 0; i < n_q_admitted; i++) {
 		snprintf(s, sizeof(s), "q_admitted_%d", i);
-		q_admitted[i] = rte_ring_create(s, 2 * ADMITTED_TRAFFIC_MEMPOOL_SIZE,
+                printf("rte ring size: %d\n", rte_ring_get_memsize(ADMITTED_TRAFFIC_MEMPOOL_SIZE));
+		q_admitted[i] = rte_ring_create(s, ADMITTED_TRAFFIC_MEMPOOL_SIZE,
 				0, RING_F_SP_ENQ | RING_F_SC_DEQ);
 		if (q_admitted[i] == NULL)
 			rte_exit(EXIT_FAILURE, "Cannot init q_admitted: %s\n",

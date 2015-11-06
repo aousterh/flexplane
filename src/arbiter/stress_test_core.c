@@ -135,7 +135,7 @@ static void add_initial_requests(struct comm_core_state *core,
 	flush_backlog(g_admissible_status());
 }
 
-static inline print_completion_stats(uint64_t *admitted_tslots,
+static inline void print_completion_stats(uint64_t *admitted_tslots,
 		uint32_t admitted_index, uint32_t percent_out_of_group,
 		unsigned lcore_id) {
 	double ep_tput_gbps, rtr_tput_gbps;
@@ -177,7 +177,7 @@ void inline initialize_areq_data() {
 
 }
 
-void inline add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amount) {
+static void inline add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amount) {
 #if defined(PRIO_BY_FLOW_QUEUEING)
 
 #if FLOW_SHIFT != 2

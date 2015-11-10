@@ -12,6 +12,7 @@
 #include "path_sel_core.h"
 #include "log_core.h"
 #include "stress_test_core.h"
+#include "../emulation/emu_topology.h"
 
 int control_do_queue_allocation(void)
 {
@@ -195,6 +196,7 @@ void launch_cores(void)
 	Benchmark *benchmark;
 	char s[64];
 	uint16_t n_q_admitted = 1;
+	struct emu_topo_config topo_config;
 
 	benchmark_cost_of_get_time();
 
@@ -213,6 +215,14 @@ void launch_cores(void)
 	comm_init_global_structs(first_time_slot);
 
 #ifdef EMULATION_ALGO
+	/* initialize emulated network topology */
+	topo_config.num_racks = EMU_NUM_RACKS;
+	topo_config.rack_shift = 5;
+	if (SEPARATE_RACKS == 1)
+		topo_config.num_core_rtrs = 0;
+	else
+		topo_config.num_core_rtrs = 1;
+
 	/* create a q_admitted_out for each algo core */
 	if (ALGO_N_CORES > MAX_Q_ADMITTED)
 		rte_exit(EXIT_FAILURE, "ALGO_N_CORES exceeds max q admitted\n");
@@ -240,7 +250,8 @@ void launch_cores(void)
 	admitted_traffic_mempool = allocate_admitted_traffic_mempool(0);
 
 	/* initialize admission core global data */
-	admission_init_global(&q_admitted[0], admitted_traffic_mempool);
+	admission_init_global(&q_admitted[0], admitted_traffic_mempool,
+			&topo_config);
 
 	// Calculate start and end times
 	start_time = rte_get_timer_cycles() + sec_to_hpet(0.2); /* start after last end */
@@ -289,7 +300,7 @@ void launch_cores(void)
 	for (i = 0; i < N_ADMISSION_CORES; i++)
 		log_core->add_logged_lcore(enabled_lcore[FIRST_ADMISSION_CORE + i]);
 #ifdef EMULATION_ALGO
-	for (i = 0; i < emu_get_num_routers(); i++)
+	for (i = 0; i < num_routers(&topo_config); i++)
 		log_core->add_queueing_stats(emu_get_queueing_stats(i));
 	for (i = 0; i < ALGO_N_CORES; i++)
 		log_core->add_drop_stats(emu_get_port_stats(i));

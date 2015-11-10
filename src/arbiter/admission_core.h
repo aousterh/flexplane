@@ -23,7 +23,8 @@ extern "C" {
 
 static inline
 void admission_init_global(struct rte_ring **q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool *admitted_traffic_mempool,
+		struct emu_topo_config *topo_config)
 {
 	pim_admission_init_global(q_admitted_out[0], admitted_traffic_mempool);
 }
@@ -75,7 +76,8 @@ extern "C" {
 
 static inline
 void admission_init_global(struct rte_ring **q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool *admitted_traffic_mempool,
+		struct emu_topo_config *topo_config)
 {
 	seq_admission_init_global(q_admitted_out[0], admitted_traffic_mempool);
 }
@@ -126,9 +128,11 @@ extern "C" {
 
 static inline
 void admission_init_global(struct rte_ring **q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool *admitted_traffic_mempool,
+		struct emu_topo_config *topo_config)
 {
-	emu_admission_init_global(q_admitted_out, admitted_traffic_mempool);
+	emu_admission_init_global(q_admitted_out, admitted_traffic_mempool,
+			topo_config);
 }
 
 static inline
@@ -167,7 +171,8 @@ struct admission_statistics *g_admission_stats(void) {
 
 static inline
 void admission_init_global(struct rte_ring *q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool *admitted_traffic_mempool,
+		struct emu_topo_config *topo_config)
 {
 	/* do nothing */
 }

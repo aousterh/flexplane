@@ -35,7 +35,6 @@
 #define TIMESLOTS_PER_TIME_SYNC	64
 
 Emulation *g_emulation;
-struct emu_topo_config topo_config;
 
 struct admission_log admission_core_logs[RTE_MAX_LCORE];
 
@@ -58,13 +57,9 @@ struct port_drop_stats *emu_get_port_stats(uint8_t router_index)
 	return g_emulation->m_port_drop_stats[router_index];
 }
 
-uint16_t emu_get_num_routers()
-{
-	return num_routers(&topo_config);
-}
-
 void emu_admission_init_global(struct rte_ring **q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool *admitted_traffic_mempool,
+		struct emu_topo_config *topo_config)
 {
 	int i;
 
@@ -72,19 +67,11 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 	for (i = 0; i < RTE_MAX_LCORE; i++)
 		admission_log_init(&admission_core_logs[i]);
 
-	/* choose topology */
-	topo_config.num_racks = EMU_NUM_RACKS;
-	topo_config.rack_shift = 5;
-	if (SEPARATE_RACKS == 1)
-		topo_config.num_core_rtrs = 0;
-	else
-		topo_config.num_core_rtrs = 1;
-
 	if (IS_STRESS_TEST) {
 		RTE_LOG(INFO, ADMISSION,
 				"Emulation stress test with %d nodes, %d racks, rack shift of %d\n",
-				STRESS_TEST_NUM_NODES, topo_config.num_racks,
-				topo_config.rack_shift);
+				STRESS_TEST_NUM_NODES, topo_config->num_racks,
+				topo_config->rack_shift);
 	}
 
 	/* init emu_state */
@@ -194,7 +181,7 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 
 	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
 			(fp_ring **) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
-			rtr_args, etype, NULL, &topo_config);
+			rtr_args, etype, NULL, topo_config);
 }
 
 int exec_emu_admission_core(void *void_cmd_p)

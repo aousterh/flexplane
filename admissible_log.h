@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-#define		MAINTAIN_EMU_ADM_LOG_COUNTERS	1
+#define		MAINTAIN_EMU_ADM_LOG_COUNTERS	0
 
 /**
  * Per-core statistics for emulation

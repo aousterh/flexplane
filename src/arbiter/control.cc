@@ -13,6 +13,7 @@
 #include "log_core.h"
 #include "stress_test_core.h"
 #include "../emulation/emu_topology.h"
+#include "../emulation/emu_comm_core_map.h"
 
 int control_do_queue_allocation(void)
 {
@@ -93,15 +94,16 @@ void launch_stress_test_cores(uint64_t start_time,
 		uint64_t end_time, uint64_t first_time_slot,
 		struct rte_ring **q_path_selected,
 		struct rte_ring **q_admitted,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool *admitted_traffic_mempool,
+		struct emu_topo_config *topo_config)
 {
 	struct stress_test_core_cmd cmd[N_COMM_CORES];
 	uint64_t hz = rte_get_timer_hz();
 	uint16_t i;
 
 	/* Prepare commands */
-	uint32_t remaining_nodes = STRESS_TEST_NUM_NODES;
-	uint32_t remaining_q_admitted = ALGO_N_CORES;
+	uint32_t node_index = 0;
+	uint32_t q_admitted_index = 0;
 	for (i = 0; i < N_COMM_CORES; i++) {
 		cmd[i].start_time = start_time;
 		cmd[i].end_time = start_time + hz * STRESS_TEST_DURATION_SEC;
@@ -113,20 +115,17 @@ void launch_stress_test_cores(uint64_t start_time,
 		cmd[i].initial_flow_size = STRESS_TEST_INITIAL_FLOW_SIZE;
 		cmd[i].admitted_traffic_mempool = admitted_traffic_mempool;
 #ifdef EMULATION_ALGO
-		uint16_t remaining_racks = remaining_nodes * EMU_NUM_RACKS /
-				STRESS_TEST_NUM_NODES;
-		uint16_t num_racks = remaining_racks / (N_COMM_CORES - i);
-		cmd[i].num_nodes = num_racks * STRESS_TEST_NUM_NODES / EMU_NUM_RACKS;
-		cmd[i].q_allocated = &q_admitted[ALGO_N_CORES - remaining_q_admitted];
-		cmd[i].num_q_allocated = remaining_q_admitted / (N_COMM_CORES - i);
-		remaining_q_admitted -= cmd[i].num_q_allocated;
+		cmd[i].num_nodes = endpoints_for_comm(i, topo_config);
+		cmd[i].q_allocated = &q_admitted[q_admitted_index];
+		cmd[i].num_q_allocated = cores_for_comm(i);
+		q_admitted_index += cmd[i].num_q_allocated;
 #else
 		cmd[i].num_nodes = remaining_nodes / (N_COMM_CORES - i);
 		cmd[i].q_allocated =
 					((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
 #endif
-		cmd[i].first_node = STRESS_TEST_NUM_NODES - remaining_nodes;
-		remaining_nodes -= cmd[i].num_nodes;
+		cmd[i].first_node = node_index;
+		node_index += cmd[i].num_nodes;
 		printf("STRESS TEST CORE %d: %d nodes (first: %d), %d admitted qs\n",
 				i, cmd[i].num_nodes, cmd[i].first_node,
 				cmd[i].num_q_allocated);
@@ -231,7 +230,6 @@ void launch_cores(void)
 	/* create admitted_out queues */
 	for (i = 0; i < n_q_admitted; i++) {
 		snprintf(s, sizeof(s), "q_admitted_%d", i);
-                printf("rte ring size: %d\n", rte_ring_get_memsize(ADMITTED_TRAFFIC_MEMPOOL_SIZE));
 		q_admitted[i] = rte_ring_create(s, ADMITTED_TRAFFIC_MEMPOOL_SIZE,
 				0, RING_F_SP_ENQ | RING_F_SC_DEQ);
 		if (q_admitted[i] == NULL)
@@ -334,7 +332,7 @@ void launch_cores(void)
 		launch_stress_test_cores(start_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
                                          end_time + STRESS_TEST_START_GAP_SEC * rte_get_timer_hz(),
                                          first_time_slot, &q_path_selected, &q_admitted[0],
-										 admitted_traffic_mempool);
+										 admitted_traffic_mempool, &topo_config);
 	} else {
 		launch_comm_cores(start_time, end_time, first_time_slot, &q_path_selected,
 				&q_admitted[0], admitted_traffic_mempool);

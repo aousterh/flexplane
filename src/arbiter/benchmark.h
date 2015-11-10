@@ -12,8 +12,10 @@
 #include "../graph-algo/fp_ring.h"
 #include "../graph-algo/platform.h"
 
+#ifdef BENCHMARK_ALGO
 #define	ADMITTED_TRAFFIC_MEMPOOL_SIZE		(16*1024)
 #define	ADMITTED_TRAFFIC_CACHE_SIZE			512
+#endif
 
 #define BENCH_MODE_Q_PER_ENQ_CORE	0
 #define BENCH_MODE_Q_PER_DEQ_CORE	1

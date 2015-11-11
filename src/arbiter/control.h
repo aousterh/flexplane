@@ -5,7 +5,6 @@
 #ifndef CONTROL_H_
 #define CONTROL_H_
 
-#include <rte_ip.h>
 #include <stdint.h>
 #include "../graph-algo/algo_config.h"
 
@@ -106,9 +105,6 @@ extern "C" {
 #define RTE_LOGTYPE_CONTROL RTE_LOGTYPE_USER1
 #define CONTROL_DEBUG(a...) RTE_LOG(DEBUG, CONTROL, ##a)
 #define CONTROL_INFO(a...) RTE_LOG(INFO, CONTROL, ##a)
-
-/* maximum number of q admitted rings */
-#define MAX_Q_ADMITTED	64
 
 /**
  * Allocate queues to lcores

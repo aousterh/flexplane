@@ -15,6 +15,10 @@
 #include "../emulation/emu_topology.h"
 #include "../emulation/emu_comm_core_map.h"
 
+/* maximums for stress/comm cores */
+#define MAX_Q_ADMITTED	64
+#define MAX_ADMITTED_MEMPOOLS	64
+
 int control_do_queue_allocation(void)
 {
 	int ret, i, j;
@@ -60,7 +64,7 @@ int control_do_queue_allocation(void)
 void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 		uint64_t first_time_slot, struct rte_ring **q_path_selected,
 		struct rte_ring **q_admitted,
-		struct rte_mempool *admitted_traffic_mempool)
+		struct rte_mempool **admitted_traffic_mempool)
 {
 	struct comm_core_cmd comm_cmd;
 	unsigned lcore_id = rte_lcore_id();
@@ -71,12 +75,15 @@ void launch_comm_cores(uint64_t start_time, uint64_t end_time,
 				"comm core supports 1 queue, %d were configured\n",
 				lcore_conf[rte_lcore_id()].n_rx_queue);
 
+	/* TODO: support multiple comm cores */
+	assert(N_COMM_CORES == 1);
+
 	// Set commands
 	comm_cmd.start_time = start_time;
 	comm_cmd.end_time = end_time;
 	comm_cmd.q_allocated =
 			((N_PATH_SEL_CORES > 0) ? q_path_selected : q_admitted);
-	comm_cmd.admitted_traffic_mempool = admitted_traffic_mempool;
+	comm_cmd.admitted_traffic_mempool = admitted_traffic_mempool[0];
 	comm_cmd.rx_queue_id = lcore_conf[lcore_id].rx_queue_list[0].queue_id;
 	comm_cmd.tx_queue_id = lcore_conf[lcore_id].enabled_ind;
 	comm_cmd.port_id = lcore_conf[lcore_id].rx_queue_list[0].port_id;
@@ -94,7 +101,7 @@ void launch_stress_test_cores(uint64_t start_time,
 		uint64_t end_time, uint64_t first_time_slot,
 		struct rte_ring **q_path_selected,
 		struct rte_ring **q_admitted,
-		struct rte_mempool *admitted_traffic_mempool,
+		struct rte_mempool **admitted_traffic_mempool,
 		struct emu_topo_config *topo_config)
 {
 	struct stress_test_core_cmd cmd[N_COMM_CORES];
@@ -113,7 +120,7 @@ void launch_stress_test_cores(uint64_t start_time,
 		cmd[i].num_initial_srcs = STRESS_TEST_INITIAL_SOURCES;
 		cmd[i].num_initial_dsts_per_src = STRESS_TEST_INITIAL_DSTS_PER_SRC;
 		cmd[i].initial_flow_size = STRESS_TEST_INITIAL_FLOW_SIZE;
-		cmd[i].admitted_traffic_mempool = admitted_traffic_mempool;
+		cmd[i].admitted_traffic_mempool = admitted_traffic_mempool[i];
 #ifdef EMULATION_ALGO
 		cmd[i].num_nodes = endpoints_for_comm(i, topo_config);
 		cmd[i].q_allocated = &q_admitted[q_admitted_index];
@@ -141,10 +148,12 @@ void launch_stress_test_cores(uint64_t start_time,
 	exec_stress_test_core(&cmd[0]);
 }
 
-struct rte_mempool *allocate_admitted_traffic_mempool(int socketid)
+struct rte_mempool *allocate_admitted_traffic_mempool(int socketid,
+		uint16_t index)
 {
 	struct rte_mempool *pool;
 	int elem_size;
+	char s[64];
 
 #if (defined(EMULATION_ALGO) || defined(BENCHMARK_ALGO))
 	elem_size = sizeof(struct emu_admitted_traffic);
@@ -152,8 +161,9 @@ struct rte_mempool *allocate_admitted_traffic_mempool(int socketid)
 	elem_size = sizeof(struct admitted_traffic);
 #endif
 
+	snprintf(s, sizeof(s), "admitted_traffic_pool_%d", index);
 	pool =
-		rte_mempool_create("admitted_traffic_pool",
+		rte_mempool_create(s,
 			ADMITTED_TRAFFIC_MEMPOOL_SIZE, /* num elements */
 			elem_size, /* element size */
 			ADMITTED_TRAFFIC_CACHE_SIZE, /* cache size */
@@ -190,7 +200,7 @@ void launch_cores(void)
 	uint64_t now;
 	struct rte_ring *q_admitted[MAX_Q_ADMITTED];
 	struct rte_ring *q_path_selected;
-	struct rte_mempool *admitted_traffic_mempool;
+	struct rte_mempool *admitted_traffic_mempool[MAX_ADMITTED_MEMPOOLS];
 	LogCore *log_core;
 	Benchmark *benchmark;
 	char s[64];
@@ -244,11 +254,12 @@ void launch_cores(void)
 		rte_exit(EXIT_FAILURE,
 				"Cannot init q_path_selected: %s\n", rte_strerror(rte_errno));
 
-	/* create admitted_traffic_mempool */
-	admitted_traffic_mempool = allocate_admitted_traffic_mempool(0);
+	/* create one admitted_traffic_mempool for each comm core */
+	for (i = 0; i < N_COMM_CORES; i++)
+		admitted_traffic_mempool[i] = allocate_admitted_traffic_mempool(0, i);
 
 	/* initialize admission core global data */
-	admission_init_global(&q_admitted[0], admitted_traffic_mempool,
+	admission_init_global(&q_admitted[0], &admitted_traffic_mempool[0],
 			&topo_config);
 
 	// Calculate start and end times

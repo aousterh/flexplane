@@ -216,7 +216,7 @@ struct admissible_state *setup_state(bool oversubscribed,
     /* init global status */
     status = create_admissible_state(false, 0, 0, 0, q_head, q_admitted_out,
                                      q_spent, *bin_mempool,
-                                     *admitted_traffic_mempool,
+                                     admitted_traffic_mempool,
                                      q_bin, (1 << BIN_RING_SHIFT),
                                      &q_ready_partitions[0], R_DropTail,
                                      (void *) &r_args, E_Simple,

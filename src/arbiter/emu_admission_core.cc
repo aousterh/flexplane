@@ -58,7 +58,7 @@ struct port_drop_stats *emu_get_port_stats(uint8_t router_index)
 }
 
 void emu_admission_init_global(struct rte_ring **q_admitted_out,
-		struct rte_mempool *admitted_traffic_mempool,
+		struct rte_mempool **admitted_traffic_mempool,
 		struct emu_topo_config *topo_config)
 {
 	int i;
@@ -175,11 +175,7 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
     RTE_LOG(INFO, ADMISSION, "setup info: %d nodes, flow shift %d, comm cores: %d\n",
             NUM_NODES, FLOW_SHIFT, N_COMM_CORES);
 
-	RTE_LOG(INFO, ADMISSION,
-			"admitted_traffic_mempool=%p q_admitted_out=%p\n",
-			admitted_traffic_mempool, q_admitted_out);
-
-	g_emulation = new Emulation((fp_mempool *) admitted_traffic_mempool,
+	g_emulation = new Emulation((fp_mempool **) admitted_traffic_mempool,
 			(fp_ring **) q_admitted_out, (1 << PACKET_Q_LOG_SIZE), rtype,
 			rtr_args, etype, NULL, topo_config);
 }

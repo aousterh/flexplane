@@ -58,7 +58,7 @@ struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_ring *e, struct fp_ring **q_admitted_out,
 		struct fp_ring *q_spent, struct fp_mempool *bin_mempool,
-		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **f,
+		struct fp_mempool **admitted_traffic_mempool, struct fp_ring **f,
 		struct fp_ring **q_new_demands, struct fp_ring **q_ready_partitions,
 		enum RouterType g, void *h, enum EndpointType i, void *j)
 {
@@ -128,7 +128,7 @@ create_admissible_state(bool oversubscribed, uint16_t inter_rack_capacity,
 		uint16_t out_of_boundary_capacity, uint16_t num_nodes,
 		struct fp_ring *q_head, struct fp_ring **q_admitted_out,
 		struct fp_ring *q_spent, struct fp_mempool *head_bin_mempool,
-		struct fp_mempool *admitted_traffic_mempool, struct fp_ring **q_bin,
+		struct fp_mempool **admitted_traffic_mempool, struct fp_ring **q_bin,
 		struct fp_ring **a, struct fp_ring **b, enum RouterType c, void *d,
 		enum EndpointType e, void *f)
 {
@@ -263,7 +263,7 @@ static inline
 struct admissible_state *
 create_admissible_state(bool a, uint16_t b, uint16_t c, uint16_t d,
 		struct fp_ring *e, struct fp_ring **q_admitted_out, struct fp_ring *f,
-		struct fp_mempool *g, struct fp_mempool *admitted_traffic_mempool,
+		struct fp_mempool *g, struct fp_mempool **admitted_traffic_mempool,
 		struct fp_ring **h, uint32_t packet_rings_size, struct fp_ring **i,
 		enum RouterType r_type, void *r_args, enum EndpointType e_type,
 		void *e_args, struct emu_topo_config *topo_config) {

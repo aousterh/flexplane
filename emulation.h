@@ -54,7 +54,7 @@ struct emu_comm_state {
  */
 class Emulation {
 public:
-	Emulation(struct fp_mempool *admitted_traffic_mempool,
+	Emulation(struct fp_mempool **admitted_traffic_mempool,
 			struct fp_ring **q_admitted_out, uint32_t packet_ring_size,
 			enum RouterType r_type, void *r_args, enum EndpointType e_type,
 			void *e_args, struct emu_topo_config *topo_config);
@@ -122,7 +122,7 @@ public:
 
 private:
 	struct fp_mempool						*m_packet_mempool;
-	struct fp_mempool						*m_admitted_traffic_mempool;
+	std::vector<struct fp_mempool *>		m_admitted_traffic_mempool;
 	std::vector<struct fp_ring *>			m_q_admitted_out;
 	struct emu_comm_state					m_comm_state;
 	struct emu_topo_config					*m_topo_config;

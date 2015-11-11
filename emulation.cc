@@ -8,6 +8,7 @@
 #include "emulation.h"
 #include "admitted.h"
 #include "emulation_core.h"
+#include "emu_comm_core_map.h"
 #include "endpoint_group.h"
 #include "router.h"
 #include "drivers/EndpointDriver.h"
@@ -23,12 +24,11 @@
 #include <assert.h>
 #include <stdio.h>
 
-Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
+Emulation::Emulation(struct fp_mempool **admitted_traffic_mempool,
 		struct fp_ring **q_admitted_out, uint32_t packet_ring_size,
 		RouterType r_type, void *r_args, EndpointType e_type, void *e_args,
 		struct emu_topo_config *m_topo_config)
-	: m_admitted_traffic_mempool(admitted_traffic_mempool),
-	  m_topo_config(m_topo_config) {
+	: m_topo_config(m_topo_config) {
 	uint32_t i, pq;
 	EndpointGroup	*epgs[EMU_MAX_ENDPOINT_GROUPS];
 	Router			*rtrs[EMU_MAX_ROUTERS];
@@ -41,6 +41,10 @@ Emulation::Emulation(struct fp_mempool *admitted_traffic_mempool,
 	m_packet_mempool = make_mempool("packet_mempool", PACKET_MEMPOOL_SIZE,
 			EMU_ALIGN(sizeof(struct emu_packet)), PACKET_MEMPOOL_CACHE_SIZE, 0,
 			0);
+
+	/* copy pointers to mempools */
+	for (i = 0; i < N_COMM_CORES; i++)
+		m_admitted_traffic_mempool.push_back(admitted_traffic_mempool[i]);
 
 	/* copy pointers to admitted outs */
 	for (i = 0; i < ALGO_N_CORES; i++)
@@ -113,11 +117,12 @@ void Emulation::cleanup() {
 	/* empty queues of admitted traffic, return structs to the mempool */
 	for (i = 0; i < m_q_admitted_out.size(); i++) {
 		while (fp_ring_dequeue(m_q_admitted_out[i], (void **) &admitted) == 0)
-			fp_mempool_put(m_admitted_traffic_mempool, admitted);
+			/* TODO: free these admitted structs */
 		fp_free(m_q_admitted_out[i]);
 	}
 
-	fp_free(m_admitted_traffic_mempool);
+	for (i = 0; i < m_admitted_traffic_mempool.size(); i++)
+		fp_free(m_admitted_traffic_mempool[i]);
 	fp_free(m_packet_mempool);
 }
 
@@ -263,14 +268,16 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 			m_cores[core_index] =
 					new (p_aligned) EmulationCore(&epg_drivers[i], NULL, 1, 0,
 							core_index, m_q_admitted_out[core_index],
-							m_admitted_traffic_mempool, m_packet_mempool);
+							m_admitted_traffic_mempool[comm_for_emu(
+									core_index)], m_packet_mempool);
 			core_index++;
 		}
 		for (i = 0; i < num_routers(m_topo_config); i++) {
 			p_aligned = fp_malloc("EmulationCore", sizeof(class EmulationCore));
 			m_cores[core_index] = new (p_aligned) EmulationCore(NULL,
 					&router_drivers[i], 0, 1, core_index,
-					m_q_admitted_out[core_index], m_admitted_traffic_mempool,
+					m_q_admitted_out[core_index],
+					m_admitted_traffic_mempool[comm_for_emu(core_index)],
 					m_packet_mempool);
 			core_index++;
 		}
@@ -282,14 +289,16 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 					new (p_aligned) EmulationCore(&epg_drivers[i],
 							&router_drivers[i], 1, 1, core_index,
 							m_q_admitted_out[core_index],
-							m_admitted_traffic_mempool, m_packet_mempool);
+							m_admitted_traffic_mempool[comm_for_emu(
+									core_index)], m_packet_mempool);
 			core_index++;
 		}
 		if (num_core_routers(m_topo_config) == 1) {
 			p_aligned = fp_malloc("EmulationCore", sizeof(class EmulationCore));
 			m_cores[core_index] = new (p_aligned) EmulationCore(NULL,
 					&router_drivers[core_index], 0, 1, core_index,
-					m_q_admitted_out[core_index], m_admitted_traffic_mempool,
+					m_q_admitted_out[core_index],
+					m_admitted_traffic_mempool[comm_for_emu(core_index)],
 					m_packet_mempool);
 		}
 	} else if (ALGO_N_CORES == 1) {
@@ -298,7 +307,8 @@ void Emulation::assign_components_to_cores(EndpointGroup **epgs, Router **rtrs,
 		m_cores[core_index] = new (p_aligned) EmulationCore(epg_drivers,
 				router_drivers, num_endpoint_groups(m_topo_config),
 				num_routers(m_topo_config), core_index,
-				m_q_admitted_out[core_index], m_admitted_traffic_mempool,
+				m_q_admitted_out[core_index],
+				m_admitted_traffic_mempool[comm_for_emu(core_index)],
 				m_packet_mempool);
 	} else {
 		throw std::runtime_error("no specified way to assign this topology to cores");

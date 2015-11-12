@@ -32,12 +32,13 @@ do
         echo "running topo with $racks racks, outfile: $OUT_FILE"
 
         FAST=build/fast_"$racks"_racks_"$comms"_comms
+        cp $FAST build/fast
 
         if [ "$#" -ne 1 ]; then
-            sudo cset shield -e -- $FAST -c 7ffe -n 3 --no-hpet -- -p 1 > $OUT_FILE 2> $ERR_FILE
+            sudo cset shield -e -- build/fast -c 7ffe -n 3 --no-hpet -- -p 1 > $OUT_FILE 2> $ERR_FILE
         elif [ "$1" = "mlx" ]; then
             # run on mellanox
-            sudo cset shield -e -- $FAST -c 7ffe -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1 > $OUT_FILE 2> $ERR_FILE
+            sudo cset shield -e -- build/fast -c 7ffe -n 3 --no-hpet -d ./librte_pmd_mlx4.so -- -p 1 > $OUT_FILE 2> $ERR_FILE
         else
             echo "unrecognized argument $1"
         fi

@@ -21,15 +21,14 @@ do
     
     if [ "$#" -ne 1 ]; then
         # build for intel
-        make clean && make CMD_LINE_CFLAGS+=-DALGO_N_CORES=$cores CMD_LINE_CFLAGS+=-DEMU_NUM_RACKS=$racks CMD_LINE_CFLAGS+=-DN_COMM_CORES=$comms -j22
+        make clean && make CMD_LINE_CFLAGS+=-DALGO_N_CORES=$cores CMD_LINE_CFLAGS+=-DEMU_NUM_RACKS=$racks CMD_LINE_CFLAGS+=-DN_COMM_CORES=$comms APP=fast_"$racks"_racks_"$comms"_comms -j22
     elif [ "$1" = "mlx" ]; then
         # build for mellanox
-        make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y CMD_LINE_CFLAGS+=-DALGO_N_CORES=$cores CMD_LINE_CFLAGS+=-DEMU_NUM_RACKS=$racks CMD_LINE_CFLAGS+=-DN_COMM_CORES=$comms -j22
+        make clean && make CONFIG_RTE_LIBRTE_PMD_PCAP=y CMD_LINE_CFLAGS+=-DALGO_N_CORES=$cores CMD_LINE_CFLAGS+=-DEMU_NUM_RACKS=$racks CMD_LINE_CFLAGS+=-DN_COMM_CORES=$comms APP=fast_"$racks"_racks_"$comms"_comms -j22
     else
         echo "unrecognized argument $1"
     fi
 
-    cp build/fast build/fast_"$racks"_racks_"$comms"_comms
 done
 
 # copy build arbiters to build directory for deployment to arbiter machines

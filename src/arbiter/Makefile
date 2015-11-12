@@ -3,8 +3,10 @@
 include $(RTE_SDK)/mk/rte.vars.mk
 EMU_DIR = ../../../fastpass-private/src/emulation
 
-# binary name
-APP = fast
+# binary name, if not specified elsewhere
+ifeq ($(APP),)
+	APP = fast
+endif
 
 SRCS-y := main.c \
           control.cc \

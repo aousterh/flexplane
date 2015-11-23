@@ -47,7 +47,7 @@ struct emu_packet *HULLScheduler::schedule(uint32_t output_port,
     /* add to phantom length */
 	m_phantom_len[output_port] += HULL_MTU_SIZE;
 
-    if (m_phantom_len[output_port] > m_hull_params.mark_threshold) {
+    if ((uint32_t) m_phantom_len[output_port] > m_hull_params.mark_threshold) {
     	/* Set ECN mark on packet, then enqueue */
         dropper->mark_ecn(pkt, output_port);
     }

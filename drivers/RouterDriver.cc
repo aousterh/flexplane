@@ -59,6 +59,7 @@ void RouterDriver::step() {
 	uint32_t i, j, n_pkts;
 	struct emu_packet *pkt_ptrs[ROUTER_MAX_BURST];
 	assert(ROUTER_MAX_BURST >= m_burst_size);
+	(void) i;
 
 	adm_log_emu_router_driver_step_begin(m_stat);
 

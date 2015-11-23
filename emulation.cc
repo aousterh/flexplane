@@ -32,8 +32,6 @@ Emulation::Emulation(struct fp_mempool **admitted_traffic_mempool,
 	uint32_t i, pq;
 	EndpointGroup	*epgs[EMU_MAX_ENDPOINT_GROUPS];
 	Router			*rtrs[EMU_MAX_ROUTERS];
-	EmulationOutput *out;
-	Dropper *dropper;
 	char s[64];
 	struct fp_ring *packet_queues[EMU_MAX_PACKET_QS];
 

@@ -38,7 +38,7 @@ CXXFLAGS = $(CXXDEFINES) $(CXXINCLUDES)
 
 CPPFLAGS += -isystem $(GTEST_DIR)/include
 CXXFLAGS += -g -pthread
-#CXXFLAGS += -Wall -Wextra
+CXXFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.

@@ -40,13 +40,13 @@ void PFabricQueueManager::enqueue(struct emu_packet *pkt, uint32_t port,
  */
 PFabricRouter::PFabricRouter(struct pfabric_args *pfabric_params,
 		uint32_t rack_index, struct emu_topo_config *topo_config)
-    : m_bank(tor_ports(topo_config), pfabric_params->q_capacity),
+    : PFabricRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config)),
+      m_bank(tor_ports(topo_config), pfabric_params->q_capacity),
       m_rt(topo_config->rack_shift, rack_index,
     		  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
       m_qm(&m_bank),
-      m_sch(&m_bank),
-      PFabricRouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
+      m_sch(&m_bank)
 {}
 
 PFabricRouter::~PFabricRouter() {}

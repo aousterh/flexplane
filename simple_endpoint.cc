@@ -10,13 +10,13 @@
 
 SimpleEndpointGroup::SimpleEndpointGroup(uint16_t start_id,
 		uint16_t q_capacity, struct emu_topo_config *topo_config)
-: m_bank(endpoints_per_epg(topo_config), 1, q_capacity),
+: SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
+		  endpoints_per_epg(topo_config)),
+  m_bank(endpoints_per_epg(topo_config), 1, q_capacity),
   m_cla(),
   m_qm(&m_bank, q_capacity),
   m_sch(&m_bank),
-  m_sink(start_id >> topo_config->rack_shift, topo_config->rack_shift),
-  SimpleEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
-		  endpoints_per_epg(topo_config))
+  m_sink(start_id >> topo_config->rack_shift, topo_config->rack_shift)
 {}
 
 void SimpleEndpointGroup::assign_to_core(EmulationOutput *emu_output)
@@ -40,13 +40,13 @@ void SimpleEndpointGroup::reset(uint16_t endpoint_id)
 RateLimitingEndpointGroup::RateLimitingEndpointGroup(uint16_t start_id,
 		uint16_t q_capacity, uint16_t t_btwn_pkts,
 		struct emu_topo_config *topo_config)
-: m_bank(endpoints_per_epg(topo_config), 1, q_capacity),
+: RateLimitingEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
+		  endpoints_per_epg(topo_config)),
+  m_bank(endpoints_per_epg(topo_config), 1, q_capacity),
   m_cla(),
   m_qm(&m_bank, q_capacity),
   m_sch(&m_bank, endpoints_per_epg(topo_config), t_btwn_pkts),
-  m_sink(start_id >> topo_config->rack_shift, topo_config->rack_shift),
-  RateLimitingEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
-		  endpoints_per_epg(topo_config))
+  m_sink(start_id >> topo_config->rack_shift, topo_config->rack_shift)
 {}
 
 void RateLimitingEndpointGroup::assign_to_core(EmulationOutput *emu_output)
@@ -69,13 +69,13 @@ void RateLimitingEndpointGroup::reset(uint16_t endpoint_id)
 
 SimpleTSOEndpointGroup::SimpleTSOEndpointGroup(uint16_t start_id,
 		uint16_t q_capacity, struct emu_topo_config *topo_config)
-: m_bank(endpoints_per_epg(topo_config), 1, q_capacity),
+: SimpleTSOEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
+		  endpoints_per_epg(topo_config)),
+  m_bank(endpoints_per_epg(topo_config), 1, q_capacity),
   m_cla(),
   m_qm(&m_bank, q_capacity),
   m_sch(&m_bank, endpoints_per_epg(topo_config)),
-  m_sink(start_id >> topo_config->rack_shift, topo_config->rack_shift),
-  SimpleTSOEndpointGroupBase(&m_cla, &m_qm, &m_sch, &m_sink, start_id,
-		  endpoints_per_epg(topo_config))
+  m_sink(start_id >> topo_config->rack_shift, topo_config->rack_shift)
 {}
 
 void SimpleTSOEndpointGroup::assign_to_core(EmulationOutput *emu_output)

@@ -19,13 +19,13 @@ DropTailTSOQueueManager::DropTailTSOQueueManager(PacketQueueBank *bank,
 
 DropTailTSORouter::DropTailTSORouter(uint16_t q_capacity, uint32_t rack_index,
 		struct emu_topo_config *topo_config)
-	: m_bank(tor_ports(topo_config), 1, DROP_TAIL_QUEUE_CAPACITY),
+	: DropTailTSORouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config)),
+	  m_bank(tor_ports(topo_config), 1, DROP_TAIL_QUEUE_CAPACITY),
 	  m_rt(topo_config->rack_shift, rack_index,
 			  endpoints_per_rack(topo_config), tor_uplink_mask(topo_config)),
 	  m_cla(),
 	  m_qm(&m_bank, q_capacity),
-	  m_sch(&m_bank, tor_ports(topo_config) * 1),
-	  DropTailTSORouterBase(&m_rt, &m_cla, &m_qm, &m_sch, tor_ports(topo_config))
+	  m_sch(&m_bank, tor_ports(topo_config) * 1)
 {}
 
 DropTailTSORouter::~DropTailTSORouter() {}

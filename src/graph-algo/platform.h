@@ -60,7 +60,7 @@ static const char *fp_strerror() {
 #endif /* unlikely */
 
 /* do nothing for prefetch instructions */
-#define fp_prefetch0
+#define fp_prefetch0(addr)
 
 /* mempool */
 struct fp_mempool {

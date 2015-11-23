@@ -133,7 +133,7 @@ inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
 	: m_n_ports(n_ports),
 	  m_max_occupancy(queue_max_size)
 {
-	uint16_t i, j, pkt_pointers_size, metadata_array_size;
+	uint16_t i, pkt_pointers_size, metadata_array_size;
 
 	/* initialize packet queues as empty */
 	m_queues.reserve(n_ports);

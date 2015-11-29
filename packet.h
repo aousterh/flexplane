@@ -36,7 +36,9 @@ struct emu_packet {
 	/* custom per-scheme fields */
 	uint8_t		n_mtus;
 	uint32_t	priority;
+        uint64_t        slack;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
+
 
 /**
  * Initialize a packet with @src, @dst, @flow, and @id. @areq_data provides

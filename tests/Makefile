@@ -4,7 +4,7 @@
 EMU_FILES = emulation.cc emulation_core.cc router.cc endpoint_group.cc \
 	simple_endpoint.cc
 DRV_FILES = RouterDriver.cc EndpointDriver.cc
-QM_FILES = drop_tail.cc red.cc dctcp.cc pfabric_qm.cc drop_tail_tso.cc
+QM_FILES = drop_tail.cc red.cc dctcp.cc pfabric_qm.cc drop_tail_tso.cc lstf_qm.cc
 SCHED_FILES = hull_sched.cc
 
 # Rules for constructing paths to .o files
@@ -25,6 +25,7 @@ CXXDEFINES += -DALGO_N_CORES=1
 # Target-specific includes
 tso_unittests: CXXDEFINES += -DUSE_TSO
 pfabric_unittests: CXXDEFINES += -DPFABRIC
+lstf_unittests: CXXDEFINES += -DLSTF
 
 CXXINCLUDES = 
 CXXINCLUDES += -I$(PWD)/../../../../fastpass-public/src/graph-algo
@@ -46,11 +47,11 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 
 # House-keeping build targets.
-all : unittests round_robin_unittets
+all : unittests round_robin_unittets lstf_unittests
 
 clean :
 	rm -f unittests round_robin_unittests gtest.a gtest_main.a *.o ../*.o \
-	../drivers/*.o ../queue_managers/*.o ../schedulers/*.o
+	../drivers/*.o ../queue_managers/*.o ../schedulers/*.o lstf_unittests
 
 # Builds gtest.a and gtest_main.a.
 
@@ -100,4 +101,7 @@ round_robin_unittests : round_robin_unittest.o $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 tso_unittests : drop_tail_tso_unittest.o $(EMULATION_ALL_O) gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+lstf_unittests : lstf_queue_bank_unittest.o lstf_unittest.o $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

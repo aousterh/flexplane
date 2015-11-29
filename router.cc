@@ -11,6 +11,7 @@
 #include "queue_managers/red.h"
 #include "queue_managers/dctcp.h"
 #include "queue_managers/pfabric_qm.h"
+#include "queue_managers/lstf_qm.h"
 #include "schedulers/hull_sched.h"
 #include <assert.h>
 #include "output.h"
@@ -93,7 +94,15 @@ Router *RouterFactory::NewRouter(enum RouterType type, void *args,
 				sizeof(class DropTailTSORouter));
 		return new (p_aligned) DropTailTSORouter(dt_args->q_capacity,
 				router_index, topo_config);
+
+        case (R_LSTF):
+                assert(args != NULL);
+                p_aligned = fp_malloc("LSTFRouter", sizeof(class LSTFRouter));
+                return new (p_aligned) LSTFRouter((struct lstf_args *) args,
+                                router_index, topo_config);
 	}
+
+
 
 	throw std::runtime_error("invalid router type\n");
 }

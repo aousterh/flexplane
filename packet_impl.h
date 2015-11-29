@@ -37,6 +37,14 @@ void packet_init(struct emu_packet *packet, uint16_t src, uint16_t dst,
         packet->n_mtus = areq_data[0];
 #endif
 
+#if defined(LSTF)
+        if (areq_data != NULL){
+                packet->slack = (((uint64_t)(ntohl(*((uint32_t *) areq_data)))) << 32) + ntohl(*((uint32_t *) areq_data + 1));
+        }
+        else{
+                packet->slack = 0;
+        }
+#endif
 }
 
 static inline

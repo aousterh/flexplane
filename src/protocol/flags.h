@@ -52,6 +52,8 @@ static inline u16 emu_req_data_bytes(void) {
 	req_data_bytes = 0;
 #elif (defined(PFABRIC))
 	req_data_bytes = 4;
+#elif (defined(LSTF))
+        req_data_bytes = 8;
 #else
 	req_data_bytes = MAX_REQ_DATA_BYTES;
 #endif

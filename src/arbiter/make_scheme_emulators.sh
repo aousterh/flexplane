@@ -5,7 +5,7 @@
 
 n_racks=( 1 )
 schemes=( DROP_TAIL RED DCTCP HULL_SCHED ROUND_ROBIN PFABRIC \
-                    PRIO_BY_FLOW_QUEUEING )
+                    PRIO_BY_FLOW_QUEUEING LSTF)
 
 for scheme in "${schemes[@]}"
 do

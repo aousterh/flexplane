@@ -23,6 +23,7 @@
 #include "../emulation/classifiers/BySourceClassifier.h"
 #include "../emulation/queue_managers/drop_tail.h"
 #include "../emulation/queue_managers/dctcp.h"
+#include "../emulation/queue_managers/lstf_qm.h"
 #include "../emulation/queue_managers/pfabric_qm.h"
 #include "../emulation/queue_managers/red.h"
 #include "../emulation/schedulers/hull_sched.h"
@@ -164,6 +165,13 @@ void emu_admission_init_global(struct rte_ring **q_admitted_out,
 
     rtype = R_PFabric;
     rtr_args = &p_args;
+#elif defined(LSTF)
+    struct lstf_args l_args;
+    l_args.q_capacity = LSTF_QUEUE_CAPACITY;
+    RTE_LOG(INFO, ADMISSION, "Using LSTF routers with q_capacity %d\n",
+                l_args.q_capacity);
+    rtype = R_LSTF;
+    rtr_args = &l_args;
 #else
 #error "Unrecognized router type"
 #endif

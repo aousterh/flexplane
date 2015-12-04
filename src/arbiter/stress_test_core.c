@@ -204,6 +204,21 @@ static void inline add_backlog_wrapper(uint16_t src, uint16_t dst, uint32_t amou
 				&areq_data[index * emu_req_data_bytes()]);
 	} else
 		add_backlog(g_admissible_status(), src, dst, amount, 0, NULL);
+#elif defined(LSTF)
+        uint16_t i;
+
+        if (amount <= STRESS_TEST_MAX_AREQS) {
+                uint8_t *areq_pointer = &areq_data[0];
+                for(i=0; i<amount; i++){
+                        *((uint32_t *) areq_pointer) = 0;
+                        *((uint32_t *) (areq_pointer + 4)) = htonl(1000 * amount);
+                        areq_pointer += emu_req_data_bytes();
+                }
+                add_backlog(g_admissible_status(), src, dst, amount, 0,
+                                &areq_data[0]);
+        } else{
+                add_backlog(g_admissible_status(), src, dst, amount, 0, NULL);
+        }
 #else
 	add_backlog(g_admissible_status(), src, dst, amount, 0, NULL);
 #endif

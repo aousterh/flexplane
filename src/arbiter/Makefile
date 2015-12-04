@@ -25,6 +25,7 @@ SRCS-y := main.c \
           $(EMU_DIR)/queue_managers/red.cc \
           $(EMU_DIR)/queue_managers/dctcp.cc \
           $(EMU_DIR)/queue_managers/pfabric_qm.cc \
+          $(EMU_DIR)/queue_managers/lstf_qm.cc \
           $(EMU_DIR)/schedulers/hull_sched.cc \
           $(EMU_DIR)/simple_endpoint.cc \
           $(EMU_DIR)/emulation.cc \

@@ -18,7 +18,7 @@
 #include "classifiers/SingleQueueClassifier.h"
 #include "schedulers/LSTFScheduler.h"
 
-#define LSTF_QUEUE_CAPACITY	65536
+#define LSTF_QUEUE_CAPACITY     1024	
 
 struct lstf_args{
         uint16_t q_capacity;  

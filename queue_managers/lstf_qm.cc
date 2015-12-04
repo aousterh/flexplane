@@ -1,7 +1,7 @@
 /*
  * lstf_qm.cc
  *
- * Created on: November 18, 2015a
+ * Created on: November 18, 2015
  *     Author: lut
  */
 

@@ -39,7 +39,6 @@ struct emu_packet {
         uint64_t        slack;
 }  __attribute__((aligned(64))) /* don't want sharing between cores */;
 
-
 /**
  * Initialize a packet with @src, @dst, @flow, and @id. @areq_data provides
  * additional information in an array of bytes. The use of this data varies by

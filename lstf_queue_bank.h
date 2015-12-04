@@ -128,30 +128,37 @@ inline LSTFQueueBank::LSTFQueueBank(uint32_t n_ports,
         : m_n_ports(n_ports),
           m_max_occupancy(queue_max_size)
 {
+        uint32_t i, pkt_pointers_size, metadata_array_size;
+        
+        /* initialize packet queues as empty */
         m_queues.reserve(n_ports);
         m_metadata.reserve(n_ports);
         
-        uint32_t i, pkt_pointers_size, metadata_array_size;
-
+        /* calculate sizes */
         pkt_pointers_size = sizeof(struct emu_packet *) * queue_max_size;
         metadata_array_size = sizeof(struct lstf_metadata) * queue_max_size;
 
+        /* initialize queue and metadata for every queue in the queue bank */
         for (i=0; i<n_ports; i++){
+                /* allocate queue for packet pointers */
                 struct emu_packet **pkt_pointers = (struct emu_packet **)
                         fp_malloc("LSTFPacketPointers", pkt_pointers_size);
                 if (pkt_pointers == NULL)
                         throw std::runtime_error("could not allocate packet queue");
                 m_queues.push_back(pkt_pointers);
-
+                
+                /* allocate metadata queue*/
                 struct lstf_metadata *metadata_array = (struct lstf_metadata *)
                         fp_malloc("LSTFMetaData", metadata_array_size);
                 m_metadata.push_back(metadata_array);
         }
-
+        
+        /* initialize occupancies to zero */
         m_occupancies.reserve(n_ports);
         for (i=0; i<n_ports; i++)
                 m_occupancies.push_back(0);
 
+        /* initialize port masks */
         uint32_t mask_n_64 = (n_ports + 63)/64;
         m_non_empty_ports = (uint64_t *)fp_calloc("non_empty_ports", 1,
                 sizeof(uint64_t) * mask_n_64);
@@ -174,8 +181,11 @@ inline LSTFQueueBank::~LSTFQueueBank()
 inline void LSTFQueueBank::enqueue(uint32_t port, struct emu_packet *p, uint64_t cur_time) {
 
         uint16_t index;
+
+        /* mark port as non-empty */
         asm("bts %1,%0" : "+m" (*m_non_empty_ports) : "r" (port));
 
+        /* put packet and metadata in first available spot */
         struct lstf_metadata *metadata = m_metadata[port];
         struct emu_packet **pkt_pointers = m_queues[port];
 
@@ -196,6 +206,7 @@ inline struct emu_packet *LSTFQueueBank::dequeue_least_slack(
     uint32_t port, uint64_t cur_time) {
         uint16_t i, dequeue_index, last_index;
         uint64_t arrival;
+        uint64_t tdiff;
         struct lstf_metadata least_slack;
         struct lstf_metadata *metadata;
         struct emu_packet *p;
@@ -203,6 +214,8 @@ inline struct emu_packet *LSTFQueueBank::dequeue_least_slack(
         metadata = m_metadata[port];
         least_slack.slack = LSTF_MAX_SLACK;
         least_slack.arrival = 0;
+
+        /* find the least-slack metadata */
         for (i=0; i<m_occupancies[port]; i++){
 
                 if (metadata[i].slack + metadata[i].arrival <= least_slack.slack + least_slack.arrival){
@@ -214,10 +227,13 @@ inline struct emu_packet *LSTFQueueBank::dequeue_least_slack(
 
         p = m_queues[port][dequeue_index];
         arrival = metadata[dequeue_index].arrival;
-        p->slack -= cur_time - arrival;
+        tdiff = cur_time - arrival;
+        /* to prevent underflow */
+        p->slack = tdiff <= p->slack ? p->slack - tdiff : 0;
 
         m_occupancies[port]--;
 
+        /* copy last entry into vacated spot */
         last_index = m_occupancies[port];
         memcpy(&metadata[dequeue_index], &metadata[last_index],
                 sizeof(struct lstf_metadata));
@@ -234,6 +250,7 @@ inline struct emu_packet *LSTFQueueBank::dequeue_least_slack(
 inline struct emu_packet *LSTFQueueBank::dequeue_most_slack(
     uint32_t port)
 {
+        /* functionality is very similar to dequeue_least_slack */
         uint16_t i, dequeue_index, last_index;
         struct lstf_metadata most_slack;
         struct lstf_metadata *metadata;

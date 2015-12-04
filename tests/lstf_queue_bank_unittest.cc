@@ -5,8 +5,8 @@
  *      Author: lut
  */
 
-#include "../lstf_queue_bank.h"
-#include "../queue_managers/lstf_qm.h"
+#include "lstf_queue_bank.h"
+#include "queue_managers/lstf_qm.h"
 #include "gtest/gtest.h"
 
 /*

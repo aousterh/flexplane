@@ -17,8 +17,8 @@ KCPPFLAGS += -I/usr/include
 
 HOSTCC = gcc
 CC = gcc
-HOSTCC = /mnt/vol/engshare/third-party/centos6-native/gcc/gcc-4.7.1/cc6c9dc/bin/gcc
-CC = /mnt/vol/engshare/third-party/centos6-native/gcc/gcc-4.7.1/cc6c9dc/bin/gcc
+#HOSTCC = /mnt/vol/engshare/third-party/centos6-native/gcc/gcc-4.7.1/cc6c9dc/bin/gcc
+#CC = /mnt/vol/engshare/third-party/centos6-native/gcc/gcc-4.7.1/cc6c9dc/bin/gcc
 
 default:
 	$(MAKE) -C $(KDIR) M=$$PWD KCPPFLAGS="$(KCPPFLAGS)" HOSTCC="$(HOSTCC)" CC="$(CC)"

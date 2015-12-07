@@ -93,6 +93,8 @@ void print_global_admission_log_emulation() {
 	printf("router type HULL as scheduler");
 #elif defined(PFABRIC)
 	printf("router type pFabric");
+#elif defined(LSTF)
+	printf("router type LSTF");
 #endif
 
 #if defined(USE_TSO)

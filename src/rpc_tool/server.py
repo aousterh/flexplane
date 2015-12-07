@@ -10,9 +10,11 @@ from empirical import *
 
 response_dict = {}
 DATA_PER_PACKET = 1448
-CUSTOM_DATA_SIZE = 4
+LSTF_CUSTOM_DATA_SIZE = 8
+PFABRIC_CUSTOM_DATA_SIZE = 4
 
-def generate_response(size, encode_pkts_remaining=False):
+def generate_response(size, encode_pkts_remaining=False,
+                      encode_flow_size=False):
     if encode_pkts_remaining:
         if size % 4 != 0:
             print "ERROR: invalid response size for encoding data"
@@ -31,8 +33,33 @@ def generate_response(size, encode_pkts_remaining=False):
 
             # make packet data all the custom data, in case packets aren't
             # perfectly segmented into the expected sizes
-            for i in range(data_size / CUSTOM_DATA_SIZE):
+            for i in range(data_size / PFABRIC_CUSTOM_DATA_SIZE):
                 pkts.append(struct.pack('!L', num_pkts))
+
+            remaining_bytes -= data_size
+            num_pkts -= 1
+
+        data = ''.join(pkts)
+    elif encode_flow_size:
+        if size % 8 != 0:
+            print "ERROR: invalid response size for LSTF"
+            exit(0)
+
+        # encode the flow size * 1000 in each packet
+        num_pkts = int(math.ceil(float(size) / DATA_PER_PACKET))
+        slack = num_pkts * 1000
+
+        pkts = []
+        remaining_bytes = size
+        print "generating response, encoding pkts remaining"
+        while num_pkts > 0:
+            # append more custom data and another packet's worth of data
+            data_size = min(DATA_PER_PACKET, remaining_bytes)
+
+            # make packet data all the custom data, in case packets aren't
+            # perfectly segmented into the expected sizes
+            for i in range(data_size / LSTF_CUSTOM_DATA_SIZE):
+                pkts.append(struct.pack('!Q', slack))
 
             remaining_bytes -= data_size
             num_pkts -= 1
@@ -71,11 +98,12 @@ def run_server(params):
     # prepare responses before connecting if a size is specified. this is
     # helpful when responses are large and take a long time to generate
     if params.r_size is not None:
-        generate_response(params.r_size, params.pfabric)
+        generate_response(params.r_size, params.pfabric, params.lstf)
     elif params.ecdf is not None:
         empir_rand = EmpiricalRandomVariable(params.ecdf)
         for response_size in empir_rand.get_all_values():
-            generate_response(response_size * DATA_PER_PACKET, params.pfabric)
+            generate_response(response_size * DATA_PER_PACKET, params.pfabric,
+                              params.lstf)
 
     server_socket, connection, address = setup_socket(params)
 
@@ -91,7 +119,8 @@ def run_server(params):
                 response_size = int(data[1])
 
                 if response_size not in response_dict:
-                    generate_response(response_size, params.pfabric)
+                    generate_response(response_size, params.pfabric,
+                                      params.lstf)
 
                 response = response_dict[response_size]
                 response_length = len(response_dict[response_size])
@@ -123,6 +152,9 @@ def get_args():
     parser.add_argument('-pfabric', action="store_const", const=True,
                         required=False, default=False,
                         help='encode remaining flow size for pfabric')
+    parser.add_argument('-lstf', action="store_const", const=True,
+                        required=False, default=False,
+                        help='encode flow size * 1000 for lstf')
     parser.add_argument('--ecdf', metavar='ecdf_file_name', type=str,
                         help='choose response sizes from an empirical CDF from file')
 
@@ -130,6 +162,9 @@ def get_args():
 
 def main():
     args = get_args()
+
+    if args.pfabric and args.lstf:
+        print "ERROR: cannot set pfabric and lstf simultaneously"
 
     run_server(args)
 

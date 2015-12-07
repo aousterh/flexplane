@@ -14,6 +14,10 @@ CUSTOM_DATA_SIZE = 4
 
 def generate_response(size, encode_pkts_remaining=False):
     if encode_pkts_remaining:
+        if size % 4 != 0:
+            print "ERROR: invalid response size for encoding data"
+            exit(0)
+
         # encode the number of remaining packets in the first 4 data bytes
         # of each packet
         num_pkts = int(math.ceil(float(size) / DATA_PER_PACKET))

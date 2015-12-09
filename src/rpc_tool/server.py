@@ -113,9 +113,9 @@ def run_server(params):
     try:
         num_responses = 0
         while True:
-            buf = connection.recv(8)
+            buf = connection.recv(12)
             if len(buf) > 0:
-                data = struct.unpack('!LL', buf)
+                data = struct.unpack('!QL', buf)
                 response_size = int(data[1])
 
                 if response_size not in response_dict:

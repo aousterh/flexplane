@@ -81,7 +81,7 @@ def run_client(params):
 
             # requests are only one packet long, so they get highest priority
             # sys.stderr.write("about to send request %d\n" % num_requests)
-            client_socket.send(struct.pack('!LL', HIGHEST_PRIORITY, response_size))
+            client_socket.send(struct.pack('!QL', HIGHEST_PRIORITY, response_size))
             # sys.stderr.write("sent request %d\n" % num_requests)
 
             # wait for reply

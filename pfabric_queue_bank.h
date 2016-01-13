@@ -18,18 +18,34 @@
 
 #define MAX(X, Y)	(((X) > (Y)) ? (X) : (Y))
 
-#define PFABRIC_MAX_PRIORITY	0xFFFFFFFF
+#define PFABRIC_MAX_PRIORITY		0xFFFFFFFF
+#define MAX_ACTIVE_FLOWS_PER_PORT	32
 
-/* Metadata about a queued packet in pfabric, maintained in an array. On
- * enqueue, we add the new packet to the end of the array. On dequeue, we
- * iterate through the array and find the item to dequeue. We then copy the last
- * item in the array into the vacated spot, so that enqueue is constant time
- * and dequeue is linear in the number of queued packets. */
-struct pfabric_metadata {
+/* Metadata about a queued flow in pfabric. Head and tail point into an array
+ * of packets. Within that array, packets in each flow are connected via a
+ * linked list. Enqueue/dequeue scan the array of active flows, and then use
+ * this metadata to point into the array of packets. TODO: also include flow in
+ * this. */
+struct pfabric_flow_metadata {
 	uint16_t src;
 	uint16_t dst;
-	uint16_t id;
+	uint32_t head_priority;
+	uint32_t tail_priority;
+	struct pfabric_pkt_metadata *head; /* NULL if this is not in use */
+	struct pfabric_pkt_metadata *tail;
+};
+
+/* Metadata about a queued packet and a pointer to the packet itself,
+ * maintained in an array. On enqueue, we add the new packet to the end of the
+ * array and set the next/prev pointers. On dequeue, we remove the pkt and copy
+ * the last item in the array into the vacated spot, so that enqueue and
+ * dequeue time are both constant in the number of queued packets. */
+struct pfabric_pkt_metadata {
+	struct emu_packet *pkt;
 	uint32_t priority;
+	struct pfabric_pkt_metadata *prev;
+	struct pfabric_pkt_metadata *next;
+	struct pfabric_flow_metadata *flow;
 };
 
 /**
@@ -104,20 +120,39 @@ public:
 	 */
 	inline struct queue_bank_stats *get_queue_bank_stats();
 
+	/**
+	 * Debugging function which prints the contents of the queue bank.
+	 */
+	void print_contents();
+
 private:
+	/**
+	 * Dequeues and returns the first packet from this port for this flow.
+	 */
+	struct emu_packet *dequeue_packet_from_flow(uint32_t port,
+			struct pfabric_flow_metadata *flow_metadata);
+
+	/**
+	 * Removes a flow from the flow metadata array for this port
+	 */
+	void remove_flow(uint32_t port, struct pfabric_flow_metadata *flow);
+
 	uint32_t m_n_ports;
 
 	uint32_t m_max_occupancy;
 
-	/** an array of packets for each port */
-	std::vector<struct emu_packet **> m_queues;
+	/** an array of flow metadata for each port (indexes into the
+	 * corresponding packet metadata array) */
+	std::vector<struct pfabric_flow_metadata *> m_flow_metadata;
 
-	/** an array of packet metadata for each port (metadata corresponds to
-	 * packets in m_packet_queues) */
-	std::vector<struct pfabric_metadata *> m_metadata;
+	/** an array of packet metadata for each port */
+	std::vector<struct pfabric_pkt_metadata *> m_pkt_metadata;
 
 	/** the occupancy of each port */
 	std::vector<uint16_t> m_occupancies;
+
+	/** the number of flows for each port */
+	std::vector<uint16_t> m_flows;
 
 	/** a mask with 1 for non-empty ports, 0 for empty ports */
 	uint64_t *m_non_empty_ports;
@@ -133,36 +168,44 @@ inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
 	: m_n_ports(n_ports),
 	  m_max_occupancy(queue_max_size)
 {
-	uint16_t i, pkt_pointers_size, metadata_array_size;
+	uint16_t i, j, pkt_metadata_size, flow_metadata_size;
 
-	/* initialize packet queues as empty */
-	m_queues.reserve(n_ports);
-	m_metadata.reserve(n_ports);
+	/* initialize metadata queues as empty */
+	m_pkt_metadata.reserve(n_ports);
+	m_flow_metadata.reserve(n_ports);
 
 	/* calculate sizes
 	 * TODO: round up to nearest multiple of 64 to avoid false sharing. */
-	pkt_pointers_size = sizeof(struct emu_packet *) * queue_max_size;
-	metadata_array_size = sizeof(struct pfabric_metadata) * queue_max_size;
+	pkt_metadata_size = sizeof(struct pfabric_pkt_metadata) * queue_max_size;
+	flow_metadata_size = sizeof(struct pfabric_flow_metadata) *
+			MAX_ACTIVE_FLOWS_PER_PORT;
 
-	/* for every queue in the queue bank, initialize queue and metadata */
+	/* for every queue in the queue bank, initialize pkt and flow metadata */
 	for (i = 0; i < n_ports; i++) {
 		/* allocate queue for packet pointers */
-		struct emu_packet **pkt_pointers = (struct emu_packet **)
-				fp_malloc("pFabricPacketPointers", pkt_pointers_size);
-		if (pkt_pointers == NULL)
+		struct pfabric_pkt_metadata *pkt_metadata =
+				(struct pfabric_pkt_metadata *)
+				fp_malloc("pFabricPacketMetadata", pkt_metadata_size);
+		if (pkt_metadata == NULL)
 			throw std::runtime_error("could not allocate packet queue");
-		m_queues.push_back(pkt_pointers);
+		m_pkt_metadata.push_back(pkt_metadata);
 
 		/* allocate metadata queue */
-		struct pfabric_metadata *metadata_array = (struct pfabric_metadata *)
-				fp_malloc("pFabricMetadata", metadata_array_size);
-		m_metadata.push_back(metadata_array);
+		struct pfabric_flow_metadata *flow_metadata =
+				(struct pfabric_flow_metadata *)
+				fp_malloc("pFabricFlowMetadata", flow_metadata_size);
+		for (j = 0; j < MAX_ACTIVE_FLOWS_PER_PORT; j++)
+			flow_metadata[j].head = NULL;
+		m_flow_metadata.push_back(flow_metadata);
 	}
 
-	/* initialize occupancies to zero */
+	/* initialize occupancies and flow counts to zero */
 	m_occupancies.reserve(n_ports);
-	for (i = 0; i < n_ports; i++)
+	m_flows.reserve(n_ports);
+	for (i = 0; i < n_ports; i++) {
 		m_occupancies.push_back(0);
+		m_flows.push_back(0);
+	}
 
 	/* initialize port masks */
 	uint32_t mask_n_64 = (n_ports + 63) / 64;
@@ -177,30 +220,55 @@ inline PFabricQueueBank::PFabricQueueBank(uint32_t n_ports,
 inline PFabricQueueBank::~PFabricQueueBank()
 {
 	for (uint32_t i = 0; i < m_n_ports; i++) {
-		free(m_queues[i]);
-		free(m_metadata[i]);
+		free(m_pkt_metadata[i]);
+		free(m_flow_metadata[i]);
 	}
 
 	free(m_non_empty_ports);
 }
 
 inline void PFabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
-	uint16_t index;
+	uint16_t p_index;
+	struct pfabric_flow_metadata *flow_metadata;
 
 	/* mark port as non-empty */
 	asm("bts %1,%0" : "+m" (*m_non_empty_ports) : "r" (port));
 
 	/* put packet and metadata in first available spot */
-	struct pfabric_metadata *metadata = m_metadata[port];
-	struct emu_packet **pkt_pointers = m_queues[port];
+	p_index = m_occupancies[port];
+	struct pfabric_pkt_metadata *pkt_metadata = &m_pkt_metadata[port][p_index];
+	pkt_metadata->pkt = p;
+	pkt_metadata->priority = p->priority;
+	pkt_metadata->next = NULL;
 
-        /* add to end of arrays */
-	index = m_occupancies[port];
-        metadata[index].src = p->src;
-        metadata[index].dst = p->dst;
-        metadata[index].id = p->id;
-        metadata[index].priority = p->priority;
-        pkt_pointers[index] = p;
+	/* find entry in flow queue */
+	flow_metadata = m_flow_metadata[port];
+	while (flow_metadata->head != NULL) {
+		if (flow_metadata >= m_flow_metadata[port] + MAX_ACTIVE_FLOWS_PER_PORT)
+			throw std::runtime_error("too many active flows");
+
+		if ((flow_metadata->src == p->src) && (flow_metadata->dst == p->dst))
+			goto found_flow_metadata;
+
+		flow_metadata++;
+	}
+	/* no existing flow entry - initialize a new one */
+	flow_metadata->src = p->src;
+	flow_metadata->dst = p->dst;
+	flow_metadata->head_priority = p->priority;
+	flow_metadata->tail_priority = p->priority;
+	flow_metadata->head = pkt_metadata;
+	flow_metadata->tail = NULL;
+	m_flows[port]++;
+
+found_flow_metadata:
+	/* add pkt metadata to linked list */
+	pkt_metadata->prev = flow_metadata->tail;
+	pkt_metadata->flow = flow_metadata;
+	if (flow_metadata->tail != NULL)
+		flow_metadata->tail->next = pkt_metadata;
+	flow_metadata->tail = pkt_metadata;
+	flow_metadata->tail_priority = p->priority;
 
 	m_occupancies[port]++;
 
@@ -209,98 +277,50 @@ inline void PFabricQueueBank::enqueue(uint32_t port, struct emu_packet *p) {
 
 inline struct emu_packet *PFabricQueueBank::dequeue_highest_priority(
 		uint32_t port) {
-	uint16_t i, dequeue_index, dequeue_id, last_index;
-	struct pfabric_metadata highest_prio;
-	struct pfabric_metadata *metadata;
-	struct emu_packet *p;
+	struct pfabric_flow_metadata *flow_metadata, *highest_pri_flow_metadata;
+	uint32_t highest_priority = PFABRIC_MAX_PRIORITY;
 
-	metadata = m_metadata[port];
-	highest_prio.priority = PFABRIC_MAX_PRIORITY;
-
-	/* find metadata with highest priority */
-	for (i = 0; i < m_occupancies[port]; i++) {
-		if (metadata[i].priority <= highest_prio.priority)
-			memcpy(&highest_prio, &metadata[i],
-					sizeof(struct pfabric_metadata));
-	}
-
-	/* find packet in this flow with lowest id in same flow, to avoid
-	 * re-ordering. NOTE: flow should also be checked if we use flow with
-	 * pFabric. */
-	dequeue_id = highest_prio.id;
-	for (i = 0; i < m_occupancies[port]; i++) {
-		if ((metadata[i].src == highest_prio.src) &&
-		    (metadata[i].dst == highest_prio.dst) &&
-		    (metadata[i].id <= dequeue_id)) {
-			dequeue_index = i;
-			dequeue_id = metadata[i].id;
+	/* find the flow with the highest priority */
+	flow_metadata = m_flow_metadata[port];
+	while (flow_metadata->head != NULL) {
+		if (flow_metadata->tail_priority <= highest_priority) {
+			highest_pri_flow_metadata = flow_metadata;
+			highest_priority = flow_metadata->tail_priority;
 		}
+
+		flow_metadata++;
 	}
 
-	p = m_queues[port][dequeue_index];
-
-	/* bookkeeping */
-	m_occupancies[port]--;
-
-	/* copy last entry into vacated spot (changes nothing if this was in the
-	   last spot) */
-	last_index = m_occupancies[port];
-	memcpy(&metadata[dequeue_index], &metadata[last_index],
-	       sizeof(struct pfabric_metadata));
-	m_queues[port][dequeue_index] = m_queues[port][last_index];
-
-	uint64_t port_empty = (m_occupancies[port] == 0) & 0x1;
-	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
-
-	queue_bank_log_dequeue(&m_stats, port);
-
-	return p;
+	return dequeue_packet_from_flow(port, highest_pri_flow_metadata);
 }
 
 inline struct emu_packet *PFabricQueueBank::dequeue_lowest_priority(
 		uint32_t port) {
-	uint16_t i, last_index;
-	struct pfabric_metadata *metadata = m_metadata[port];
-	struct emu_packet *p;
-
+	struct pfabric_flow_metadata *flow_metadata, *lowest_pri_flow_metadata;
 	uint32_t lowest_priority = 0;
-	uint16_t lowest_priority_index = 0;
 
-	/* find entry with lowest priority (aka highest prio number) */
-	for (i = 0; i < m_occupancies[port]; i++) {
-		if (metadata[i].priority >= lowest_priority) {
-			lowest_priority = metadata[i].priority;
-			lowest_priority_index = i;
+	/* find the flow with the lowest priority */
+	flow_metadata = m_flow_metadata[port];
+	while (flow_metadata->head != NULL) {
+		if (flow_metadata->tail_priority >= lowest_priority) {
+			lowest_pri_flow_metadata = flow_metadata;
+			lowest_priority = flow_metadata->tail_priority;
 		}
+
+		flow_metadata++;
 	}
 
-	p = m_queues[port][lowest_priority_index];
-
-	/* bookkeeping */
-	m_occupancies[port]--;
-
-	/* copy last entry into vacated spot (changes nothing if this was in the
-	   last spot) */
-	last_index = m_occupancies[port];
-	memcpy(&metadata[lowest_priority_index], &metadata[last_index],
-	       sizeof(struct pfabric_metadata));
-	m_queues[port][lowest_priority_index] = m_queues[port][last_index];
-
-	uint64_t port_empty = (m_occupancies[port] == 0) & 0x1;
-	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
-
-	queue_bank_log_dequeue(&m_stats, port);
-
-	return p;
+	return dequeue_packet_from_flow(port, lowest_pri_flow_metadata);
 }
 
 inline uint32_t PFabricQueueBank::lowest_priority(uint32_t port) {
-	uint16_t i;
+	struct pfabric_flow_metadata *flow_metadata;
 	uint32_t lowest_priority = 0;
 
-	struct pfabric_metadata *metadata = m_metadata[port];
-	for (i = 0; i < m_occupancies[port]; i++) {
-		lowest_priority = MAX(lowest_priority, metadata[i].priority);
+	flow_metadata = m_flow_metadata[port];
+	while (flow_metadata->head != NULL) {
+		lowest_priority = MAX(lowest_priority, flow_metadata->head_priority);
+		flow_metadata++;
 	}
 
 	return lowest_priority;
@@ -323,6 +343,99 @@ inline int PFabricQueueBank::empty(uint32_t port)
 
 inline struct queue_bank_stats *PFabricQueueBank::get_queue_bank_stats() {
 	return &m_stats;
+}
+
+inline emu_packet *PFabricQueueBank::dequeue_packet_from_flow(uint32_t port,
+		struct pfabric_flow_metadata *flow_metadata) {
+	struct pfabric_pkt_metadata *pkt_metadata, *last_pkt_metadata;
+	struct emu_packet *p;
+
+	/* dequeue the first packet in this flow */
+	pkt_metadata = flow_metadata->head;
+	p = pkt_metadata->pkt;
+	flow_metadata->head = pkt_metadata->next;
+	if (pkt_metadata->next != NULL) {
+		pkt_metadata->next->prev = NULL;
+		flow_metadata->head_priority = flow_metadata->head->priority;
+	}
+
+	/* remove from flow_metadata queue if this flow now has no packets */
+	if (pkt_metadata->next == NULL)
+		remove_flow(port, flow_metadata);
+
+	/* bookkeeping */
+	m_occupancies[port]--;
+
+	/* move the last entry in the pkt queue to the vacated spot (changes
+	 * nothing if this was in the last spot), update linked-list pointers */
+	last_pkt_metadata = &m_pkt_metadata[port][m_occupancies[port]];
+	if (pkt_metadata != last_pkt_metadata) {
+		memcpy(pkt_metadata, last_pkt_metadata,
+				sizeof(struct pfabric_pkt_metadata));
+		if (pkt_metadata->prev != NULL)
+			pkt_metadata->prev->next = pkt_metadata;
+		else
+			pkt_metadata->flow->head = pkt_metadata;
+		if (pkt_metadata->next != NULL)
+			pkt_metadata->next->prev = pkt_metadata;
+		else
+			pkt_metadata->flow->tail = pkt_metadata;
+	}
+
+	/* mark port as empty if necessary */
+	uint64_t port_empty = (m_occupancies[port] == 0) & 0x1;
+	m_non_empty_ports[port >> 6] ^= (port_empty << (port & 0x3F));
+
+	queue_bank_log_dequeue(&m_stats, port);
+	return p;
+}
+
+inline void PFabricQueueBank::remove_flow(uint32_t port,
+		struct pfabric_flow_metadata *flow) {
+	struct pfabric_flow_metadata *last_flow;
+	struct pfabric_pkt_metadata *pkt;
+
+	m_flows[port]--;
+	last_flow = &m_flow_metadata[port][m_flows[port]];
+
+	if (last_flow != flow)
+		memcpy(flow, last_flow, sizeof(struct pfabric_flow_metadata));
+
+	last_flow->head = NULL;
+
+	/* update pointers from packets in this flow */
+	pkt = flow->head;
+	while (pkt != NULL) {
+		pkt->flow = flow;
+		pkt = pkt->next;
+	}
+}
+
+inline void PFabricQueueBank::print_contents() {
+	uint32_t port;
+	struct pfabric_flow_metadata *flow;
+	struct pfabric_pkt_metadata *pkt;
+
+	for (port = 0; port < m_n_ports; port++) {
+		if (m_occupancies[port] > 0) {
+			printf("port %d with %d flows:\n", port, m_flows[port]);
+			flow = &m_flow_metadata[port][0];
+
+			while (flow->head != NULL) {
+				printf("flow from %d to %d with prios from %d to %d: ",
+						flow->src, flow->dst, flow->head_priority,
+						flow->tail_priority);
+				pkt = flow->head;
+				while (pkt != NULL) {
+					printf("%d, ", pkt->priority);
+					pkt = pkt->next;
+				}
+				printf("\n");
+
+				flow++;
+			}
+		}
+	}
 }
 
 #endif /* PFABRIC_QUEUE_BANK_H_ */

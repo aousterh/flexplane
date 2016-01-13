@@ -94,7 +94,7 @@ TESTS_O = $(addsuffix .o, $(basename $(TESTS_CC)))
 unittests : $(TESTS_O) $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
-pfabric_unittests : pfabric_unittest.o $(EMULATION_ALL_O) gtest_main.a
+pfabric_unittests : pfabric_queue_bank_unittest.o pfabric_unittest.o $(EMULATION_ALL_O) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 round_robin_unittests : round_robin_unittest.o $(EMULATION_ALL_O) gtest_main.a

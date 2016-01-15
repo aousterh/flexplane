@@ -13,8 +13,7 @@ mkdir /tmp/aousterh-logs
 # shield cpus appropriately
 sudo cset shield -c 1-14
 
-
-OUT_SUMMARY="emu_output_summary.csv"
+OUT_SUMMARY="emu_output_summary_${description}.csv"
 echo "racks,comms,index,tput,label" > $OUT_SUMMARY
 
 for i in `seq 1 $n_iterations`;

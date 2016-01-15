@@ -21,8 +21,8 @@ do
 
         echo "Building emulator with scheme $scheme and $racks racks ($cores cores)"
         prefix="-D"
-        fast_name=build/fast_"$scheme"_"$racks"_racks
-        rm $fast_name
+        fast_name=fast_"$scheme"_"$racks"_racks
+        rm build/$fast_name
 
         if [ $scheme = "PRIO_BY_FLOW_QUEUEING" ]; then
            flow_shift=2
@@ -34,8 +34,7 @@ do
                            CMD_LINE_CFLAGS+=-DEMU_NUM_RACKS=$racks \
                            CMD_LINE_CFLAGS+=-DN_COMM_CORES=$comm_cores \
                            CMD_LINE_CFLAGS+=-DFLOW_SHIFT=$flow_shift \
-                           EMU_RTR_FLAGS=$prefix$scheme -j22
-
-        cp build/fast $fast_name
+                           EMU_RTR_FLAGS=$prefix$scheme \
+                           APP="$fast_name" -j22
     done
 done

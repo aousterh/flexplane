@@ -178,7 +178,7 @@ inline void Emulation::add_backlog(uint16_t src, uint16_t dst, uint16_t flow,
 
 inline void Emulation::reset_sender(uint16_t src) {
 	struct fp_ring *q_resets;
-	uint64_t endpoint_id = src;
+	uint64_t endpoint_id = src % endpoints_per_epg(m_topo_config);
 
 	q_resets =
 			m_comm_state.q_resets[src / endpoints_per_epg(m_topo_config)];

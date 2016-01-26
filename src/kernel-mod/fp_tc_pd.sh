@@ -2,10 +2,10 @@
 
 # script for inserting the Fastpass kernel module on a machine in the pd cluster
 
-CONTROLLER_IP="10.1.1.10"
+CONTROLLER_IP="192.168.1.1"
 DEV="em2"
 
-TC="/home/aousterh/src/iproute2-fastpass/tc/tc"
+TC="/home/aousterh/tc"
 
 # disable generic and tcp segmentation offloads
 sudo ethtool -K $DEV gso off tso off
@@ -16,7 +16,7 @@ echo 2129920 > /proc/sys/net/core/wmem_default
 
 ./del_tc_pd.sh
 
-sudo insmod fastpass.ko fastpass_debug=1 ctrl_addr=$CONTROLLER_IP req_cost=200000 req_bucketlen=400000 retrans_timeout_ns=2000000 req_min_gap=1000
+sudo insmod fastpass.ko fastpass_debug=0 ctrl_addr=$CONTROLLER_IP req_cost=100000 req_bucketlen=200000 retrans_timeout_ns=2000000 req_min_gap=1000
 
 echo -- lsmod after --
 lsmod | grep fastpass

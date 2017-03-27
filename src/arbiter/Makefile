@@ -1,7 +1,7 @@
 # Based on the DPDK Programmer Guide November 2012 (Ch 15.3.1)
 
 include $(RTE_SDK)/mk/rte.vars.mk
-EMU_DIR = ../../../fastpass-private/src/emulation
+EMU_DIR = ../emulation
 
 # binary name, if not specified elsewhere
 ifeq ($(APP),)

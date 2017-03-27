@@ -8,8 +8,8 @@ CXXDEFINES += -DFASTPASS_CONTROLLER
 CXXDEFINES += -DALGO_N_CORES=1
 
 CXXINCLUDES = 
-CXXINCLUDES += -I$(PWD)/../../../fastpass-public/src/graph-algo
-CXXINCLUDES += -I$(PWD)/../../../fastpass-public/src/arbiter
+CXXINCLUDES += -I$(PWD)/../graph-algo
+CXXINCLUDES += -I$(PWD)/../arbiter
 CXXINCLUDES += -I.
 
 CXXFLAGS = $(CXXDEFINES) $(CXXINCLUDES)

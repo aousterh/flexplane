@@ -2,7 +2,7 @@
 CC = g++
 #CC = gcc
 #CC = icc
-EMU_DIR = ../../../fastpass-private/src/emulation
+EMU_DIR = ../emulation
 CCFLAGS = -g
 CCFLAGS += -DNDEBUG
 CCFLAGS += -O3

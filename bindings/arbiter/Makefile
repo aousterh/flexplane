@@ -1,7 +1,7 @@
 # Based on the DPDK Programmer Guide November 2012 (Ch 15.3.1)
 
 include $(RTE_SDK)/mk/rte.vars.mk
-EMU_DIR = ${PWD}/../../../fastpass-private/src/emulation
+EMU_DIR = ${PWD}/../../src/emulation
 ARBITER_DIR = ${PWD}/../../src/arbiter
 PROTOCOL_DIR = ${PWD}/../../src/protocol
 GRAPH_ALGO_DIR = ${PWD}/../../src/graph-algo

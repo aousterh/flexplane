@@ -28,8 +28,8 @@ pfabric_unittests: CXXDEFINES += -DPFABRIC
 lstf_unittests: CXXDEFINES += -DLSTF
 
 CXXINCLUDES = 
-CXXINCLUDES += -I$(PWD)/../../../../fastpass-public/src/graph-algo
-CXXINCLUDES += -I$(PWD)/../../../../fastpass-public/src/arbiter
+CXXINCLUDES += -I$(PWD)/../../graph-algo
+CXXINCLUDES += -I$(PWD)/../../arbiter
 CXXINCLUDES += -I..
 
 CXXFLAGS = $(CXXDEFINES) $(CXXINCLUDES)

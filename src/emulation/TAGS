@@ -1,0 +1,345 @@
+
+Makefile,515
+CXX 2,9
+CXXFLAGS 3,19
+CXXFLAGS +=CXXFLAGS +4,33
+CXXFLAGS +=CXXFLAGS +5,54
+CXXFLAGS +=CXXFLAGS +7,87
+CXXFLAGS +=CXXFLAGS +10,181
+CXXFLAGS +=CXXFLAGS +11,242
+CXXFLAGS +=CXXFLAGS +12,300
+CXXFLAGS +=CXXFLAGS +13,316
+LDFLAGS 14,345
+%_wrap.o:%_wrap.o18,411
+%.o:%.o20,496
+%.pic.o:%.pic.o22,538
+.PHONY:.PHONY26,631
+all:all27,645
+clean:clean28,663
+emulation:emulation32,782
+.PHONY:.PHONY37,929
+py:py38,940
+WRAP_HEADERS 40,957
+%_wrap.cc:%_wrap.cc53,1198
+_fastemu.so:_fastemu.so57,1296
+
+admissible_log.h,795
+#define EMU_ADMISSIBLE_LOG_H__11,183
+#define		MAINTAIN_EMU_ADM_LOG_COUNTERS	16,275
+struct emu_admission_core_statistics 22,411
+struct emu_admission_statistics 28,497
+void adm_log_emu_wait_for_admitted_enqueue(65,1408
+void adm_log_emu_admitted_alloc_failed(72,1612
+void adm_log_emu_admitted_packet(79,1808
+void adm_log_emu_dropped_demand(86,1992
+void adm_log_emu_dropped_packet(93,2174
+void adm_log_emu_packet_alloc_failed(100,2356
+void adm_log_emu_endpoint_enqueue_backlog_failed(107,2548
+void adm_log_emu_send_packets_failed(114,2789
+void adm_log_emu_admitted_struct_overflow(121,3005
+void adm_log_emu_endpoint_sent_packets(128,3207
+void adm_log_emu_router_sent_packets 135,3427
+void adm_log_emu_endpoint_dropped_packet 142,3644
+void adm_log_emu_router_dropped_packet 149,3845
+
+admissible_log_impl.h,239
+struct emu_admission_statistics emu_saved_admission_statistics;15,244
+void print_global_admission_log_emulation(17,309
+#define D(24,574
+#undef D34,1070
+void emu_save_admission_stats(62,2103
+void emu_save_admission_core_stats(67,2244
+
+admitted.h,356
+#define EMU_ADMITTED_H_9,103
+struct emu_admitted_edge 21,327
+struct emu_admitted_traffic 31,588
+void admitted_init(42,807
+void admitted_insert_edge(54,1059
+void admitted_insert_admitted_edge(75,1799
+void admitted_insert_dropped_edge(87,2164
+void admitted_edge_print(99,2499
+void admitted_print(115,2924
+uint32_t get_admitted_struct_size(127,3181
+
+api.h,76
+#define API_H_11,160
+#define EMU_ALIGNTO	19,301
+#define EMU_ALIGN(20,327
+
+api_impl.h,239
+#define API_IMPL_H__11,176
+void drop_packet(22,364
+void enqueue_packet_at_endpoint(31,550
+struct emu_packet *create_packet(create_packet40,791
+void free_packet(55,1150
+void drop_demand(61,1303
+void *packet_priv(packet_priv68,1530
+
+composite.h,782
+#define COMPOSITE_H_9,98
+#define THROW 16,217
+class Classifier 21,371
+	void classify(Classifier::classify28,563
+class QueueManager 36,869
+	void enqueue(QueueManager::enqueue43,1056
+class Scheduler 49,1221
+	struct emu_packet *schedule(Scheduler::schedule54,1337
+	uint64_t *non_empty_port_mask(Scheduler::non_empty_port_mask59,1482
+#undef THROW62,1528
+class CompositeRouter 68,1672
+CompositeRouter<CLA,QM,SCH>::CompositeRouter(CompositeRouter88,2218
+CompositeRouter<CLA,QM,SCH>::~CompositeRouter(~CompositeRouter101,2652
+void CompositeRouter<CLA,QM,SCH>::push(push104,2748
+void CompositeRouter<CLA,QM,SCH>::pull(pull112,2964
+void CompositeRouter<CLA,QM,SCH>::push_batch(push_batch119,3131
+uint32_t CompositeRouter<CLA,QM,SCH>::pull_batch(pull_batch130,3420
+
+config.h,196
+#define CONFIG_H_9,96
+#define EMU_ROUTER_NUM_PORTS	11,115
+#define EMU_NUM_ROUTERS	12,147
+#define EMU_NUM_ENDPOINTS	13,175
+#define EMU_NUM_ENDPOINT_GROUPS	14,243
+#define EMU_MAX_DROPS	15,277
+
+cuckoo.h,340
+#define CUCKOO_H_9,91
+struct cuckoo_bucket 15,170
+struct cuckoo_elem 21,265
+struct cuckoo_htable 26,318
+#define FNV_32_PRIME 90,2002
+#define FNV1_32_INIT 91,2036
+static inline int cuckoo_init(94,2072
+static inline void cuckoo_destroy(135,3096
+static inline uint32_t _other_bucket(142,3270
+static inline int cuckoo_insert(148,3446
+
+drop_tail.cc,504
+#define DROP_TAIL_PORT_CAPACITY 12,147
+#define DROP_TAIL_MAX_CAPACITY 13,183
+DropTailQueueManager::DropTailQueueManager(15,219
+inline void DropTailQueueManager::enqueue(23,437
+DropTailRouter::DropTailRouter(35,765
+DropTailRouter::~DropTailRouter(43,1118
+DropTailEndpoint::DropTailEndpoint(54,1347
+DropTailEndpoint::~DropTailEndpoint(67,1677
+void DropTailEndpoint::reset(71,1730
+void DropTailEndpoint::new_packet(79,1904
+void DropTailEndpoint::push(88,2180
+void DropTailEndpoint::pull(95,2342
+
+drop_tail.h,582
+#define DROP_TAIL_H_9,104
+struct drop_tail_args 27,470
+class DropTailQueueManager 32,524
+typedef CompositeRouter<TorClassifier,TorClassifier45,893
+typedef CompositeRouter<TorClassifier, DropTailQueueManager,45,893
+	DropTailRouterBase;46,976
+class DropTailRouter 52,1087
+class DropTailEndpoint 68,1436
+class DropTailEndpointGroup 83,1828
+	DropTailEndpointGroup(DropTailEndpointGroup::DropTailEndpointGroup85,1889
+	~DropTailEndpointGroup(DropTailEndpointGroup::~DropTailEndpointGroup87,1972
+	virtual Endpoint *make_endpoint(DropTailEndpointGroup::make_endpoint88,2002
+
+emulation.cc,464
+#define ENDPOINT_MAX_BURST	18,270
+#define ROUTER_MAX_BURST	19,321
+emu_state *g_state;g_state21,374
+void emu_init_state(25,491
+void emu_cleanup(65,1898
+static inline void emu_emulate_epg_push(103,3025
+static inline void emu_emulate_epg_pull(120,3508
+static inline void emu_emulate_epg_new_pkts(145,4287
+static inline void emu_emulate_router(162,4762
+void emu_emulate(209,6140
+void emu_reset_sender(244,7336
+static inline void free_packet_ring(251,7563
+
+emulation.h,231
+#define EMULATION_H_9,102
+#define ADMITTED_MEMPOOL_SIZE	19,308
+#define ADMITTED_Q_LOG_SIZE	20,341
+#define PACKET_MEMPOOL_SIZE	21,372
+#define PACKET_Q_LOG_SIZE	22,414
+#define EMU_NUM_PACKET_QS	23,444
+struct emu_state 48,1269
+
+emulation_impl.h,124
+#define EMULATION_IMPL_H_9,116
+#define MIN(21,351
+#define EMU_ADD_BACKLOG_BATCH_SIZE	22,386
+void emu_add_backlog(28,488
+
+emulation_test.cc,101
+void emulate_and_print_admitted(23,418
+emu_state *setup_state(setup_state40,869
+int main(72,1876
+
+endpoint.h,360
+#define ENDPOINT_H_9,100
+enum EndpointType 15,164
+	E_DropTail16,184
+class Endpoint 28,627
+	Endpoint(Endpoint::Endpoint30,652
+	virtual ~Endpoint(Endpoint::~Endpoint31,688
+	virtual void reset(Endpoint::reset32,713
+	virtual void new_packet(Endpoint::new_packet33,739
+	virtual void push(Endpoint::push34,795
+	virtual void pull(Endpoint::pull35,845
+
+endpoint_group.cc,368
+EndpointGroup::EndpointGroup(17,306
+EndpointGroup::~EndpointGroup(23,434
+void EndpointGroup::init(31,568
+void EndpointGroup::reset(41,822
+void EndpointGroup::new_packets(45,909
+void EndpointGroup::push_batch(56,1158
+uint32_t EndpointGroup::pull_batch(66,1354
+EndpointGroup *EndpointGroupFactory::NewEndpointGroup(EndpointGroupFactory::NewEndpointGroup96,2163
+
+endpoint_group.h,136
+#define ENDPOINT_GROUP_H_9,116
+#define MAX_ENDPOINTS_PER_GROUP	15,250
+class EndpointGroup 29,974
+class EndpointGroupFactory 50,1686
+
+fastemu.i,240
+%module(module1,0
+%exception exception12,148
+%template(PacketQueueBank) QueueBank<QueueBank48,909
+%apply uint32_t *OUTPUT OUTPUT51,986
+%clear uint32_t *port;port53,1084
+%clear uint32_t *queue;queue54,1108
+	def classify(74,1576
+
+fastemu_wrap.h,861
+#define SWIG_fastemu_WRAP_H_12,547
+class SwigDirector_PyQueueManager 18,612
+    bool swig_get_inner(SwigDirector_PyQueueManager::swig_get_inner27,914
+    void swig_set_inner(SwigDirector_PyQueueManager::swig_set_inner31,1152
+    PyObject *swig_get_method(SwigDirector_PyQueueManager::swig_get_method39,1423
+class SwigDirector_PyScheduler 60,2064
+    bool swig_get_inner(SwigDirector_PyScheduler::swig_get_inner70,2381
+    void swig_set_inner(SwigDirector_PyScheduler::swig_set_inner74,2619
+    PyObject *swig_get_method(SwigDirector_PyScheduler::swig_get_method82,2890
+class SwigDirector_PyClassifier 103,3528
+    bool swig_get_inner(SwigDirector_PyClassifier::swig_get_inner112,3828
+    void swig_set_inner(SwigDirector_PyClassifier::swig_set_inner116,4066
+    PyObject *swig_get_method(SwigDirector_PyClassifier::swig_get_method124,4337
+
+packet.h,74
+#define PACKET_H_9,96
+struct emu_packet 20,405
+void packet_init(30,521
+
+packet_queue.h,236
+#define PACKET_QUEUE_H_9,110
+#define MAX_PACKET_QUEUE_LEN	14,176
+struct packet_queue 26,522
+void queue_create(42,905
+int queue_enqueue(61,1353
+int queue_dequeue(80,1769
+int queue_empty(100,2103
+uint32_t queue_occupancy(109,2266
+
+pfabric.c,764
+struct pfabric_per_flow_queue21,362
+struct pfabric_per_port37,691
+struct pfabric_router_priv 49,927
+struct pfabric_endpoint_priv 54,1058
+static inline void pfq_init(61,1224
+static inline bool pfq_is_empty(64,1320
+static inline bool pfq_is_full(67,1424
+static inline void pfq_enq(70,1551
+static inline struct emu_packet *pfq_deq(pfq_deq75,1698
+static inline void pf_port_init(79,1835
+static int pfabric_rtr_init(89,2113
+static void *pfabric_rtr_cleanup(pfabric_rtr_cleanup100,2339
+static void pfabric_rtr_emulate(105,2402
+int pfabric_ep_init(113,2559
+void pfabric_ep_reset(118,2622
+void pfabric_ep_cleanup(123,2675
+void pfabric_ep_emulate(128,2730
+struct router_ops pfabric_router_ops 137,2884
+struct endpoint_ops pfabric_endpoint_ops 144,3074
+
+pfabric.h,141
+#define PFABRIC_H_9,94
+#define PFABRIC_MAX_ENDPOINTS	13,132
+#define PFABRIC_MAX_QUEUE_LEN	16,207
+#define PFABRIC_MAX_ROUTER_PORTS	18,242
+
+pipeline.c,61
+#define PIPELINE_BURST_SIZE	13,183
+int pipeline_run(15,216
+
+pipeline.h,226
+#define PIPELINE_H_13,132
+#define PIPELINE_MAX_PORTS 15,153
+#define PIPELINE_MAX_PROCESSORS 16,185
+typedef int (*fp_port_rx)fp_port_rx24,415
+typedef uint64_t (*fp_processor)fp_processor34,776
+struct fp_pipeline 36,857
+
+port.h,72
+#define PORT_H_9,94
+struct emu_port 21,340
+int port_pair_init(35,803
+
+queue_bank.h,708
+#define QUEUE_BANK_H_9,100
+class QueueBank 21,333
+typedef QueueBank<struct emu_packet> PacketQueueBank;104,2416
+QueueBank<ELEM>::QueueBank(QueueBank109,2520
+QueueBank<ELEM>::~QueueBank(~QueueBank146,3753
+inline uint32_t QueueBank<ELEM>::flat_index(flat_index156,3946
+inline void QueueBank<ELEM>::enqueue(enqueue161,4089
+inline ELEM *QueueBank<ELEM>::dequeue(dequeue175,4485
+inline uint64_t *QueueBank<ELEM>::non_empty_port_mask(non_empty_port_mask192,4934
+inline uint64_t QueueBank<ELEM>::non_empty_queue_mask(non_empty_queue_mask198,5048
+inline int QueueBank<ELEM>::empty(empty205,5183
+inline uint32_t QueueBank<ELEM>:: occupancy(211,5331
+inline int QueueBank<ELEM>::full(full217,5493
+
+radix_heap.h,306
+#define RADIX_HEAP_H_9,258
+#define RADIX_HEAP_NUM_PRIOS	13,310
+struct radix_heap 15,343
+static inline void rheap_init(28,700
+#define rheap_entry(49,1248
+static inline struct list_node *rheap_find_min(rheap_find_min60,1598
+static inline void rheap_del(85,2085
+static inline void rheap_add(103,2754
+
+red.c,345
+#define RED_PORT_CAPACITY 12,131
+int red_router_init(14,160
+void red_router_cleanup(35,780
+void red_router_emulate(50,1169
+int red_endpoint_init(92,2504
+void drop_from_queue(96,2580
+void ecnmark_pkt(103,2765
+int red_rules(110,2937
+void red_endpoint_reset(135,3574
+void red_endpoint_cleanup(137,3628
+void red_endpoint_emulate(139,3684
+
+red.h,109
+#define RED_H_9,89
+struct red_args 17,191
+struct red_router 25,347
+static struct emu_ops red_ops 72,1540
+
+router.cc,66
+Router *RouterFactory::NewRouter(RouterFactory::NewRouter12,147
+
+router.h,188
+#define ROUTER_H_9,96
+enum RouterType 15,158
+	R_DropTail16,176
+class Router 28,562
+	Router(Router::Router30,585
+	virtual ~Router(Router::~Router31,619
+class RouterFactory 44,1072

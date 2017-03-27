@@ -7,6 +7,11 @@ such as ECN marks), so that packets arrive at their destinations with the
 timings and modifications they would have in a hardware network that supported
 the programmed scheme.
 
+Flexplane is described in more detail in:
+Amy Ousterhout, Jonathan Perry, Hari Balakrishnan, and Petr Lapukhov.
+"Flexplane: An Experimentation Platform for Resource Management in Datacenters."
+NSDI 2017.
+
 Directory Structure
 
 This repo is a fork of https://github.com/yonch/fastpass. The key directories
